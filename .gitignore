@@ -1,0 +1,43 @@
+# ---- Secrets / env ----
+.env
+*.env
+!.env.example
+backend/.env
+frontend/.env
+
+# ---- Python / Django ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+.venv/
+venv/
+env/
+.Python
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.mypy_cache/
+staticfiles/
+mediafiles/
+
+# ---- Node / Vite ----
+node_modules/
+frontend/dist/
+dist/
+.vite/
+*.local
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# ---- Docker ----
+*.pid

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run GovBot auto-deploy every 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+Unit=govbot-deploy.service
+
+[Install]
+WantedBy=timers.target

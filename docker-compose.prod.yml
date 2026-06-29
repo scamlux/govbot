@@ -1,0 +1,60 @@
+# ===========================================================================
+# GovBot — production stack. Single public port (6969 -> frontend nginx),
+# which reverse-proxies /api and /admin to the internal backend container.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+# ===========================================================================
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-govbot}
+      POSTGRES_USER: ${POSTGRES_USER:-govbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-govbot}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-govbot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      DEBUG: ${DEBUG:-0}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      POSTGRES_DB: ${POSTGRES_DB:-govbot}
+      POSTGRES_USER: ${POSTGRES_USER:-govbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-govbot}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:6969}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_MAX_TOKENS: ${OPENAI_MAX_TOKENS:-1200}
+      OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE:-0.3}
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Single-origin: the SPA calls /api on its own host, nginx proxies it.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${PUBLIC_PORT:-6969}:80"
+
+volumes:
+  pgdata:

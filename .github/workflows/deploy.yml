@@ -1,0 +1,60 @@
+name: CI / Deploy
+
+# CI: run backend tests on every push/PR.
+# CD (optional instant deploy): if SERVER_* secrets are set, SSH in and redeploy.
+# The server also auto-pulls via a systemd timer, so deploys happen even without
+# these secrets — they just make it instant on push.
+#
+# Optional repo secrets (Settings → Secrets and variables → Actions):
+#   SERVER_HOST, SERVER_USER, SERVER_PASSWORD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend deps
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          SECRET_KEY: ci-test-secret
+        run: pytest -q
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for deploy secrets
+        id: gate
+        env:
+          HOST: ${{ secrets.SERVER_HOST }}
+        run: echo "ready=${HOST:+yes}" >> "$GITHUB_OUTPUT"
+      - name: Deploy over SSH
+        if: steps.gate.outputs.ready == 'yes'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            set -e
+            cd /opt/govbot
+            APP_DIR=/opt/govbot ./deploy.sh
+      - name: Note
+        if: steps.gate.outputs.ready != 'yes'
+        run: echo "No SERVER_* secrets set — skipping instant deploy. The server's systemd timer will auto-pull this commit within ~2 min."

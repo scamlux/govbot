@@ -1,0 +1,9 @@
+[Unit]
+Description=GovBot auto-deploy (pull origin/main and redeploy if changed)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/govbot
+ExecStart=/usr/bin/env bash /opt/govbot/auto-deploy.sh
