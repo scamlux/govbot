@@ -4,6 +4,11 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from accounts.views import AdminUserListView
+from chat.admin_views import (
+    AdminCatalogGapsView,
+    AdminFeedbackListView,
+    AdminQuestionAnalyticsView,
+)
 from scenarios.views import AdminCategoryViewSet, AdminScenarioViewSet
 
 
@@ -21,6 +26,18 @@ urlpatterns = [
     path("api/health/", health, name="health"),
     path("api/auth/", include("accounts.urls")),
     path("api/admin/users/", AdminUserListView.as_view(), name="admin-users"),
+    # Chat oversight (A3 feedback, C1/C2 analytics) — staff only.
+    path("api/admin/feedback/", AdminFeedbackListView.as_view(), name="admin-feedback"),
+    path(
+        "api/admin/analytics/questions/",
+        AdminQuestionAnalyticsView.as_view(),
+        name="admin-analytics-questions",
+    ),
+    path(
+        "api/admin/analytics/gaps/",
+        AdminCatalogGapsView.as_view(),
+        name="admin-analytics-gaps",
+    ),
     path("api/admin/", include(admin_router.urls)),
     path("api/", include("chat.urls")),
     path("api/scenarios/", include("scenarios.urls")),

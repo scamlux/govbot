@@ -3,6 +3,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from accounts.models import User
+from chat.models import Conversation, Message, MessageFeedback
 from scenarios.models import Category, Scenario
 
 pytestmark = pytest.mark.django_db
@@ -114,3 +115,89 @@ def test_scenario_order_auto_increments_within_category(admin_client):
     )
     assert resp.status_code == 201
     assert resp.json()["order"] == 8  # max(7) + 1 within the category
+
+
+# --------------------------------------------------------------------------- #
+# Helpers for chat-oversight admin API (A3, C1, C2)
+# --------------------------------------------------------------------------- #
+def _conversation_with_messages(email, language, pairs):
+    """Create a conversation with (user_text, assistant_text, sources) rows."""
+    user = User.objects.create_user(email=email, password="Pw!12345678")
+    conv = Conversation.objects.create(user=user, language=language)
+    msgs = []
+    for user_text, assistant_text, sources in pairs:
+        msgs.append(Message.objects.create(conversation=conv, role=Message.USER, content=user_text))
+        msgs.append(
+            Message.objects.create(
+                conversation=conv, role=Message.ASSISTANT, content=assistant_text, sources=sources
+            )
+        )
+    return conv, msgs
+
+
+# --------------------------------------------------------------------------- #
+# A3 — feedback list
+# --------------------------------------------------------------------------- #
+def test_admin_feedback_list_filters_and_paginates(admin_client):
+    _, msgs = _conversation_with_messages(
+        "a@ex.com", "en", [("q1", "a1", None), ("q2", "a2", None)]
+    )
+    MessageFeedback.objects.create(message=msgs[1], rating="down", reason="wrong")
+    MessageFeedback.objects.create(message=msgs[3], rating="up")
+
+    resp = admin_client.get("/api/admin/feedback/?rating=down")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["count"] == 1
+    row = body["results"][0]
+    assert row["rating"] == "down"
+    assert row["message_content"] == "a1"
+    assert row["conversation_language"] == "en"
+
+
+def test_admin_feedback_list_requires_staff(user_client):
+    assert user_client.get("/api/admin/feedback/").status_code == 403
+
+
+# --------------------------------------------------------------------------- #
+# C1 — question analytics
+# --------------------------------------------------------------------------- #
+def test_admin_question_analytics(admin_client):
+    _conversation_with_messages(
+        "en@ex.com", "en", [("How to renew passport passport", "ok", None)]
+    )
+    _conversation_with_messages("ru@ex.com", "ru", [("Как получить визу виза", "ok", None)])
+
+    resp = admin_client.get("/api/admin/analytics/questions/?days=30")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["message_count"] == 2
+    assert data["conversation_count"] == 2
+    langs = {row["language"]: row["count"] for row in data["language_split"]}
+    assert langs == {"en": 1, "ru": 1}
+    terms = {t["term"] for t in data["top_terms"]}
+    assert "passport" in terms and "виза" in terms
+
+
+def test_admin_analytics_requires_staff(user_client):
+    assert user_client.get("/api/admin/analytics/questions/").status_code == 403
+
+
+# --------------------------------------------------------------------------- #
+# C2 — catalog gaps
+# --------------------------------------------------------------------------- #
+def test_admin_catalog_gaps_ranks_ungrounded_questions(admin_client):
+    # Two ungrounded asks of the same question, one grounded ask of another.
+    _conversation_with_messages("g1@ex.com", "en", [("driver license rules", "ok", None)])
+    _conversation_with_messages("g2@ex.com", "en", [("driver license rules", "ok", None)])
+    _conversation_with_messages(
+        "g3@ex.com", "en", [("passport renewal", "ok", [{"slug": "p", "title": "P", "source_url": ""}])]
+    )
+
+    resp = admin_client.get("/api/admin/analytics/gaps/")
+    assert resp.status_code == 200
+    gaps = resp.json()["gaps"]
+    assert gaps[0]["question"] == "driver license rules"
+    assert gaps[0]["count"] == 2
+    # The grounded question is not a gap.
+    assert all("passport" not in g["question"] for g in gaps)

@@ -55,6 +55,10 @@ class Scenario(models.Model):
     body = models.JSONField(
         default=empty_translations, help_text="Markdown-capable, per language."
     )
+    source_url = models.URLField(
+        blank=True,
+        help_text="Official source link (agency page) surfaced when the AI cites this scenario.",
+    )
     tags = models.JSONField(default=list, blank=True)
     order = models.PositiveIntegerField(default=0)
     is_published = models.BooleanField(default=True)
@@ -65,3 +69,36 @@ class Scenario(models.Model):
 
     def __str__(self):
         return localize(self.title, "en") or self.slug
+
+    def embedding_source_text(self, lang: str) -> str:
+        """Concatenated title + body for a language — the text we embed / keyword-match."""
+        return "\n".join(
+            part for part in (localize(self.title, lang), localize(self.body, lang)) if part
+        ).strip()
+
+
+class ScenarioEmbedding(models.Model):
+    """A stored vector for one scenario in one language.
+
+    Vectors are kept as a plain JSON list of floats (not pgvector): at catalog scale
+    (tens–hundreds of rows) brute-force cosine in Python is effectively free and keeps the
+    SQLite dev fallback working. Swap in pgvector here once the catalog grows to thousands.
+    """
+
+    scenario = models.ForeignKey(
+        Scenario, related_name="embeddings", on_delete=models.CASCADE
+    )
+    language = models.CharField(max_length=2)
+    vector = models.JSONField(default=list)
+    model = models.CharField(max_length=80, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["scenario", "language"], name="uniq_scenario_language_embedding"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.scenario.slug} [{self.language}] ({len(self.vector)}d)"

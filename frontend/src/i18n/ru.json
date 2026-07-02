@@ -47,7 +47,25 @@
     "published": "Опубликовано",
     "confirmDeleteCategory": "Удалить эту категорию и все её сценарии?",
     "confirmDeleteScenario": "Удалить этот сценарий?",
-    "saveError": "Не удалось сохранить. Проверьте поля и попробуйте снова."
+    "saveError": "Не удалось сохранить. Проверьте поля и попробуйте снова.",
+    "analytics": "Аналитика",
+    "period": "Период",
+    "last7Days": "7 дней",
+    "last30Days": "30 дней",
+    "last90Days": "90 дней",
+    "topQuestions": "Частые термины вопросов",
+    "languageSplit": "По языкам",
+    "catalogGaps": "Пробелы каталога",
+    "catalogGapsHint": "Частые вопросы без подходящего сценария — кандидаты на добавление.",
+    "recentDownvotes": "Недавние 👎 ответы",
+    "term": "Термин",
+    "count": "Кол-во",
+    "question": "Вопрос",
+    "messages": "Сообщения",
+    "createScenario": "Создать сценарий",
+    "noAnalytics": "Пока нет данных за этот период.",
+    "totalMessages": "Сообщений",
+    "totalConversations": "Диалогов"
   },
   "common": {
     "loading": "Загрузка…",
@@ -58,7 +76,8 @@
     "language": "Язык",
     "send": "Отправить",
     "cancel": "Отмена",
-    "delete": "Удалить"
+    "delete": "Удалить",
+    "offline": "Вы офлайн — показываем сохранённое содержимое."
   },
   "landing": {
     "heroTitle": "Понятные ответы на вопросы о госуслугах",
@@ -109,7 +128,13 @@
     "assistant": "GovBot",
     "suggestion1": "Как заменить паспорт?",
     "suggestion2": "Как зарегистрировать бизнес?",
-    "suggestion3": "Что нужно для туристической визы?"
+    "suggestion3": "Что нужно для туристической визы?",
+    "sources": "Источники:",
+    "feedbackUp": "Полезно",
+    "feedbackDown": "Не помогло",
+    "feedbackReasonPlaceholder": "Что было не так? (необязательно)",
+    "export": "Экспорт чата",
+    "voiceInput": "Голосовой ввод"
   },
   "scenarios": {
     "title": "Каталог сценариев",

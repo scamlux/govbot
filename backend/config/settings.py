@@ -8,9 +8,28 @@ backend runs instantly in development.
 from datetime import timedelta
 from pathlib import Path
 
+import sys
+
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+INSECURE_SECRET_KEY = "django-insecure-dev-only-change-me"
+
+
+def require_secure_secret_key(debug: bool, secret_key: str) -> None:
+    """S1 — refuse to run production on the insecure default signing key.
+
+    A guessable ``SECRET_KEY`` under ``DEBUG=False`` means forgeable JWTs and tamperable
+    sessions, so we fail loudly at import rather than boot. In ``DEBUG`` the shared default
+    is fine for instant local dev. Kept as a pure function so the rule is unit-testable.
+    """
+    if not debug and secret_key == INSECURE_SECRET_KEY:
+        raise ImproperlyConfigured(
+            "SECRET_KEY is unset or the insecure development default while DEBUG=False. "
+            "Set a strong, unique SECRET_KEY in the environment before deploying."
+        )
 
 env = environ.Env(
     DEBUG=(bool, False),
@@ -23,9 +42,14 @@ environ.Env.read_env(BASE_DIR / ".env")
 # ---------------------------------------------------------------------------
 # Core
 # ---------------------------------------------------------------------------
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-change-me")
+SECRET_KEY = env("SECRET_KEY", default=INSECURE_SECRET_KEY)
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+
+# Enforce the S1 guard on a real boot. Skipped under pytest, which sets up Django before
+# the test env is fully applied — the rule itself is covered by tests/test_settings.py.
+if "pytest" not in sys.modules:
+    require_secure_secret_key(DEBUG, SECRET_KEY)
 
 # ---------------------------------------------------------------------------
 # Applications
@@ -125,6 +149,12 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
     ),
+    # A1 — throttle scopes are attached per-view (chat endpoints only); rates come
+    # from env so ops can tighten limits without a code change.
+    "DEFAULT_THROTTLE_RATES": {
+        "chat_burst": env("CHAT_THROTTLE_BURST", default="20/min"),
+        "chat_sustained": env("CHAT_THROTTLE_SUSTAINED", default="500/day"),
+    },
 }
 
 SIMPLE_JWT = {
@@ -162,8 +192,20 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # ---------------------------------------------------------------------------
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")
+# Embedding model used for RAG grounding of chat answers against the Scenario Catalog.
+OPENAI_EMBEDDING_MODEL = env("OPENAI_EMBEDDING_MODEL", default="text-embedding-3-small")
 OPENAI_MAX_TOKENS = env.int("OPENAI_MAX_TOKENS", default=1200)
 OPENAI_TEMPERATURE = env.float("OPENAI_TEMPERATURE", default=0.3)
+
+# ---------------------------------------------------------------------------
+# Chat input hardening (S3) + RAG retrieval knobs (B4)
+# ---------------------------------------------------------------------------
+# Max characters accepted for a single chat message (server-enforced; the UI mirrors it).
+CHAT_MAX_MESSAGE_CHARS = env.int("CHAT_MAX_MESSAGE_CHARS", default=4000)
+# Retrieval tunables: how many grounding snippets to inject and the cosine floor below
+# which a scenario is treated as irrelevant.
+RETRIEVAL_TOP_K = env.int("RETRIEVAL_TOP_K", default=3)
+RETRIEVAL_MIN_SCORE = env.float("RETRIEVAL_MIN_SCORE", default=0.28)
 
 # ---------------------------------------------------------------------------
 # i18n / tz

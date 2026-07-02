@@ -393,3 +393,68 @@ h1, h2, h3 { font-family: var(--font-display); line-height: 1.16; color: var(--i
   .lang-btn { padding: 0.28rem 0.45rem; font-size: 0.72rem; }
   .brand-name { font-size: 1.05rem; }
 }
+
+/* ============================================================= *
+ *  Post-MVP UI: sources, feedback, voice, export, offline,
+ *  analytics (backlog A2/B2/C3/D1/D2/D3)
+ * ============================================================= */
+
+/* B2 — source chips under grounded assistant answers */
+.msg-sources { margin-top: 0.6rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.msg-sources-label { font-size: 0.74rem; font-weight: 700; color: var(--muted); }
+.msg-sources-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.source-chip { display: inline-flex; align-items: center; gap: 0.25rem; background: var(--surface-3); border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.78rem; }
+.source-chip-link { color: var(--brand-700); font-weight: 600; }
+.source-chip-link:hover { text-decoration: underline; }
+.source-chip-ext { color: var(--muted); font-weight: 700; text-decoration: none; }
+.source-chip-ext:hover { color: var(--brand-700); }
+
+/* A2 — feedback thumbs */
+.msg-feedback { margin-top: 0.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.fb-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 0.1rem 0.5rem; font-size: 0.9rem; cursor: pointer; line-height: 1.4; transition: all 0.15s; opacity: 0.7; }
+.fb-btn:hover { opacity: 1; border-color: var(--brand-soft); }
+.fb-btn.active { opacity: 1; background: var(--brand-tint); border-color: var(--brand-soft); }
+.fb-reason { display: inline-flex; gap: 0.35rem; align-items: center; }
+.fb-reason input { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 0.3rem 0.55rem; font-size: 0.8rem; min-width: 180px; }
+.fb-reason input:focus { outline: none; border-color: var(--brand); }
+
+/* D2 — mic button, S3 — char counter (chat input bar) */
+.chat-mic { border: none; background: var(--surface-2); border-radius: 999px; width: 2.3rem; height: 2.3rem; font-size: 1rem; cursor: pointer; flex: none; transition: background 0.15s; }
+.chat-mic:hover { background: var(--surface-3); }
+.chat-mic.listening { background: var(--brand-soft); animation: mic-pulse 1.2s ease-in-out infinite; }
+@keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--brand-soft); } 50% { box-shadow: 0 0 0 6px transparent; } }
+.char-counter { font-size: 0.72rem; color: var(--muted); align-self: center; flex: none; }
+
+/* D3 — export button */
+.chat-export-btn { margin-left: auto; border: none; background: transparent; font-size: 1.05rem; cursor: pointer; color: var(--ink-soft); padding: 0.2rem 0.5rem; border-radius: var(--radius-xs); }
+.chat-export-btn:hover { background: var(--surface-3); color: var(--brand-700); }
+
+/* D1 — offline banner */
+.offline-banner { background: #8a5a00; color: #fff; text-align: center; font-size: 0.82rem; font-weight: 600; padding: 0.4rem 1rem; }
+
+/* C3 — analytics panel */
+.analytics-period { flex-direction: row; align-items: center; gap: 0.5rem; }
+.analytics-period span { font-size: 0.8rem; color: var(--muted); }
+.stat-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+.stat-tile { flex: 1 1 140px; background: var(--surface-2); border-radius: var(--radius-sm); padding: 1rem 1.2rem; }
+.stat-num { font-size: 1.9rem; font-weight: 800; color: var(--ink); line-height: 1; }
+.stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
+.analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.2rem; }
+.analytics-block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 1rem 1.1rem; }
+.analytics-block h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+.analytics-hint { font-size: 0.76rem; margin: -0.3rem 0 0.6rem; }
+.term-list, .lang-bars, .gaps-list, .downvote-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.term-list li { display: flex; justify-content: space-between; font-size: 0.85rem; }
+.term-word { color: var(--ink); }
+.term-count, .gap-count { color: var(--muted); font-weight: 700; }
+.lang-bars li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+.lang-code { width: 2.2rem; font-weight: 700; color: var(--ink-soft); }
+.lang-bar-track { flex: 1; height: 8px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
+.lang-bar-fill { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+.lang-count { width: 2rem; text-align: right; color: var(--muted); font-weight: 700; }
+.gaps-list li { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.84rem; }
+.gap-q { color: var(--ink); }
+.downvote-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem; font-size: 0.82rem; border-bottom: 1px solid var(--line); padding-bottom: 0.4rem; }
+.dv-lang { font-weight: 700; color: var(--brand-700); font-size: 0.72rem; }
+.dv-text { flex: 1; color: var(--ink-soft); }
+.dv-reason { color: var(--muted); font-style: italic; width: 100%; }

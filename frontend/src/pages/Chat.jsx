@@ -5,6 +5,11 @@ import { useTranslation } from "react-i18next";
 import { chatApi, streamMessage } from "../api/endpoints";
 import MessageBubble from "../components/MessageBubble";
 import Spinner from "../components/Spinner";
+import { useSpeechInput } from "../hooks/useSpeechInput";
+import { exportConversationMarkdown } from "../utils/exportConversation";
+
+// S3 — mirror the server-side cap (CHAT_MAX_MESSAGE_CHARS) as a client hint.
+const MAX_CHARS = 4000;
 
 export default function Chat() {
   const { t, i18n } = useTranslation();
@@ -17,6 +22,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [loadingConv, setLoadingConv] = useState(false);
   const [streamingText, setStreamingText] = useState(null);
+  const [streamingSources, setStreamingSources] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const scrollRef = useRef(null);
@@ -113,6 +119,7 @@ export default function Chat() {
       };
       setMessages((prev) => [...prev, optimistic]);
       setStreamingText("");
+      setStreamingSources([]);
       scrollToBottom();
 
       try {
@@ -122,18 +129,21 @@ export default function Chat() {
             setStreamingText((prev) => (prev ?? "") + delta);
             scrollToBottom();
           },
+          onSources: (srcs) => setStreamingSources(srcs), // B2
         });
-        // Commit the final assistant message.
+        // Commit the final assistant message (with its grounding sources).
         setMessages((prev) => [
           ...prev,
           {
             id: result.assistantMessageId ?? `a-${Date.now()}`,
             role: "assistant",
             content: result.content,
+            sources: result.sources || [],
             created_at: new Date().toISOString(),
           },
         ]);
         setStreamingText(null);
+        setStreamingSources([]);
         refreshConversations();
       } catch {
         setMessages((prev) => [
@@ -177,6 +187,39 @@ export default function Chat() {
     [activeId, startNewChat, t]
   );
 
+  // A2 — rate an assistant reply; optimistically reflect it in local message state.
+  const submitFeedback = useCallback(async (messageId, rating, reason) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, feedback: { rating, reason: reason || "" } } : m
+      )
+    );
+    try {
+      await chatApi.feedback(messageId, rating, reason || "");
+    } catch {
+      /* keep the optimistic state; a transient failure shouldn't nag the user */
+    }
+  }, []);
+
+  // D2 — dictation into the input box (hidden when unsupported).
+  const { supported: voiceSupported, listening, toggle: toggleVoice } = useSpeechInput({
+    lang: i18n.language,
+    onResult: (text) => {
+      setInput((prev) => (prev ? `${prev} ${text}` : text));
+      requestAnimationFrame(autoGrowInput);
+    },
+  });
+
+  // D3 — download the active conversation as Markdown (incl. sources).
+  const activeConversation = conversations.find((c) => c.id === activeId);
+  const exportConversation = useCallback(() => {
+    exportConversationMarkdown({
+      title: activeConversation?.title || t("chat.newChat"),
+      messages,
+      sourcesLabel: t("chat.sources"),
+    });
+  }, [activeConversation, messages, t]);
+
   const onSubmit = (e) => {
     e.preventDefault();
     send(input);
@@ -190,6 +233,8 @@ export default function Chat() {
   };
 
   const showEmpty = messages.length === 0 && streamingText === null;
+  const canExport = messages.length > 0 && !sending;
+  const nearLimit = input.length > MAX_CHARS * 0.8;
 
   return (
     <div className="chat-layout">
@@ -236,6 +281,17 @@ export default function Chat() {
             ☰
           </button>
           <span className="chat-mobilebar-title">{t("chat.conversations")}</span>
+          {canExport && (
+            <button
+              type="button"
+              className="chat-export-btn"
+              onClick={exportConversation}
+              aria-label={t("chat.export")}
+              title={t("chat.export")}
+            >
+              ⬇
+            </button>
+          )}
         </div>
         <div className="chat-messages" ref={scrollRef}>
           {loadingConv ? (
@@ -261,10 +317,23 @@ export default function Chat() {
           ) : (
             <>
               {messages.map((m) => (
-                <MessageBubble key={m.id} role={m.role} content={m.content} />
+                <MessageBubble
+                  key={m.id}
+                  role={m.role}
+                  content={m.content}
+                  sources={m.sources}
+                  messageId={typeof m.id === "number" ? m.id : undefined}
+                  feedback={m.feedback}
+                  onFeedback={submitFeedback}
+                />
               ))}
               {streamingText !== null && (
-                <MessageBubble role="assistant" content={streamingText} pending />
+                <MessageBubble
+                  role="assistant"
+                  content={streamingText}
+                  sources={streamingSources}
+                  pending
+                />
               )}
             </>
           )}
@@ -278,6 +347,7 @@ export default function Chat() {
             ref={inputRef}
             className="chat-input"
             rows={1}
+            maxLength={MAX_CHARS}
             placeholder={t("chat.placeholder")}
             value={input}
             onChange={(e) => {
@@ -287,6 +357,23 @@ export default function Chat() {
             onKeyDown={onKeyDown}
             aria-label={t("chat.placeholder")}
           />
+          {nearLimit && (
+            <span className="char-counter" aria-live="polite">
+              {input.length}/{MAX_CHARS}
+            </span>
+          )}
+          {voiceSupported && (
+            <button
+              type="button"
+              className={listening ? "chat-mic listening" : "chat-mic"}
+              onClick={toggleVoice}
+              aria-label={t("chat.voiceInput")}
+              aria-pressed={listening}
+              title={t("chat.voiceInput")}
+            >
+              🎤
+            </button>
+          )}
           <button
             type="submit"
             className="chat-send"

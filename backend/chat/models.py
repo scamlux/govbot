@@ -39,6 +39,10 @@ class Message(models.Model):
     content = models.TextField()
     tokens = models.PositiveIntegerField(null=True, blank=True)
     model = models.CharField(max_length=80, blank=True)
+    # B3 — RAG citations for a grounded assistant reply, persisted so reopened
+    # conversations still show their sources. Shape: [{slug, title, source_url}].
+    # Null on user messages and on ungrounded assistant replies.
+    sources = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -46,3 +50,29 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.role}: {self.content[:40]}"
+
+
+class MessageFeedback(models.Model):
+    """A user's 👍/👎 rating of one assistant reply (A2).
+
+    One row per message (``OneToOne``) — re-rating upserts. The only real signal we have
+    for monitoring the assistant's accuracy over time.
+    """
+
+    UP = "up"
+    DOWN = "down"
+    RATING_CHOICES = ((UP, "Thumbs up"), (DOWN, "Thumbs down"))
+
+    message = models.OneToOneField(
+        Message, related_name="feedback", on_delete=models.CASCADE
+    )
+    rating = models.CharField(max_length=4, choices=RATING_CHOICES)
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.rating} on message #{self.message_id}"

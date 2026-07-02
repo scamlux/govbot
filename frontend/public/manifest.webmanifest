@@ -1,0 +1,25 @@
+{
+  "name": "GovBot — Government Information Made Simple",
+  "short_name": "GovBot",
+  "description": "Multilingual AI answers about Uzbekistan public services, plus an offline-readable Scenario Catalog.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1b5e9c",
+  "lang": "uz",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

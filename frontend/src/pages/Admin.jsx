@@ -20,7 +20,7 @@ export default function Admin() {
       </div>
 
       <div className="admin-tabs" role="tablist">
-        {["users", "categories", "scenarios"].map((key) => (
+        {["users", "categories", "scenarios", "analytics"].map((key) => (
           <button
             key={key}
             role="tab"
@@ -36,6 +36,138 @@ export default function Admin() {
       {tab === "users" && <UsersPanel />}
       {tab === "categories" && <CategoriesPanel />}
       {tab === "scenarios" && <ScenariosPanel />}
+      {tab === "analytics" && <AnalyticsPanel />}
+    </div>
+  );
+}
+
+/* ---------------------------- Analytics --------------------------- */
+function AnalyticsPanel() {
+  const { t } = useTranslation();
+  const [days, setDays] = useState(30);
+  const [questions, setQuestions] = useState(null);
+  const [gaps, setGaps] = useState(null);
+  const [downvotes, setDownvotes] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    setQuestions(null);
+    setGaps(null);
+    setDownvotes(null);
+    adminApi.analyticsQuestions(days).then(({ data }) => active && setQuestions(data)).catch(() => active && setQuestions({}));
+    adminApi.analyticsGaps(days).then(({ data }) => active && setGaps(data.gaps || [])).catch(() => active && setGaps([]));
+    adminApi.feedback("down").then(({ data }) => active && setDownvotes(data.results || [])).catch(() => active && setDownvotes([]));
+    return () => {
+      active = false;
+    };
+  }, [days]);
+
+  if (!questions) return <Spinner />;
+
+  const langMax = Math.max(1, ...(questions.language_split || []).map((r) => r.count));
+  const isEmpty = (questions.message_count || 0) === 0;
+
+  return (
+    <div className="admin-card">
+      <div className="admin-card-head">
+        <h2>{t("admin.analytics")}</h2>
+        <label className="field field-sm analytics-period">
+          <span>{t("admin.period")}</span>
+          <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+            <option value={7}>{t("admin.last7Days")}</option>
+            <option value={30}>{t("admin.last30Days")}</option>
+            <option value={90}>{t("admin.last90Days")}</option>
+          </select>
+        </label>
+      </div>
+
+      {isEmpty ? (
+        <p className="muted">{t("admin.noAnalytics")}</p>
+      ) : (
+        <>
+          <div className="stat-row">
+            <div className="stat-tile">
+              <div className="stat-num">{questions.message_count}</div>
+              <div className="stat-label">{t("admin.totalMessages")}</div>
+            </div>
+            <div className="stat-tile">
+              <div className="stat-num">{questions.conversation_count}</div>
+              <div className="stat-label">{t("admin.totalConversations")}</div>
+            </div>
+          </div>
+
+          <div className="analytics-grid">
+            <section className="analytics-block">
+              <h3>{t("admin.topQuestions")}</h3>
+              <ul className="term-list">
+                {(questions.top_terms || []).map((row) => (
+                  <li key={row.term}>
+                    <span className="term-word">{row.term}</span>
+                    <span className="term-count">{row.count}</span>
+                  </li>
+                ))}
+                {(questions.top_terms || []).length === 0 && <li className="muted">—</li>}
+              </ul>
+            </section>
+
+            <section className="analytics-block">
+              <h3>{t("admin.languageSplit")}</h3>
+              <ul className="lang-bars">
+                {(questions.language_split || []).map((row) => (
+                  <li key={row.language}>
+                    <span className="lang-code">{row.language?.toUpperCase()}</span>
+                    <span className="lang-bar-track">
+                      <span
+                        className="lang-bar-fill"
+                        style={{ width: `${(row.count / langMax) * 100}%` }}
+                      />
+                    </span>
+                    <span className="lang-count">{row.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="analytics-block">
+              <h3>{t("admin.catalogGaps")}</h3>
+              <p className="muted analytics-hint">{t("admin.catalogGapsHint")}</p>
+              <ul className="gaps-list">
+                {gaps === null ? (
+                  <li className="muted">…</li>
+                ) : gaps.length === 0 ? (
+                  <li className="muted">—</li>
+                ) : (
+                  gaps.map((g, i) => (
+                    <li key={i}>
+                      <span className="gap-q">{g.question}</span>
+                      <span className="gap-count">{g.count}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </section>
+
+            <section className="analytics-block">
+              <h3>{t("admin.recentDownvotes")}</h3>
+              <ul className="downvote-list">
+                {downvotes === null ? (
+                  <li className="muted">…</li>
+                ) : downvotes.length === 0 ? (
+                  <li className="muted">—</li>
+                ) : (
+                  downvotes.slice(0, 8).map((d) => (
+                    <li key={d.id}>
+                      <span className="dv-lang">{d.conversation_language?.toUpperCase()}</span>
+                      <span className="dv-text">{d.message_content}</span>
+                      {d.reason && <span className="dv-reason">“{d.reason}”</span>}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </section>
+          </div>
+        </>
+      )}
     </div>
   );
 }

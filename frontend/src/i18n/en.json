@@ -47,7 +47,25 @@
     "published": "Published",
     "confirmDeleteCategory": "Delete this category and all its scenarios?",
     "confirmDeleteScenario": "Delete this scenario?",
-    "saveError": "Could not save. Check the fields and try again."
+    "saveError": "Could not save. Check the fields and try again.",
+    "analytics": "Analytics",
+    "period": "Period",
+    "last7Days": "Last 7 days",
+    "last30Days": "Last 30 days",
+    "last90Days": "Last 90 days",
+    "topQuestions": "Top question terms",
+    "languageSplit": "By language",
+    "catalogGaps": "Catalog gaps",
+    "catalogGapsHint": "Frequent questions with no matching scenario — candidates to add.",
+    "recentDownvotes": "Recent 👎 answers",
+    "term": "Term",
+    "count": "Count",
+    "question": "Question",
+    "messages": "Messages",
+    "createScenario": "Create scenario",
+    "noAnalytics": "No data for this period yet.",
+    "totalMessages": "Messages",
+    "totalConversations": "Conversations"
   },
   "common": {
     "loading": "Loading…",
@@ -58,7 +76,8 @@
     "language": "Language",
     "send": "Send",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "offline": "You are offline — showing saved content."
   },
   "landing": {
     "heroTitle": "Plain-language answers to your government questions",
@@ -109,7 +128,13 @@
     "assistant": "GovBot",
     "suggestion1": "How do I renew my passport?",
     "suggestion2": "How do I register a business?",
-    "suggestion3": "What do I need for a tourist visa?"
+    "suggestion3": "What do I need for a tourist visa?",
+    "sources": "Sources:",
+    "feedbackUp": "Helpful",
+    "feedbackDown": "Not helpful",
+    "feedbackReasonPlaceholder": "What was wrong? (optional)",
+    "export": "Export chat",
+    "voiceInput": "Voice input"
   },
   "scenarios": {
     "title": "Scenario Catalog",

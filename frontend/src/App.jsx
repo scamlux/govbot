@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import OfflineBanner from "./components/OfflineBanner";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AdminRoute from "./auth/AdminRoute";
 import Landing from "./pages/Landing";
@@ -19,6 +20,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <OfflineBanner />
       <Navbar />
       <main className={isChat ? "app-main app-main-flush" : "app-main"}>
         <Routes>

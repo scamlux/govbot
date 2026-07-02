@@ -115,7 +115,13 @@ umar/                              # repo root (the GovBot project)
 
 **`chat.Message`**:
 - `conversation` (FK), `role` (`user` / `assistant`), `content` (text), `created_at`,
-  optional `tokens` (int, nullable), `model` (char, nullable).
+  optional `tokens` (int, nullable), `model` (char, nullable), `sources` (JSON list,
+  nullable — RAG citations `[{slug,title,source_url}]` persisted on a grounded assistant
+  reply so reopened conversations still show them).
+
+**`chat.MessageFeedback`** (answer quality signal):
+- `message` (OneToOne → assistant Message), `rating` (`up`/`down`), `reason` (text, optional),
+  `created_at`, `updated_at`. One row per message; re-rating upserts.
 
 **`scenarios.Category`**:
 - `slug` (unique), `icon` (emoji/icon name string), `name` (JSON: `{uz,ru,en}`),
@@ -123,8 +129,16 @@ umar/                              # repo root (the GovBot project)
 
 **`scenarios.Scenario`**:
 - `category` (FK), `slug` (unique), `title` (JSON: `{uz,ru,en}`),
-  `body` (JSON: `{uz,ru,en}`, markdown-capable), `tags` (JSON list), `order` (int),
+  `body` (JSON: `{uz,ru,en}`, markdown-capable), `source_url` (URL, optional — official
+  agency link surfaced when the AI cites this scenario), `tags` (JSON list), `order` (int),
   `is_published` (bool, default True), `updated_at`.
+
+**`scenarios.ScenarioEmbedding`** (RAG grounding store):
+- `scenario` (FK), `language` (`uz`/`ru`/`en`), `vector` (JSON list of floats), `model`,
+  `updated_at`; unique per (`scenario`, `language`). Vectors are stored as plain JSON (not
+  pgvector) and ranked by brute-force cosine in Python — chosen for KISS at catalog scale
+  and to keep the SQLite dev fallback working. Swap in pgvector once the catalog reaches
+  thousands of rows.
 
 > Convention: multilingual fields are stored as JSON objects keyed by language code
 > (`{"uz": "...", "ru": "...", "en": "..."}`). Serializers resolve a single language via a
@@ -146,21 +160,48 @@ umar/                              # repo root (the GovBot project)
 - `GET    /api/conversations/{id}/` — conversation with its messages.
 - `DELETE /api/conversations/{id}/`.
 - `POST   /api/conversations/{id}/messages/` — body `{ content, language }`. Persists the
-  user message, calls the OpenAI service, persists and returns the assistant reply.
+  user message, calls the OpenAI service, persists and returns the assistant reply. Response
+  includes `sources: [{slug,title,source_url}]` (B1) — the RAG grounding citations, empty
+  when ungrounded. **Rate limited** per user (A1): a burst (`CHAT_THROTTLE_BURST`, default
+  20/min) and a sustained (`CHAT_THROTTLE_SUSTAINED`, default 500/day) throttle; a 429
+  returns a localized message. `content` is length-capped server-side by
+  `CHAT_MAX_MESSAGE_CHARS` (default 4000) with a localized 400 (S3).
   **Streaming:** implemented via Server-Sent Events at
-  `POST /api/conversations/{id}/messages/stream/` (chunked `text/event-stream`).
+  `POST /api/conversations/{id}/messages/stream/` (chunked `text/event-stream`); it emits an
+  `event: sources` frame before `event: done`. Both endpoints are throttled identically.
   The non-streaming endpoint above returns the full reply as JSON.
+- `POST   /api/messages/{id}/feedback/` — body `{ rating: up|down, reason? }` (A2). Owner-only,
+  assistant messages only, idempotent upsert.
 
 **Scenarios** (public read; admin write via Django admin)
 - `GET /api/scenarios/categories/?lang=uz`
 - `GET /api/scenarios/?category={slug}&lang=ru&search=...`
 - `GET /api/scenarios/{slug}/?lang=en`
 
+**Admin — chat oversight** (staff only)
+- `GET /api/admin/feedback/?rating=down` — paginated feedback list, newest first, with the
+  rated message content + conversation language (A3).
+- `GET /api/admin/analytics/questions/?days=30` — top question terms, message/conversation
+  counts, and a per-language split over the window (C1).
+- `GET /api/admin/analytics/gaps/?days=30` — frequent questions whose reply retrieved no
+  grounding, clustered and ranked by frequency = missing scenarios (C2).
+
 ### 4.3 OpenAI service (`chat/services.py`)
 - `generate_reply(messages, language)` builds the request and calls the OpenAI Chat
   Completions API. A streaming variant `stream_reply(messages, language)` yields chunks.
-- Reads `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o-mini`), `OPENAI_MAX_TOKENS`
-  (default 1200) and `OPENAI_TEMPERATURE` (default 0.3) from env.
+- Reads `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o-mini`), `OPENAI_EMBEDDING_MODEL`
+  (default `text-embedding-3-small`), `OPENAI_MAX_TOKENS` (default 1200) and
+  `OPENAI_TEMPERATURE` (default 0.3) from env.
+- **RAG grounding (`chat/retrieval.py`):** before each reply, the latest user question is
+  matched against the Scenario Catalog and the most relevant scenarios are injected into the
+  prompt as an "official reference material" block, with a localized instruction to prefer
+  that material, cite the `source_url`, and admit uncertainty (pointing to the official
+  body) when the material doesn't cover the question. Two modes, chosen automatically:
+  **vector** (embed the query, cosine-rank `ScenarioEmbedding` rows) when a key is set;
+  **keyword** (term overlap on scenario text) as fallback in mock mode or before embeddings
+  are built — so grounding is demonstrable in local dev without a key. Embeddings are
+  refreshed on scenario save via a `post_save` signal and can be backfilled with
+  `python manage.py embed_scenarios`.
 - **System prompt** that:
   - defines GovBot as an assistant for Uzbekistan government / public-service information,
   - instructs replying in the user's language (`uz`/`ru`/`en`),
@@ -180,9 +221,16 @@ umar/                              # repo root (the GovBot project)
 - DB from `DATABASE_URL` (or discrete `POSTGRES_*` vars) — works locally and in Docker.
   When neither is set, a local SQLite file (`db.sqlite3`) is used so the backend runs
   instantly in development. Tests force this SQLite fallback via `conftest.py`.
-- All models registered in Django admin.
+- All models registered in Django admin (incl. read-only `MessageFeedback`).
 - Seed command `python manage.py seed_scenarios` populates the catalog with realistic,
   clearly-marked sample entries in all three languages.
+- **SECRET_KEY guard (S1):** with `DEBUG=False` the app refuses to start on the insecure
+  default key (`config.settings.require_secure_secret_key`, skipped only under pytest).
+- **Chat throttles (A1):** `DEFAULT_THROTTLE_RATES` scopes `chat_burst` / `chat_sustained`,
+  read from `CHAT_THROTTLE_BURST` / `CHAT_THROTTLE_SUSTAINED`; applied on the message +
+  stream views only.
+- **Tunables:** `CHAT_MAX_MESSAGE_CHARS` (S3), `RETRIEVAL_TOP_K` / `RETRIEVAL_MIN_SCORE`
+  (B4) are all env-configurable.
 
 ---
 
@@ -213,15 +261,28 @@ umar/                              # repo root (the GovBot project)
 - Clean, modern, trustworthy "civic" feel — friendly, not bureaucratic. Responsive
   (mobile-first), accessible (labels, focus states, keyboard nav). Light theme.
 
+### 5.4 Post-MVP features
+- **Sources chips (B2):** grounded assistant answers render clickable source chips linking to
+  `/scenarios/{slug}` and the external `source_url` (new tab, `rel="noopener"`).
+- **Answer feedback (A2):** 👍/👎 under each assistant bubble; 👎 opens an optional reason
+  field. State persists (returned on conversation reload).
+- **Admin Analytics tab (C3):** top question terms, language split, catalog gaps, recent 👎,
+  with a date-range selector.
+- **PWA (D1):** web manifest + service worker (`frontend/public/`). App shell + Scenario
+  Catalog cached (stale-while-revalidate) for offline reading; offline banner.
+- **Voice input (D2):** Web Speech API mic button in the chat box; hidden when unsupported.
+- **Export (D3):** download the active conversation as Markdown (incl. sources), client-side.
+
 ---
 
 ## 6. Environment variables
 
 **Backend** (`backend/.env.example`): `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`,
 `DATABASE_URL` (or `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_HOST`
-/ `POSTGRES_PORT`), `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_TOKENS`,
-`OPENAI_TEMPERATURE`, `FRONTEND_ORIGIN`, `ACCESS_TOKEN_LIFETIME_MIN`,
-`REFRESH_TOKEN_LIFETIME_DAYS`.
+/ `POSTGRES_PORT`), `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_EMBEDDING_MODEL`,
+`OPENAI_MAX_TOKENS`, `OPENAI_TEMPERATURE`, `FRONTEND_ORIGIN`, `ACCESS_TOKEN_LIFETIME_MIN`,
+`REFRESH_TOKEN_LIFETIME_DAYS`, `CHAT_THROTTLE_BURST`, `CHAT_THROTTLE_SUSTAINED`,
+`CHAT_MAX_MESSAGE_CHARS`, `RETRIEVAL_TOP_K`, `RETRIEVAL_MIN_SCORE`.
 
 **Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL`.
 
@@ -271,3 +332,16 @@ git-ignored.
   component modules. ES modules.
 - Commit secrets never. Document every env var in `.env.example`.
 - Language fallback order everywhere: requested → uz → en → ru → first available.
+
+<!-- AIOFFICE:CONSTITUTION:START -->
+# 🏛️ Конституция AI Office
+
+Глобальные правила и ресурсы, которые подмешиваются в каждую сессию Claude Code
+(и записываются блоком в CLAUDE.md проекта).
+
+## Правила
+- (добавь свои правила здесь — например: всегда отвечать по-русски)
+
+## Ресурсы
+- (ссылки на доки, дашборды, тикеты, контекст)
+<!-- AIOFFICE:CONSTITUTION:END -->

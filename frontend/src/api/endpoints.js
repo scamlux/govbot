@@ -30,6 +30,11 @@ export const adminApi = {
   createScenario: (payload) => api.post("/admin/scenarios/", payload),
   updateScenario: (id, payload) => api.patch(`/admin/scenarios/${id}/`, payload),
   deleteScenario: (id) => api.delete(`/admin/scenarios/${id}/`),
+  // Analytics + feedback (A3 / C1 / C2)
+  feedback: (rating) => api.get("/admin/feedback/", { params: { rating } }),
+  analyticsQuestions: (days) =>
+    api.get("/admin/analytics/questions/", { params: { days } }),
+  analyticsGaps: (days) => api.get("/admin/analytics/gaps/", { params: { days } }),
 };
 
 // ---- Chat ----
@@ -40,6 +45,9 @@ export const chatApi = {
   deleteConversation: (id) => api.delete(`/conversations/${id}/`),
   sendMessage: (id, content, language) =>
     api.post(`/conversations/${id}/messages/`, { content, language }),
+  // A2 — rate an assistant reply (idempotent upsert).
+  feedback: (messageId, rating, reason) =>
+    api.post(`/messages/${messageId}/feedback/`, { rating, reason }),
 };
 
 /**
@@ -52,7 +60,7 @@ export async function streamMessage(
   conversationId,
   content,
   language,
-  { onDelta, onMeta } = {}
+  { onDelta, onMeta, onSources } = {}
 ) {
   const resp = await fetch(
     `${API_BASE_URL}/conversations/${conversationId}/messages/stream/`,
@@ -73,7 +81,7 @@ export async function streamMessage(
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let result = { assistantMessageId: null, content: "" };
+  let result = { assistantMessageId: null, content: "", sources: [] };
 
   // Parse the SSE stream frame by frame (frames separated by a blank line).
   for (;;) {
@@ -97,10 +105,15 @@ export async function streamMessage(
       const payload = JSON.parse(dataLine);
       if (event === "meta") {
         onMeta?.(payload);
+      } else if (event === "sources") {
+        // B1 — grounding citations arrive just before `done`.
+        result.sources = payload.sources || [];
+        onSources?.(result.sources);
       } else if (event === "done") {
         result = {
           assistantMessageId: payload.assistant_message_id,
           content: payload.content,
+          sources: result.sources,
         };
       } else if (payload.delta !== undefined) {
         result.content += payload.delta;

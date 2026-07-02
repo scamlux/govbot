@@ -97,6 +97,22 @@ Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default `gpt-4o-mini`).
 **Leave the key blank to run in mock mode** — the chat works end-to-end with a clearly
 labelled canned response, so you can develop the UI without spending tokens.
 
+### Security & limits
+
+- **SECRET_KEY (production):** with `DEBUG=0` the backend **refuses to start** on the
+  insecure development default — always set a strong, unique `SECRET_KEY`.
+- **Chat rate limits:** per-user `CHAT_THROTTLE_BURST` (default `20/min`) and
+  `CHAT_THROTTLE_SUSTAINED` (default `500/day`) protect the OpenAI budget; a 429 returns a
+  localized message. `CHAT_MAX_MESSAGE_CHARS` (default `4000`) caps message length.
+- **Retrieval tuning:** `RETRIEVAL_TOP_K` and `RETRIEVAL_MIN_SCORE` tune RAG grounding.
+
+### PWA / offline
+
+The frontend is installable and caches the app shell + Scenario Catalog via a service
+worker, so the catalog stays readable offline (chat still needs a connection). The chat box
+also supports voice dictation (where the browser exposes the Web Speech API) and Markdown
+export of a conversation.
+
 ---
 
 ## API overview

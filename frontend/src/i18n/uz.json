@@ -47,7 +47,25 @@
     "published": "Chop etilgan",
     "confirmDeleteCategory": "Bu kategoriya va uning barcha stsenariylari o'chirilsinmi?",
     "confirmDeleteScenario": "Bu stsenariy o'chirilsinmi?",
-    "saveError": "Saqlab bo'lmadi. Maydonlarni tekshirib qayta urining."
+    "saveError": "Saqlab bo'lmadi. Maydonlarni tekshirib qayta urining.",
+    "analytics": "Tahlil",
+    "period": "Davr",
+    "last7Days": "7 kun",
+    "last30Days": "30 kun",
+    "last90Days": "90 kun",
+    "topQuestions": "Ko'p so'raladigan atamalar",
+    "languageSplit": "Tillar bo'yicha",
+    "catalogGaps": "Katalog kamchiliklari",
+    "catalogGapsHint": "Mos stsenariysiz tez-tez so'raladigan savollar — qo'shish uchun nomzodlar.",
+    "recentDownvotes": "So'nggi 👎 javoblar",
+    "term": "Atama",
+    "count": "Soni",
+    "question": "Savol",
+    "messages": "Xabarlar",
+    "createScenario": "Stsenariy yaratish",
+    "noAnalytics": "Bu davr uchun hozircha ma'lumot yo'q.",
+    "totalMessages": "Xabarlar",
+    "totalConversations": "Suhbatlar"
   },
   "common": {
     "loading": "Yuklanmoqda…",
@@ -58,7 +76,8 @@
     "language": "Til",
     "send": "Yuborish",
     "cancel": "Bekor qilish",
-    "delete": "O'chirish"
+    "delete": "O'chirish",
+    "offline": "Siz oflaynsiz — saqlangan kontent ko'rsatilmoqda."
   },
   "landing": {
     "heroTitle": "Davlat xizmatlari haqidagi savollarga sodda javoblar",
@@ -109,7 +128,13 @@
     "assistant": "GovBot",
     "suggestion1": "Pasportni qanday yangilash mumkin?",
     "suggestion2": "Biznesni qanday ro'yxatdan o'tkazaman?",
-    "suggestion3": "Sayyohlik vizasi uchun nima kerak?"
+    "suggestion3": "Sayyohlik vizasi uchun nima kerak?",
+    "sources": "Manbalar:",
+    "feedbackUp": "Foydali",
+    "feedbackDown": "Foydasiz",
+    "feedbackReasonPlaceholder": "Nima noto'g'ri edi? (ixtiyoriy)",
+    "export": "Suhbatni yuklab olish",
+    "voiceInput": "Ovozli kiritish"
   },
   "scenarios": {
     "title": "Stsenariylar katalogi",

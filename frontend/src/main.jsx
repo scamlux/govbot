@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import "./i18n";
 import App from "./App";
 import { AuthProvider } from "./auth/AuthContext";
+import { registerServiceWorker } from "./registerSW";
 import "./styles/global.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -16,3 +17,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+registerServiceWorker();

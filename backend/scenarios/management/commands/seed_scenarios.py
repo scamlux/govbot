@@ -104,6 +104,7 @@ SCENARIOS = [
         "category": "identity-documents",
         "tags": ["passport", "biometric", "renewal"],
         "order": 1,
+        "source_url": "https://my.gov.uz",
         "title": {"uz": "Biometrik pasportni yangilash", "ru": "Замена биометрического паспорта", "en": "Renewing a biometric passport"},
         "body": {
             "uz": "## Biometrik pasportni yangilash\n\n**Kim uchun:** Amal qilish muddati tugagan yoki tugayotgan fuqarolar.\n\n**Odatda kerak bo'ladigan hujjatlar:**\n- Eski pasport\n- Tug'ilganlik haqida guvohnoma (zarur hollarda)\n- Davlat boji to'lovi kvitansiyasi\n\n**Qadamlar:**\n1. Davlat xizmatlari portali yoki yashash joyidagi IIB bo'limiga murojaat qiling.\n2. Ariza topshiring va biometrik ma'lumotlarni topshiring.\n3. Tayyor bo'lganda pasportni oling.\n\n**Mas'ul organ:** Ichki ishlar vazirligi (Migratsiya va fuqarolikni rasmiylashtirish).",
@@ -128,6 +129,7 @@ SCENARIOS = [
         "category": "taxes",
         "tags": ["tin", "tax", "individual"],
         "order": 1,
+        "source_url": "https://soliq.uz",
         "title": {"uz": "Jismoniy shaxs uchun STIR olish", "ru": "Получение ИНН физлица", "en": "Getting a personal TIN"},
         "body": {
             "uz": "## Jismoniy shaxs uchun STIR\n\nSTIR (soliq to'lovchining identifikatsiya raqami) ish bilan ta'minlash, bank va tadbirkorlik uchun kerak bo'ladi.\n\n**Olish yo'li:** Soliq qo'mitasining rasmiy portali yoki yaqin soliq bo'limi orqali, shaxsni tasdiqlovchi hujjat bilan.\n\n**Mas'ul organ:** Soliq qo'mitasi.",
@@ -215,6 +217,7 @@ class Command(BaseCommand):
                     "category": cat_by_slug[data["category"]],
                     "title": data["title"],
                     "body": body,
+                    "source_url": data.get("source_url", ""),
                     "tags": data["tags"],
                     "order": data["order"],
                     "is_published": True,

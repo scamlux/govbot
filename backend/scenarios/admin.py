@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Scenario, localize
+from .models import Category, Scenario, ScenarioEmbedding, localize
 
 
 @admin.register(Category)
@@ -26,3 +26,15 @@ class ScenarioAdmin(admin.ModelAdmin):
     @admin.display(description="Title")
     def display_title(self, obj):
         return localize(obj.title, "en") or obj.slug
+
+
+@admin.register(ScenarioEmbedding)
+class ScenarioEmbeddingAdmin(admin.ModelAdmin):
+    list_display = ["scenario", "language", "dims", "model", "updated_at"]
+    list_filter = ["language", "model"]
+    search_fields = ["scenario__slug"]
+    readonly_fields = ["scenario", "language", "vector", "model", "updated_at"]
+
+    @admin.display(description="Dims")
+    def dims(self, obj):
+        return len(obj.vector or [])
