@@ -458,3 +458,5 @@ h1, h2, h3 { font-family: var(--font-display); line-height: 1.16; color: var(--i
 .dv-lang { font-weight: 700; color: var(--brand-700); font-size: 0.72rem; }
 .dv-text { flex: 1; color: var(--ink-soft); }
 .dv-reason { color: var(--muted); font-style: italic; width: 100%; }
+.gap-create { background: none; border: none; padding: 0; text-align: left; color: var(--brand-700); cursor: pointer; font: inherit; }
+.gap-create:hover { text-decoration: underline; }

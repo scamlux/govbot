@@ -11,6 +11,13 @@ const EMPTY_TR = { uz: "", ru: "", en: "" };
 export default function Admin() {
   const { t } = useTranslation();
   const [tab, setTab] = useState("users");
+  // C2 — jumping from a catalog gap to a prefilled "create scenario" form.
+  const [scenarioPrefill, setScenarioPrefill] = useState(null);
+
+  const createScenarioFrom = (question) => {
+    setScenarioPrefill(question);
+    setTab("scenarios");
+  };
 
   return (
     <div className="page admin">
@@ -35,14 +42,19 @@ export default function Admin() {
 
       {tab === "users" && <UsersPanel />}
       {tab === "categories" && <CategoriesPanel />}
-      {tab === "scenarios" && <ScenariosPanel />}
-      {tab === "analytics" && <AnalyticsPanel />}
+      {tab === "scenarios" && (
+        <ScenariosPanel
+          prefill={scenarioPrefill}
+          onPrefillConsumed={() => setScenarioPrefill(null)}
+        />
+      )}
+      {tab === "analytics" && <AnalyticsPanel onCreateScenario={createScenarioFrom} />}
     </div>
   );
 }
 
 /* ---------------------------- Analytics --------------------------- */
-function AnalyticsPanel() {
+function AnalyticsPanel({ onCreateScenario }) {
   const { t } = useTranslation();
   const [days, setDays] = useState(30);
   const [questions, setQuestions] = useState(null);
@@ -139,7 +151,14 @@ function AnalyticsPanel() {
                 ) : (
                   gaps.map((g, i) => (
                     <li key={i}>
-                      <span className="gap-q">{g.question}</span>
+                      <button
+                        type="button"
+                        className="gap-q gap-create"
+                        title={t("admin.createScenario")}
+                        onClick={() => onCreateScenario?.(g.question)}
+                      >
+                        {g.question}
+                      </button>
                       <span className="gap-count">{g.count}</span>
                     </li>
                   ))
@@ -362,7 +381,7 @@ function CategoryForm({ initial, onClose, onSaved }) {
 }
 
 /* --------------------------- Scenarios --------------------------- */
-function ScenariosPanel() {
+function ScenariosPanel({ prefill, onPrefillConsumed }) {
   const { t, i18n } = useTranslation();
   const [items, setItems] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -373,6 +392,11 @@ function ScenariosPanel() {
     adminApi.categories().then(({ data }) => setCategories(data)).catch(() => {});
   }, []);
   useEffect(load, [load]);
+
+  // C2 — a catalog gap was clicked: open the create form prefilled with the question.
+  useEffect(() => {
+    if (prefill) setEditing("new");
+  }, [prefill]);
 
   const remove = async (s) => {
     if (!window.confirm(t("admin.confirmDeleteScenario"))) return;
@@ -421,10 +445,15 @@ function ScenariosPanel() {
       {editing && (
         <ScenarioForm
           initial={editing === "new" ? null : editing}
+          prefillTitle={editing === "new" ? prefill : null}
           categories={categories}
-          onClose={() => setEditing(null)}
+          onClose={() => {
+            setEditing(null);
+            onPrefillConsumed?.();
+          }}
           onSaved={() => {
             setEditing(null);
+            onPrefillConsumed?.();
             load();
           }}
         />
@@ -433,14 +462,21 @@ function ScenariosPanel() {
   );
 }
 
-function ScenarioForm({ initial, categories, onClose, onSaved }) {
+function ScenarioForm({ initial, categories, onClose, onSaved, prefillTitle }) {
   const { t } = useTranslation();
   const [category, setCategory] = useState(initial?.category || categories[0]?.id || "");
   const [slug, setSlug] = useState(initial?.slug || "");
   const [order, setOrder] = useState(initial?.order ?? 0);
   const [isPublished, setIsPublished] = useState(initial?.is_published ?? true);
   const [tags, setTags] = useState((initial?.tags || []).join(", "));
-  const [title, setTitle] = useState({ ...EMPTY_TR, ...initial?.title });
+  const [title, setTitle] = useState(
+    // C2 — when opened from a catalog gap, seed every language with the question text.
+    initial?.title
+      ? { ...EMPTY_TR, ...initial.title }
+      : prefillTitle
+        ? { uz: prefillTitle, ru: prefillTitle, en: prefillTitle }
+        : { ...EMPTY_TR }
+  );
   const [body, setBody] = useState({ ...EMPTY_TR, ...initial?.body });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
