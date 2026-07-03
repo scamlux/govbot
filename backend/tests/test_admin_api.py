@@ -201,3 +201,15 @@ def test_admin_catalog_gaps_ranks_ungrounded_questions(admin_client):
     assert gaps[0]["count"] == 2
     # The grounded question is not a gap.
     assert all("passport" not in g["question"] for g in gaps)
+
+
+def test_catalog_gaps_excludes_error_and_demo_replies(admin_client):
+    # An OpenAI-error reply (canned text, sources=None) must NOT count as a catalog gap.
+    from chat.services import FRIENDLY_ERROR
+
+    _conversation_with_messages(
+        "err@ex.com", "en", [("some outage question", FRIENDLY_ERROR["en"], None)]
+    )
+    resp = admin_client.get("/api/admin/analytics/gaps/")
+    assert resp.status_code == 200
+    assert resp.json()["gaps"] == []

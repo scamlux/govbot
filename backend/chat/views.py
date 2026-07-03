@@ -51,9 +51,11 @@ class ConversationDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = ConversationDetailSerializer
 
     def get_queryset(self):
+        # Prefetch the reverse OneToOne feedback too: MessageSerializer nests it, so without
+        # this each message would trigger its own query (N+1) on conversation detail.
         return (
             Conversation.objects.filter(user=self.request.user)
-            .prefetch_related("messages")
+            .prefetch_related("messages__feedback")
         )
 
 

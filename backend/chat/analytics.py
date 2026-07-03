@@ -88,36 +88,49 @@ def question_analytics(days: int = 30) -> dict:
     }
 
 
+def _non_answer_texts() -> set[str]:
+    """Assistant contents that are NOT real answers (OpenAI error + demo/mock replies).
+
+    These persist with ``sources=None`` too, so without excluding them an OpenAI outage
+    would flood the gaps report with questions that were actually answered-but-errored.
+    """
+    from . import services
+
+    return set(services.FRIENDLY_ERROR.values()) | set(services.MOCK_REPLY.values())
+
+
 def catalog_gaps(days: int = 30, limit: int = 20) -> dict:
     """C2 — cluster the user questions whose assistant reply retrieved no grounding.
 
     Ranked by frequency; each cluster is a candidate scenario to author. Clustering is a
     simple normalized-text bucket (lowercased, whitespace-collapsed) — cheap and good
-    enough to surface the obviously-missing topics.
+    enough to surface the obviously-missing topics. Error/demo replies are excluded so only
+    genuine answered-but-ungrounded questions count as gaps.
     """
     since = _since(days)
-    # Assistant replies with no persisted sources = the question was ungrounded (B3).
-    ungrounded = (
+    # Assistant replies with no persisted sources = the question was ungrounded (B3),
+    # excluding canned error/demo replies which also carry sources=None.
+    ungrounded = list(
         Message.objects.filter(
             role=Message.ASSISTANT, created_at__gte=since, sources__isnull=True
         )
-        .select_related("conversation")
+        .exclude(content__in=_non_answer_texts())
         .order_by("conversation_id", "created_at")
     )
 
-    # Map each ungrounded assistant reply back to the user question just before it.
-    # One extra query for the candidate user messages, then matched in Python.
+    # Pre-group candidate user messages by conversation once, so mapping each assistant
+    # reply to its preceding question is O(total messages), not O(assistants x messages).
     conv_ids = {m.conversation_id for m in ungrounded}
-    user_msgs = list(
-        Message.objects.filter(
-            role=Message.USER, conversation_id__in=conv_ids, created_at__gte=since
-        ).order_by("conversation_id", "created_at")
-    )
+    user_by_conv: dict[int, list] = {}
+    for m in Message.objects.filter(
+        role=Message.USER, conversation_id__in=conv_ids, created_at__gte=since
+    ).order_by("conversation_id", "created_at"):
+        user_by_conv.setdefault(m.conversation_id, []).append(m)
 
     clusters: Counter = Counter()
     examples: dict = {}
     for assistant in ungrounded:
-        question = _preceding_question(user_msgs, assistant)
+        question = _preceding_question(user_by_conv.get(assistant.conversation_id), assistant)
         if not question:
             continue
         key = " ".join(question.lower().split())
@@ -131,12 +144,10 @@ def catalog_gaps(days: int = 30, limit: int = 20) -> dict:
     return {"days": days, "gaps": gaps}
 
 
-def _preceding_question(user_msgs, assistant) -> str:
-    """The latest user message in the same conversation before ``assistant``."""
+def _preceding_question(conv_user_msgs, assistant) -> str:
+    """The latest user message in the assistant's conversation sent at/before it."""
     best = ""
-    for m in user_msgs:
-        if m.conversation_id != assistant.conversation_id:
-            continue
+    for m in conv_user_msgs or []:
         if m.created_at <= assistant.created_at:
             best = m.content
         else:

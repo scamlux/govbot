@@ -22,16 +22,26 @@ def embed_scenario(scenario) -> int:
     if not retrieval.embeddings_enabled():
         return 0
 
-    written = 0
+    langs, texts = [], []
     for lang in LANGUAGE_CODES:
         text = scenario.embedding_source_text(lang)
         if not text:
             # No content for this language → drop any stale vector.
             ScenarioEmbedding.objects.filter(scenario=scenario, language=lang).delete()
             continue
-        vector = retrieval.embed_text(text)
-        if vector is None:
-            continue
+        langs.append(lang)
+        texts.append(text)
+
+    if not texts:
+        return 0
+
+    # One batched request for all languages instead of one round-trip each.
+    vectors = retrieval.embed_texts(texts)
+    if not vectors:
+        return 0
+
+    written = 0
+    for lang, vector in zip(langs, vectors):
         ScenarioEmbedding.objects.update_or_create(
             scenario=scenario,
             language=lang,

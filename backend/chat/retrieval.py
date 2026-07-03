@@ -44,12 +44,25 @@ def embed_text(text: str) -> list[float] | None:
     text = (text or "").strip()
     if not text or not embeddings_enabled():
         return None
+    vectors = embed_texts([text])
+    return vectors[0] if vectors else None
+
+
+def embed_texts(texts: list[str]) -> list[list[float]] | None:
+    """Embed several texts in a single request (order preserved).
+
+    Returns ``None`` in mock mode / on failure. Batching lets callers (e.g. embedding all
+    three languages of a scenario) pay one round-trip instead of one per text.
+    """
+    texts = [t for t in (texts or []) if t and t.strip()]
+    if not texts or not embeddings_enabled():
+        return None
     try:
         from openai import OpenAI
 
         client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        resp = client.embeddings.create(model=EMBEDDING_MODEL, input=text)
-        return resp.data[0].embedding
+        resp = client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
+        return [item.embedding for item in resp.data]
     except Exception:  # noqa: BLE001 — degrade to keyword mode instead of failing the chat
         logger.exception("Embedding request failed; falling back to keyword retrieval")
         return None
@@ -69,8 +82,22 @@ def cosine(a: list[float], b: list[float]) -> float:
     return dot / (na * nb)
 
 
+# Generic interrogatives / filler words dropped in keyword mode so a shared "how"/"what"
+# (very common in scenario titles like "How to renew…") can't alone qualify a match.
+_KEYWORD_STOP = {
+    "the", "how", "what", "where", "when", "which", "who", "why", "does", "did", "for",
+    "and", "you", "your", "with", "can", "need", "want", "get", "from", "about",
+    "как", "что", "где", "когда", "какой", "для", "или", "нужно", "можно",
+    "qanday", "qayerda", "qachon", "nima", "uchun", "kerak",
+}
+
+
 def _tokens(text: str) -> set[str]:
-    return {w.lower() for w in _WORD_RE.findall(text or "") if len(w) > 2}
+    return {
+        w.lower()
+        for w in _WORD_RE.findall(text or "")
+        if len(w) > 2 and w.lower() not in _KEYWORD_STOP
+    }
 
 
 def _vector_retrieve(query_vec, language, k):

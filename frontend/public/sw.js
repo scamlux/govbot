@@ -4,8 +4,10 @@
  *  - Navigations: network-first, falling back to the cached app shell ('/') when offline
  *    so the SPA still boots without a connection.
  *  - Built static assets (same-origin JS/CSS/img): stale-while-revalidate.
- *  - Scenario Catalog API GETs (URL contains '/scenarios'): stale-while-revalidate, so the
- *    catalog list/detail stay readable offline. Chat and other APIs are never cached.
+ *  - Public Scenario Catalog API GETs (path under '/api/scenarios'): stale-while-revalidate,
+ *    so the catalog list/detail stay readable offline. ALL authenticated APIs — chat,
+ *    /api/auth, /api/admin (incl. /api/admin/scenarios) — are never cached, so no user ever
+ *    sees another user's or a stale admin response.
  */
 const VERSION = "govbot-v1";
 const SHELL_CACHE = `${VERSION}-shell`;
@@ -62,13 +64,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Scenario Catalog API — keep readable offline.
-  if (url.pathname.includes("/scenarios")) {
-    event.respondWith(staleWhileRevalidate(request, API_CACHE));
-    return;
+  // API requests: cache ONLY the public Scenario Catalog; never authenticated endpoints
+  // (chat, /api/auth, /api/admin/* including /api/admin/scenarios) — those are keyed by
+  // URL only and would leak across users or serve stale admin data.
+  if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) {
+    if (url.pathname.startsWith("/api/scenarios")) {
+      event.respondWith(staleWhileRevalidate(request, API_CACHE));
+    }
+    return; // all other /api/* → straight to network
   }
 
-  // Same-origin static assets.
+  // Same-origin static assets (app shell chunks, CSS, icons).
   if (url.origin === self.location.origin) {
     event.respondWith(staleWhileRevalidate(request, ASSET_CACHE));
   }

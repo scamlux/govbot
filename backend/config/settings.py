@@ -19,16 +19,20 @@ INSECURE_SECRET_KEY = "django-insecure-dev-only-change-me"
 
 
 def require_secure_secret_key(debug: bool, secret_key: str) -> None:
-    """S1 — refuse to run production on the insecure default signing key.
+    """S1 — refuse to run production on an insecure signing key.
 
     A guessable ``SECRET_KEY`` under ``DEBUG=False`` means forgeable JWTs and tamperable
-    sessions, so we fail loudly at import rather than boot. In ``DEBUG`` the shared default
-    is fine for instant local dev. Kept as a pure function so the rule is unit-testable.
+    sessions, so we fail loudly at import rather than boot. We reject the empty string and
+    **any** key carrying Django's ``django-insecure-`` marker prefix — this covers our own
+    settings default, the different default baked into ``docker-compose.yml``, and any key
+    left over from ``django-admin startproject``. In ``DEBUG`` these are fine for instant
+    local dev. Kept as a pure function so the rule is unit-testable.
     """
-    if not debug and secret_key == INSECURE_SECRET_KEY:
+    if not debug and (not secret_key or secret_key.startswith("django-insecure-")):
         raise ImproperlyConfigured(
-            "SECRET_KEY is unset or the insecure development default while DEBUG=False. "
-            "Set a strong, unique SECRET_KEY in the environment before deploying."
+            "SECRET_KEY is unset or an insecure development default (empty or "
+            "'django-insecure-…') while DEBUG=False. Set a strong, unique SECRET_KEY in "
+            "the environment before deploying."
         )
 
 env = environ.Env(

@@ -164,6 +164,20 @@ def test_feedback_surfaced_in_conversation_detail(auth_client):
     assert assistant["feedback"]["rating"] == "up"
 
 
+def test_conversation_detail_no_feedback_n_plus_one(auth_client, django_assert_max_num_queries):
+    """Nested feedback must be prefetched — query count stays flat as messages grow."""
+    client, user = auth_client
+    conv = Conversation.objects.create(user=user, language="en")
+    for i in range(6):
+        m = Message.objects.create(conversation=conv, role=Message.ASSISTANT, content=f"a{i}")
+        MessageFeedback.objects.create(message=m, rating="up")
+    # Auth + conversation + messages + feedback prefetch — a small constant, not O(messages).
+    with django_assert_max_num_queries(6):
+        resp = client.get(reverse("conversation-detail", args=[conv.id]))
+    assert resp.status_code == 200
+    assert len(resp.json()["messages"]) == 6
+
+
 # --------------------------------------------------------------------------- #
 # B1 / B3 — structured sources returned + persisted
 # --------------------------------------------------------------------------- #
