@@ -131,6 +131,13 @@ else:
         }
     }
 
+# Reuse Postgres connections across requests instead of opening one per request
+# (a cheap latency win under load). Health-check a pooled connection before reuse so a
+# stale/closed socket is transparently replaced. Skipped for the sqlite dev fallback.
+if DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
+    DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONN_MAX_AGE", default=600)
+    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+
 # ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
@@ -188,8 +195,15 @@ CORS_ALLOW_CREDENTIALS = True
 # Trusted origins for unsafe (POST) requests to Django admin behind a proxy.
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[FRONTEND_ORIGIN])
 
-# Respect the X-Forwarded-Proto header set by the nginx reverse proxy.
+# Respect the X-Forwarded-Proto header set by the nginx reverse proxy / PaaS load balancer.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# On Railway the public hostname is injected as RAILWAY_PUBLIC_DOMAIN. Auto-trust it so a
+# deploy needs no manual ALLOWED_HOSTS/CSRF wiring (the domain isn't known until deploy).
+_railway_domain = env("RAILWAY_PUBLIC_DOMAIN", default="")
+if _railway_domain:
+    ALLOWED_HOSTS = list({*ALLOWED_HOSTS, _railway_domain})
+    CSRF_TRUSTED_ORIGINS = list({*CSRF_TRUSTED_ORIGINS, f"https://{_railway_domain}"})
 
 # ---------------------------------------------------------------------------
 # OpenAI
@@ -232,3 +246,36 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ---------------------------------------------------------------------------
+# Production security hardening (only when DEBUG is off, so local dev over http
+# is never forced onto https). All individually overridable via env.
+# ---------------------------------------------------------------------------
+if not DEBUG and "pytest" not in sys.modules:
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 365)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# ---------------------------------------------------------------------------
+# Logging — surface warnings/errors on stdout so they show up in container logs
+# (Railway/Docker) instead of being silently swallowed in production.
+# ---------------------------------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "chat": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}

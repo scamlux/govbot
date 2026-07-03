@@ -19,5 +19,7 @@ RUN chmod +x entrypoint.sh
 EXPOSE 8000
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", \
-     "--worker-class", "gthread", "--workers", "3", "--threads", "4", "--timeout", "120"]
+# sh -c so ${PORT}/${WEB_CONCURRENCY} expand at runtime: PaaS platforms (Railway) inject a
+# dynamic $PORT; locally/compose it falls back to 8000. gthread workers keep SSE streaming
+# responses working (each stream holds a thread, not a whole worker).
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --worker-class gthread --workers ${WEB_CONCURRENCY:-3} --threads ${GUNICORN_THREADS:-4} --timeout 120"]
