@@ -39,9 +39,9 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o-mini
-      # Set to the Vercel URL after the frontend deploy so CORS/SSE allow it.
+      # Vercel frontend origin — allows browser CORS + SSE from the deployed SPA.
       - key: FRONTEND_ORIGIN
-        sync: false
+        value: https://frontend-snowy-eight-17.vercel.app
       - key: WEB_CONCURRENCY
         value: "3"
       - key: PYTHONUNBUFFERED
