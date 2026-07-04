@@ -17,6 +17,9 @@ services:
   - type: web
     name: govbot-backend
     runtime: docker
+    # Code currently lives on the PR branch (not yet merged to main). Switch this to
+    # `main` once PR #1 is merged.
+    branch: worktree-backlog-impl
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
