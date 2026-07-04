@@ -20,18 +20,23 @@ The backend can go on **Render** (recommended — one-click Blueprint, no API to
 
 ---
 
-## 1a. Backend + Postgres on Render (recommended — Blueprint)
+## 1a. Backend on Render + Postgres on Supabase (recommended — Blueprint)
 
-The repo ships a `render.yaml` Blueprint, so Render provisions the web service **and** a
-Postgres database in one step — no API token or CLI needed.
+DB lives on **Supabase**; Render runs only the Django web service (via the `render.yaml`
+Blueprint). No API token or CLI needed.
 
+0. **Supabase DB**: create a project at [supabase.com](https://supabase.com) → Project
+   Settings → Database → copy the connection string. Use the **Direct connection**
+   (`...:5432/postgres`) or the **Session pooler** — NOT the transaction pooler (6543),
+   which breaks Django's persistent `CONN_MAX_AGE` connections.
 1. Create an account at [render.com](https://render.com) and connect your GitHub.
 2. Dashboard → **New +** → **Blueprint** → select this repo → **Apply**.
-   Render reads `render.yaml`: builds `backend/Dockerfile`, creates `govbot-db` (free
-   Postgres), wires `DATABASE_URL`, and generates a strong `SECRET_KEY`.
-3. On the `govbot-backend` service → **Environment**, set the two `sync: false` vars:
+   Render reads `render.yaml`: builds `backend/Dockerfile` and generates a strong
+   `SECRET_KEY`.
+3. On the `govbot-backend` service → **Environment**, set the `sync: false` vars:
+   - `DATABASE_URL=postgresql://postgres:<pwd>@<host>:5432/postgres` (from Supabase, step 0)
    - `OPENAI_API_KEY=sk-...` (omit → chat runs in mock mode)
-   - `FRONTEND_ORIGIN=https://<your-vercel-app>.vercel.app` (fill after step 2 below)
+   - `FRONTEND_ORIGIN=https://<your-vercel-app>.vercel.app` (fill after section 2 below)
 4. The service auto-deploys. Entrypoint runs `migrate` + `seed_scenarios` +
    `collectstatic`; healthcheck hits `/api/scenarios/categories/`. Note the URL, e.g.
    `https://govbot-backend.onrender.com`.

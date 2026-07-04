@@ -7,11 +7,10 @@
 # collectstatic on each boot. RENDER_EXTERNAL_HOSTNAME is auto-trusted by settings for
 # ALLOWED_HOSTS / CSRF, so no manual host wiring is needed.
 
-databases:
-  - name: govbot-db
-    databaseName: govbot
-    user: govbot
-    plan: free
+# DB is external (Supabase). No Render-managed Postgres — DATABASE_URL is set as a
+# dashboard secret (sync: false) pointing at the Supabase connection string.
+# Use Supabase's DIRECT connection (port 5432) or the SESSION pooler — NOT the transaction
+# pooler (6543), which is incompatible with Django's persistent CONN_MAX_AGE connections.
 
 services:
   - type: web
@@ -32,10 +31,9 @@ services:
         generateValue: true
       - key: DEBUG
         value: "0"
+      # Supabase Postgres connection string (direct 5432 / session pooler). Set in dashboard.
       - key: DATABASE_URL
-        fromDatabase:
-          name: govbot-db
-          property: connectionString
+        sync: false
       # OpenAI — set in the dashboard (kept out of the repo). Omit → chat runs in mock mode.
       - key: OPENAI_API_KEY
         sync: false
