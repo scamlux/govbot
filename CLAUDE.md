@@ -123,8 +123,16 @@ umar/                              # repo root (the GovBot project)
 
 **`scenarios.Scenario`**:
 - `category` (FK), `slug` (unique), `title` (JSON: `{uz,ru,en}`),
-  `body` (JSON: `{uz,ru,en}`, markdown-capable), `tags` (JSON list), `order` (int),
+  `body` (JSON: `{uz,ru,en}`, markdown-capable), `source_url` (URL, optional — official
+  agency link surfaced when the AI cites this scenario), `tags` (JSON list), `order` (int),
   `is_published` (bool, default True), `updated_at`.
+
+**`scenarios.ScenarioEmbedding`** (RAG grounding store):
+- `scenario` (FK), `language` (`uz`/`ru`/`en`), `vector` (JSON list of floats), `model`,
+  `updated_at`; unique per (`scenario`, `language`). Vectors are stored as plain JSON (not
+  pgvector) and ranked by brute-force cosine in Python — chosen for KISS at catalog scale
+  and to keep the SQLite dev fallback working. Swap in pgvector once the catalog reaches
+  thousands of rows.
 
 > Convention: multilingual fields are stored as JSON objects keyed by language code
 > (`{"uz": "...", "ru": "...", "en": "..."}`). Serializers resolve a single language via a
@@ -159,8 +167,19 @@ umar/                              # repo root (the GovBot project)
 ### 4.3 OpenAI service (`chat/services.py`)
 - `generate_reply(messages, language)` builds the request and calls the OpenAI Chat
   Completions API. A streaming variant `stream_reply(messages, language)` yields chunks.
-- Reads `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o-mini`), `OPENAI_MAX_TOKENS`
-  (default 1200) and `OPENAI_TEMPERATURE` (default 0.3) from env.
+- Reads `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o-mini`), `OPENAI_EMBEDDING_MODEL`
+  (default `text-embedding-3-small`), `OPENAI_MAX_TOKENS` (default 1200) and
+  `OPENAI_TEMPERATURE` (default 0.3) from env.
+- **RAG grounding (`chat/retrieval.py`):** before each reply, the latest user question is
+  matched against the Scenario Catalog and the most relevant scenarios are injected into the
+  prompt as an "official reference material" block, with a localized instruction to prefer
+  that material, cite the `source_url`, and admit uncertainty (pointing to the official
+  body) when the material doesn't cover the question. Two modes, chosen automatically:
+  **vector** (embed the query, cosine-rank `ScenarioEmbedding` rows) when a key is set;
+  **keyword** (term overlap on scenario text) as fallback in mock mode or before embeddings
+  are built — so grounding is demonstrable in local dev without a key. Embeddings are
+  refreshed on scenario save via a `post_save` signal and can be backfilled with
+  `python manage.py embed_scenarios`.
 - **System prompt** that:
   - defines GovBot as an assistant for Uzbekistan government / public-service information,
   - instructs replying in the user's language (`uz`/`ru`/`en`),
@@ -219,8 +238,8 @@ umar/                              # repo root (the GovBot project)
 
 **Backend** (`backend/.env.example`): `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`,
 `DATABASE_URL` (or `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_HOST`
-/ `POSTGRES_PORT`), `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_TOKENS`,
-`OPENAI_TEMPERATURE`, `FRONTEND_ORIGIN`, `ACCESS_TOKEN_LIFETIME_MIN`,
+/ `POSTGRES_PORT`), `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_EMBEDDING_MODEL`,
+`OPENAI_MAX_TOKENS`, `OPENAI_TEMPERATURE`, `FRONTEND_ORIGIN`, `ACCESS_TOKEN_LIFETIME_MIN`,
 `REFRESH_TOKEN_LIFETIME_DAYS`.
 
 **Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL`.
@@ -271,3 +290,16 @@ git-ignored.
   component modules. ES modules.
 - Commit secrets never. Document every env var in `.env.example`.
 - Language fallback order everywhere: requested → uz → en → ru → first available.
+
+<!-- AIOFFICE:CONSTITUTION:START -->
+# 🏛️ Конституция AI Office
+
+Глобальные правила и ресурсы, которые подмешиваются в каждую сессию Claude Code
+(и записываются блоком в CLAUDE.md проекта).
+
+## Правила
+- (добавь свои правила здесь — например: всегда отвечать по-русски)
+
+## Ресурсы
+- (ссылки на доки, дашборды, тикеты, контекст)
+<!-- AIOFFICE:CONSTITUTION:END -->

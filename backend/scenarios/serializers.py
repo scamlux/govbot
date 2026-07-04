@@ -65,7 +65,7 @@ class ScenarioDetailSerializer(LangContextMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Scenario
-        fields = ["slug", "title", "body", "category", "tags", "updated_at"]
+        fields = ["slug", "title", "body", "source_url", "category", "tags", "updated_at"]
 
     def get_title(self, obj):
         return localize(obj.title, self.lang())
@@ -113,6 +113,7 @@ class AdminScenarioSerializer(serializers.ModelSerializer):
             "slug",
             "title",
             "body",
+            "source_url",
             "tags",
             "order",
             "is_published",

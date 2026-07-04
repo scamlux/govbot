@@ -162,6 +162,8 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # ---------------------------------------------------------------------------
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")
+# Embedding model used for RAG grounding of chat answers against the Scenario Catalog.
+OPENAI_EMBEDDING_MODEL = env("OPENAI_EMBEDDING_MODEL", default="text-embedding-3-small")
 OPENAI_MAX_TOKENS = env.int("OPENAI_MAX_TOKENS", default=1200)
 OPENAI_TEMPERATURE = env.float("OPENAI_TEMPERATURE", default=0.3)
 

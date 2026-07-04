@@ -9,6 +9,8 @@ from collections.abc import Iterator
 
 from django.conf import settings
 
+from . import retrieval
+
 logger = logging.getLogger(__name__)
 
 HISTORY_LIMIT = 10  # number of recent messages sent for context
@@ -76,11 +78,72 @@ def is_mock_mode() -> bool:
     return not bool(settings.OPENAI_API_KEY)
 
 
+# Grounding: a localized instruction wrapped around the retrieved reference material. The
+# model must prefer these curated facts and admit uncertainty when they don't cover the
+# question — this is what keeps a government assistant from inventing fees or deadlines.
+GROUNDING_HEADER = {
+    "uz": "Quyidagi rasmiy ma'lumotnoma (GovBot katalogidan) javobingizga asos bo'lsin:",
+    "ru": "Используйте следующий официальный справочный материал (из каталога GovBot) как основу ответа:",
+    "en": "Use the following official reference material (from the GovBot catalog) as the basis for your answer:",
+}
+GROUNDING_INSTRUCTION = {
+    "uz": (
+        "Javobingizni ustuvor ravishda shu ma'lumotnomaga asoslang. Tegishli bo'lsa, manba "
+        "havolasini ko'rsating. Agar ma'lumotnoma savolni qamrab olmasa, buni ochiq ayting "
+        "va foydalanuvchini mas'ul rasmiy organga yo'naltiring — taxmin qilib, aniq raqam, "
+        "to'lov yoki muddat o'ylab topmang."
+    ),
+    "ru": (
+        "Основывайте ответ прежде всего на этом материале. Где уместно, укажите ссылку на "
+        "источник. Если материал не покрывает вопрос, прямо скажите об этом и направьте "
+        "пользователя в ответственный официальный орган — не выдумывайте конкретные суммы, "
+        "пошлины или сроки."
+    ),
+    "en": (
+        "Base your answer primarily on this material and cite the source link where "
+        "relevant. If it does not cover the question, say so plainly and point the user to "
+        "the responsible official body — do not invent specific figures, fees or deadlines."
+    ),
+}
+
+
+def _latest_user_query(messages: list[dict]) -> str:
+    for message in reversed(messages):
+        if message.get("role") == "user":
+            return message.get("content", "")
+    return ""
+
+
+def _format_reference(snippets: list[dict], lang: str) -> str:
+    blocks = []
+    for i, snip in enumerate(snippets, start=1):
+        parts = [f"{i}. {snip['title']}".strip(), snip["text"]]
+        if snip.get("source_url"):
+            parts.append(f"Source: {snip['source_url']}")
+        blocks.append("\n".join(p for p in parts if p))
+    body = "\n\n".join(blocks)
+    return f"{GROUNDING_HEADER[lang]}\n\n{body}\n\n{GROUNDING_INSTRUCTION[lang]}"
+
+
+def grounding_message(messages: list[dict], lang: str) -> dict | None:
+    """Retrieve catalog snippets for the latest user query → a system message, or None."""
+    query = _latest_user_query(messages)
+    snippets = retrieval.retrieve(query, lang)
+    if not snippets:
+        return None
+    return {"role": "system", "content": _format_reference(snippets, lang)}
+
+
 def build_payload(messages: list[dict], language: str) -> list[dict]:
-    """Build the OpenAI `messages` array: system prompt + recent history."""
+    """Build the OpenAI `messages` array: system prompt + grounding + recent history."""
     lang = _lang(language)
     history = messages[-HISTORY_LIMIT:]
-    return [{"role": "system", "content": SYSTEM_PROMPTS[lang]}, *history]
+    payload = [{"role": "system", "content": SYSTEM_PROMPTS[lang]}]
+    grounding = grounding_message(messages, lang)
+    if grounding:
+        payload.append(grounding)
+    payload.extend(history)
+    return payload
 
 
 def _client():
