@@ -205,6 +205,12 @@ if _railway_domain:
     ALLOWED_HOSTS = list({*ALLOWED_HOSTS, _railway_domain})
     CSRF_TRUSTED_ORIGINS = list({*CSRF_TRUSTED_ORIGINS, f"https://{_railway_domain}"})
 
+# Same idea for Render, which injects the service hostname as RENDER_EXTERNAL_HOSTNAME.
+_render_host = env("RENDER_EXTERNAL_HOSTNAME", default="")
+if _render_host:
+    ALLOWED_HOSTS = list({*ALLOWED_HOSTS, _render_host})
+    CSRF_TRUSTED_ORIGINS = list({*CSRF_TRUSTED_ORIGINS, f"https://{_render_host}"})
+
 # ---------------------------------------------------------------------------
 # OpenAI
 # ---------------------------------------------------------------------------

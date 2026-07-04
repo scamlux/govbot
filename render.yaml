@@ -1,0 +1,47 @@
+# Render Blueprint — GovBot backend (Django + gunicorn) + managed Postgres.
+# One-click provisioning: Render dashboard → New → Blueprint → connect this repo.
+# The Vite frontend is deployed separately on Vercel (see DEPLOY.md).
+#
+# Native container (not serverless) so SSE streaming chat keeps working. The backend
+# Dockerfile CMD binds $PORT (Render injects it); entrypoint runs migrate + seed +
+# collectstatic on each boot. RENDER_EXTERNAL_HOSTNAME is auto-trusted by settings for
+# ALLOWED_HOSTS / CSRF, so no manual host wiring is needed.
+
+databases:
+  - name: govbot-db
+    databaseName: govbot
+    user: govbot
+    plan: free
+
+services:
+  - type: web
+    name: govbot-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /api/scenarios/categories/
+    autoDeploy: true
+    envVars:
+      # Render generates a strong secret → satisfies the S1 insecure-key guard.
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: govbot-db
+          property: connectionString
+      # OpenAI — set in the dashboard (kept out of the repo). Omit → chat runs in mock mode.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      # Set to the Vercel URL after the frontend deploy so CORS/SSE allow it.
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: WEB_CONCURRENCY
+        value: "3"
+      - key: PYTHONUNBUFFERED
+        value: "1"

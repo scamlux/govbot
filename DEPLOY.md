@@ -15,9 +15,35 @@ Vercel's CDN.
 Order matters: **deploy the backend first** so you know its URL before building the
 frontend (the SPA bakes `VITE_API_BASE_URL` in at build time).
 
+The backend can go on **Render** (recommended — one-click Blueprint, no API token) or
+**Railway**. Pick one for section 1, then do Vercel in section 2.
+
 ---
 
-## 1. Backend + Postgres on Railway
+## 1a. Backend + Postgres on Render (recommended — Blueprint)
+
+The repo ships a `render.yaml` Blueprint, so Render provisions the web service **and** a
+Postgres database in one step — no API token or CLI needed.
+
+1. Create an account at [render.com](https://render.com) and connect your GitHub.
+2. Dashboard → **New +** → **Blueprint** → select this repo → **Apply**.
+   Render reads `render.yaml`: builds `backend/Dockerfile`, creates `govbot-db` (free
+   Postgres), wires `DATABASE_URL`, and generates a strong `SECRET_KEY`.
+3. On the `govbot-backend` service → **Environment**, set the two `sync: false` vars:
+   - `OPENAI_API_KEY=sk-...` (omit → chat runs in mock mode)
+   - `FRONTEND_ORIGIN=https://<your-vercel-app>.vercel.app` (fill after step 2 below)
+4. The service auto-deploys. Entrypoint runs `migrate` + `seed_scenarios` +
+   `collectstatic`; healthcheck hits `/api/scenarios/categories/`. Note the URL, e.g.
+   `https://govbot-backend.onrender.com`.
+5. (If a real key was set) build vector embeddings once: service → **Shell** →
+   `python manage.py embed_scenarios`.
+
+`RENDER_EXTERNAL_HOSTNAME` is auto-trusted by settings for `ALLOWED_HOSTS`/CSRF — nothing
+to wire by hand. Then skip to **section 2 (Vercel)**.
+
+---
+
+## 1b. Backend + Postgres on Railway (alternative)
 
 1. Create a project at [railway.app](https://railway.app) → **New Project**.
 2. **Add a Postgres**: New → Database → PostgreSQL. Railway exposes `DATABASE_URL`.
