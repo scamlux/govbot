@@ -4,13 +4,18 @@ import { useTranslation } from "react-i18next";
 
 import { chatApi, streamMessage } from "../api/endpoints";
 import MessageBubble from "../components/MessageBubble";
-import Spinner from "../components/Spinner";
+import Modal from "../components/Modal";
+import Toast from "../components/Toast";
+
+// Client-side hint matching the backend's CHAT_MAX_MESSAGE_LENGTH default (S3).
+const MAX_MESSAGE_LENGTH = 4000;
 
 export default function Chat() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
 
   const [conversations, setConversations] = useState([]);
+  const [listLoading, setListLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -18,10 +23,21 @@ export default function Chat() {
   const [loadingConv, setLoadingConv] = useState(false);
   const [streamingText, setStreamingText] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const prefillConsumed = useRef(false);
+  const toastTimer = useRef(null);
+
+  const showToast = useCallback((text, kind = "ok") => {
+    clearTimeout(toastTimer.current);
+    setToast({ text, kind });
+    toastTimer.current = setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   const autoGrowInput = useCallback(() => {
     const el = inputRef.current;
@@ -46,10 +62,11 @@ export default function Chat() {
     chatApi
       .conversations()
       .then(({ data }) => setConversations(data))
-      .catch(() => setConversations([]));
+      .catch(() => setConversations([]))
+      .finally(() => setListLoading(false));
   }, []);
 
-  // Load messages when the active conversation changes.
+  // Load messages when active conversation changes.
   useEffect(() => {
     if (!activeId) {
       setMessages([]);
@@ -99,12 +116,12 @@ export default function Chat() {
   const send = useCallback(
     async (text) => {
       const content = text.trim();
-      if (!content || sending) return;
+      if (!content || sending || content.length > MAX_MESSAGE_LENGTH) return;
       setSending(true);
       setInput("");
       resetInputHeight();
 
-      // Optimistically show the user's message.
+      // Optimistically show user's message.
       const optimistic = {
         id: `tmp-${Date.now()}`,
         role: "user",
@@ -123,13 +140,14 @@ export default function Chat() {
             scrollToBottom();
           },
         });
-        // Commit the final assistant message.
+        // Commit final assistant message (with its grounding sources, B1/B2).
         setMessages((prev) => [
           ...prev,
           {
             id: result.assistantMessageId ?? `a-${Date.now()}`,
             role: "assistant",
             content: result.content,
+            sources: result.sources ?? [],
             created_at: new Date().toISOString(),
           },
         ]);
@@ -166,15 +184,37 @@ export default function Chat() {
     }
   }, [location.state, autoGrowInput]);
 
-  const deleteConversation = useCallback(
-    async (id, e) => {
-      e.stopPropagation();
-      if (!window.confirm(t("chat.deleteConfirm"))) return;
-      await chatApi.deleteConversation(id).catch(() => {});
+  const requestDelete = useCallback((id, e) => {
+    e.stopPropagation();
+    setConfirmDeleteId(id);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
+    try {
+      await chatApi.deleteConversation(id);
       setConversations((prev) => prev.filter((c) => c.id !== id));
       if (id === activeId) startNewChat();
+      showToast(t("chat.deleted"));
+    } catch {
+      showToast(t("errors.delete"), "error");
+    }
+  }, [confirmDeleteId, activeId, startNewChat, showToast, t]);
+
+  const submitFeedback = useCallback(
+    async (messageId, rating, reason) => {
+      try {
+        const { data } = await chatApi.sendFeedback(messageId, rating, reason);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, feedback: data } : m))
+        );
+        if (rating === "up") showToast(t("chat.feedbackThanks"));
+      } catch {
+        showToast(t("errors.feedback"), "error");
+      }
     },
-    [activeId, startNewChat, t]
+    [showToast, t]
   );
 
   const onSubmit = (e) => {
@@ -190,6 +230,8 @@ export default function Chat() {
   };
 
   const showEmpty = messages.length === 0 && streamingText === null;
+  const overLimit = input.length > MAX_MESSAGE_LENGTH;
+  const nearLimit = input.length > MAX_MESSAGE_LENGTH * 0.9;
 
   return (
     <div className="chat-layout">
@@ -202,7 +244,11 @@ export default function Chat() {
         </button>
         <h2 className="sidebar-title">{t("chat.conversations")}</h2>
         <ul className="conv-list">
-          {conversations.length === 0 && (
+          {listLoading &&
+            [0, 1, 2, 3].map((i) => (
+              <li key={i} className="conv-skeleton skeleton" aria-hidden="true" />
+            ))}
+          {!listLoading && conversations.length === 0 && (
             <li className="conv-empty">{t("chat.noConversations")}</li>
           )}
           {conversations.map((c) => (
@@ -216,7 +262,7 @@ export default function Chat() {
                 type="button"
                 className="conv-del"
                 aria-label={t("common.delete")}
-                onClick={(e) => deleteConversation(c.id, e)}
+                onClick={(e) => requestDelete(c.id, e)}
               >
                 ×
               </button>
@@ -239,18 +285,24 @@ export default function Chat() {
         </div>
         <div className="chat-messages" ref={scrollRef}>
           {loadingConv ? (
-            <Spinner />
+            <div className="messages-skeleton" aria-label={t("common.loading")}>
+              <div className="msg-skeleton skeleton" />
+              <div className="msg-skeleton skeleton wide" />
+              <div className="msg-skeleton skeleton right" />
+              <div className="msg-skeleton skeleton wide" />
+            </div>
           ) : showEmpty ? (
             <div className="chat-empty">
               <div className="chat-empty-mark" aria-hidden="true">🏛️</div>
               <h2>{t("chat.emptyTitle")}</h2>
               <p>{t("chat.emptySubtitle")}</p>
               <div className="suggestions">
-                {["suggestion1", "suggestion2", "suggestion3"].map((k) => (
+                {["suggestion1", "suggestion2", "suggestion3"].map((k, i) => (
                   <button
                     key={k}
                     type="button"
-                    className="chip"
+                    className="chip chip-stagger"
+                    style={{ animationDelay: `${120 + i * 70}ms` }}
                     onClick={() => send(t(`chat.${k}`))}
                   >
                     {t(`chat.${k}`)}
@@ -261,7 +313,16 @@ export default function Chat() {
           ) : (
             <>
               {messages.map((m) => (
-                <MessageBubble key={m.id} role={m.role} content={m.content} />
+                <MessageBubble
+                  key={m.id}
+                  id={m.id}
+                  role={m.role}
+                  content={m.content}
+                  createdAt={m.created_at}
+                  sources={m.sources ?? []}
+                  feedback={m.feedback ?? null}
+                  onFeedback={submitFeedback}
+                />
               ))}
               {streamingText !== null && (
                 <MessageBubble role="assistant" content={streamingText} pending />
@@ -286,17 +347,51 @@ export default function Chat() {
             }}
             onKeyDown={onKeyDown}
             aria-label={t("chat.placeholder")}
+            aria-invalid={overLimit || undefined}
           />
+          {nearLimit && (
+            <span
+              className={overLimit ? "chat-count over" : "chat-count"}
+              title={t("chat.tooLong", { max: MAX_MESSAGE_LENGTH })}
+            >
+              {input.length}/{MAX_MESSAGE_LENGTH}
+            </span>
+          )}
           <button
             type="submit"
             className="chat-send"
-            disabled={sending || !input.trim()}
+            disabled={sending || !input.trim() || overLimit}
             aria-label={t("common.send")}
           >
             {sending ? "…" : "↑"}
           </button>
         </form>
       </section>
+
+      {confirmDeleteId !== null && (
+        <Modal
+          title={t("chat.deleteTitle")}
+          onClose={() => setConfirmDeleteId(null)}
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setConfirmDeleteId(null)}
+              >
+                {t("common.cancel")}
+              </button>
+              <button type="button" className="btn btn-primary" onClick={confirmDelete}>
+                {t("common.delete")}
+              </button>
+            </>
+          }
+        >
+          <p>{t("chat.deleteBody")}</p>
+        </Modal>
+      )}
+
+      <Toast toast={toast} />
     </div>
   );
 }

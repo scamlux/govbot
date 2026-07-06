@@ -72,7 +72,10 @@
     "feature3Title": "Three languages",
     "feature3Body": "The whole experience works in Uzbek, Russian and English.",
     "categoriesTitle": "Popular topics",
-    "categoriesSubtitle": "Browse ready-made answers by category"
+    "categoriesSubtitle": "Browse ready-made answers by category",
+    "trustLangs": "3 languages",
+    "trustSources": "Answers cite official sources",
+    "trustUncertain": "Admits uncertainty — points to the official body"
   },
   "auth": {
     "loginTitle": "Sign in to GovBot",
@@ -109,7 +112,19 @@
     "assistant": "GovBot",
     "suggestion1": "How do I renew my passport?",
     "suggestion2": "How do I register a business?",
-    "suggestion3": "What do I need for a tourist visa?"
+    "suggestion3": "What do I need for a tourist visa?",
+    "sources": "Sources:",
+    "copy": "Copy message",
+    "copied": "Copied!",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "feedbackReasonPlaceholder": "What was wrong? (optional)",
+    "feedbackSend": "Send feedback",
+    "feedbackThanks": "Thanks for your feedback!",
+    "deleteTitle": "Delete conversation?",
+    "deleteBody": "This will permanently delete the conversation and all its messages.",
+    "deleted": "Conversation deleted.",
+    "tooLong": "Message is too long — maximum {{max}} characters."
   },
   "scenarios": {
     "title": "Scenario Catalog",
@@ -126,6 +141,8 @@
   "errors": {
     "network": "Network error — is the backend running?",
     "loadScenarios": "Could not load the catalog.",
-    "loadChat": "Could not load the conversation."
+    "loadChat": "Could not load the conversation.",
+    "feedback": "Could not save your feedback.",
+    "delete": "Could not delete the conversation."
   }
 }

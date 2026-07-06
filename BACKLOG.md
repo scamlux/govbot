@@ -18,18 +18,19 @@ Every task ends with tests + a `CLAUDE.md` update when behavior/spec changes.
 Protects the OpenAI budget and gives us a signal to measure answer quality. Highest
 value-per-effort; ship first.
 
-### A1 — Rate limiting on chat endpoints  *(S, P1)*
+### A1 — Rate limiting on chat endpoints  ✅ *(S, P1)*
 Throttle the message + stream endpoints so a single user can't burn the OpenAI budget or
 DoS the service.
 
-- **Acceptance:** DRF `ScopedRateThrottle` on `MessageCreateView` and `MessageStreamView`
-  (e.g. `chat_message`: 20/min, 500/day per user); anonymous blocked (already auth-only);
+- **Acceptance (as shipped):** two per-user DRF throttle scopes on `MessageCreateView` and
+  `MessageStreamView` — `chat_burst` 20/min + `chat_sustained` 500/day (a single
+  `ScopedRateThrottle` scope can't hold two rates); anonymous blocked (already auth-only);
   429 returns a localized message; limits read from env with sane defaults.
 - **Touches:** `config/settings.py` (`DEFAULT_THROTTLE_RATES`), `chat/views.py`,
   `backend/.env.example`, `tests/test_chat.py`.
 - **Depends on:** —
 
-### A2 — Answer feedback (👍 / 👎 + reason)  *(M, P1)*
+### A2 — Answer feedback (👍 / 👎 + reason)  ✅ *(M, P1)*
 Let users rate assistant replies. The only real signal for monitoring a government
 assistant's accuracy over time.
 
@@ -58,7 +59,7 @@ Surface ratings so admins can find weak answers.
 
 Core shipped. Remaining work makes the grounding *visible* and *tunable*.
 
-### B1 — Return structured sources to the client  *(M, P1)*
+### B1 — Return structured sources to the client  ✅ *(M, P1)*
 Today the model cites `source_url` inline from the prompt; the retrieved snippets aren't
 returned as data. Expose them so the UI can render trustworthy source chips.
 
@@ -69,7 +70,7 @@ returned as data. Expose them so the UI can render trustworthy source chips.
   without re-querying), `chat/serializers.py`, `tests/test_retrieval.py`, `CLAUDE.md`.
 - **Depends on:** —
 
-### B2 — Sources UI under assistant answers  *(S, P1)*
+### B2 — Sources UI under assistant answers  ✅ *(S, P1)*
 Render the sources from B1 as clickable chips (catalog link + official `source_url`).
 
 - **Acceptance:** chips appear under grounded assistant messages (both streamed + loaded
@@ -164,7 +165,7 @@ Download a conversation as Markdown/PDF.
 
 ## Epic S — Security hardening  *(cross-cutting, interleave)*
 
-### S1 — Enforce non-default SECRET_KEY in production  *(S, P1)*
+### S1 — Enforce non-default SECRET_KEY in production  ✅ *(S, P1)*
 - **Acceptance:** startup fails (or loud warning) when `DEBUG=False` and `SECRET_KEY` is the
   insecure default; documented in `.env.example` / README.
 - **Touches:** `config/settings.py`, `README.md`. **Do alongside A1.**
@@ -179,7 +180,7 @@ as an ADR before changing.
 - **Touches:** `accounts/`, `frontend/src/auth/*`, `api/client.js`, settings, tests.
 - **Depends on:** — (schedule after Epic A)
 
-### S3 — Input hardening on chat  *(S, P2)*
+### S3 — Input hardening on chat  ✅ *(S, P2)*
 - **Acceptance:** max message length enforced server-side (serializer) + client hint;
   reject oversized payloads with a localized 400.
 - **Touches:** `chat/serializers.py`, `Chat.jsx`, tests. **Bundle with A1/A2.**
@@ -188,7 +189,7 @@ as an ADR before changing.
 
 ## Milestones
 
-- **M1 — Trustworthy answers (P1):** A1, A2, B1, B2, S1. → users see sources, rate answers,
-  budget protected.
+- **M1 — Trustworthy answers (P1):** A1, A2, B1, B2, S1 (+S3 pulled forward). ✅ shipped
+  — users see sources, rate answers, budget protected.
 - **M2 — Operate & learn (P2):** A3, C1, C3, B3, S2/S3. → admins monitor quality and demand.
 - **M3 — Reach (P3):** C2, D1, D2, D3, B4.

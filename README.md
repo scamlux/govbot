@@ -132,6 +132,10 @@ cp .env.prod.example .env        # fill SECRET_KEY, POSTGRES_PASSWORD, OPENAI_AP
 ./deploy.sh                      # build + start, then health-check
 ```
 
+> **SECRET_KEY is enforced in production (S1):** with `DEBUG=0` the backend refuses to
+> boot if `SECRET_KEY` is unset or still a placeholder from the `.env` templates.
+> Generate one with `python -c "import secrets; print(secrets.token_urlsafe(64))"`.
+
 App → `http://<server-ip>:6969` · Admin → `http://<server-ip>:6969/admin`
 
 ### Domain + HTTPS

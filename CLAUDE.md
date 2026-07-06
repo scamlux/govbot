@@ -117,6 +117,10 @@ umar/                              # repo root (the GovBot project)
 - `conversation` (FK), `role` (`user` / `assistant`), `content` (text), `created_at`,
   optional `tokens` (int, nullable), `model` (char, nullable).
 
+**`chat.MessageFeedback`** (A2 — answer-quality signal):
+- `message` (OneToOne → Message), `rating` (`up`/`down`), `reason` (text, optional),
+  `created_at`, `updated_at`. One row per message; re-rating upserts.
+
 **`scenarios.Category`**:
 - `slug` (unique), `icon` (emoji/icon name string), `name` (JSON: `{uz,ru,en}`),
   `description` (JSON: `{uz,ru,en}`), `order` (int).
@@ -154,10 +158,24 @@ umar/                              # repo root (the GovBot project)
 - `GET    /api/conversations/{id}/` — conversation with its messages.
 - `DELETE /api/conversations/{id}/`.
 - `POST   /api/conversations/{id}/messages/` — body `{ content, language }`. Persists the
-  user message, calls the OpenAI service, persists and returns the assistant reply.
+  user message, calls the OpenAI service, persists and returns the assistant reply plus
+  `sources: [{slug, title, source_url}]` (B1) — the deduped grounding used for the answer,
+  `[]` when ungrounded.
   **Streaming:** implemented via Server-Sent Events at
   `POST /api/conversations/{id}/messages/stream/` (chunked `text/event-stream`).
+  SSE frame order: `event: meta` → `event: sources` (JSON list, may be `[]`) →
+  `data: {"delta": ...}` (repeated) → `event: done`.
   The non-streaming endpoint above returns the full reply as JSON.
+- `POST   /api/messages/{id}/feedback/` — body `{ rating: "up"|"down", reason? }` (A2).
+  Owner-only (404 otherwise), assistant messages only, idempotent upsert
+  (201 created / 200 updated). Feedback is embedded on messages in the
+  conversation-detail response as `feedback: {rating, reason, ...} | null`.
+
+**Protection (A1 / S3):** both message endpoints are throttled per user with two DRF
+scopes — `chat_burst` (default `20/min`) and `chat_sustained` (default `500/day`), env-
+tunable via `CHAT_THROTTLE_BURST` / `CHAT_THROTTLE_SUSTAINED`; 429 bodies are localized
+(uz/ru/en). Message length is capped server-side at `CHAT_MAX_MESSAGE_LENGTH` (default
+4000 chars) with a localized 400; the composer shows a matching counter hint.
 
 **Scenarios** (public read; admin write via Django admin)
 - `GET /api/scenarios/categories/?lang=uz`
@@ -166,7 +184,11 @@ umar/                              # repo root (the GovBot project)
 
 ### 4.3 OpenAI service (`chat/services.py`)
 - `generate_reply(messages, language)` builds the request and calls the OpenAI Chat
-  Completions API. A streaming variant `stream_reply(messages, language)` yields chunks.
+  Completions API; returns `{content, model, tokens, sources}`. The streaming variant
+  `stream_reply(messages, language)` returns `(chunk_iterator, sources)` — retrieval runs
+  once up front so views can emit the `sources` SSE frame without re-querying (B1).
+  In mock mode retrieval still runs (keyword fallback), so sources stay demonstrable
+  without a key; the friendly error path never carries sources.
 - Reads `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o-mini`), `OPENAI_EMBEDDING_MODEL`
   (default `text-embedding-3-small`), `OPENAI_MAX_TOKENS` (default 1200) and
   `OPENAI_TEMPERATURE` (default 0.3) from env.
@@ -193,6 +215,12 @@ umar/                              # repo root (the GovBot project)
   app runs in development without a key.
 
 ### 4.4 Settings
+- **S1 secret-key guard** (`config/security.py`): with `DEBUG=False`, boot fails
+  (`ImproperlyConfigured`) if `SECRET_KEY` is missing or a known insecure placeholder.
+- Chat protection knobs: `DEFAULT_THROTTLE_RATES` (`chat_burst`, `chat_sustained`) and
+  `CHAT_MAX_MESSAGE_LENGTH`, all env-tunable with sane defaults.
+- Localized API error strings (429 / 400 on chat) live in `chat/i18n.py`; resolution
+  order: requested language → user's `preferred_language` → `uz`.
 - CORS for `http://localhost:5173` (Vite) and `FRONTEND_ORIGIN` env var (production).
 - DRF default auth = JWT; default permission = `IsAuthenticated`, except scenario read
   endpoints which are `AllowAny`.
@@ -231,6 +259,18 @@ umar/                              # repo root (the GovBot project)
 ### 5.3 UX/design
 - Clean, modern, trustworthy "civic" feel — friendly, not bureaucratic. Responsive
   (mobile-first), accessible (labels, focus states, keyboard nav). Light theme.
+- **Design tokens** (`styles/global.css` `:root`): deep teal-blue primary
+  (`--brand: #0e7490` family), one warm accent, semantic success/warning/error, spacing
+  (`--space-*`) and type (`--text-*`) scales, radius + soft-shadow elevation. Components
+  consume variables only.
+- **Chat charm:** three-dot typing indicator before the first token, blinking caret while
+  streaming, bubble enter animation (fade + 4px rise, 180ms), hover copy button +
+  relative timestamp, source chips (B2) under grounded answers, thumbs feedback with a
+  scale-pop micro-interaction (A2), skeleton shimmer for the sidebar / conversation load,
+  Modal-based delete confirmation + toast. All animation is disabled under
+  `prefers-reduced-motion`.
+- Landing: trust markers under the hero CTA ("3 languages", "answers cite official
+  sources", "admits uncertainty").
 
 ---
 
@@ -240,7 +280,8 @@ umar/                              # repo root (the GovBot project)
 `DATABASE_URL` (or `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_HOST`
 / `POSTGRES_PORT`), `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_EMBEDDING_MODEL`,
 `OPENAI_MAX_TOKENS`, `OPENAI_TEMPERATURE`, `FRONTEND_ORIGIN`, `ACCESS_TOKEN_LIFETIME_MIN`,
-`REFRESH_TOKEN_LIFETIME_DAYS`.
+`REFRESH_TOKEN_LIFETIME_DAYS`, `CHAT_THROTTLE_BURST`, `CHAT_THROTTLE_SUSTAINED`,
+`CHAT_MAX_MESSAGE_LENGTH`.
 
 **Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL`.
 

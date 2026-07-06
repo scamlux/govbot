@@ -72,7 +72,10 @@
     "feature3Title": "Uchta til",
     "feature3Body": "Butun xizmat o'zbek, rus va ingliz tillarida ishlaydi.",
     "categoriesTitle": "Ommabop mavzular",
-    "categoriesSubtitle": "Kategoriyalar bo'yicha tayyor javoblar"
+    "categoriesSubtitle": "Kategoriyalar bo'yicha tayyor javoblar",
+    "trustLangs": "3 til",
+    "trustSources": "Javoblar rasmiy manbalarga tayanadi",
+    "trustUncertain": "Ishonchsiz bo'lsa — mas'ul rasmiy organga yo'naltiradi"
   },
   "auth": {
     "loginTitle": "GovBot ga kirish",
@@ -109,7 +112,19 @@
     "assistant": "GovBot",
     "suggestion1": "Pasportni qanday yangilash mumkin?",
     "suggestion2": "Biznesni qanday ro'yxatdan o'tkazaman?",
-    "suggestion3": "Sayyohlik vizasi uchun nima kerak?"
+    "suggestion3": "Sayyohlik vizasi uchun nima kerak?",
+    "sources": "Manbalar:",
+    "copy": "Xabarni nusxalash",
+    "copied": "Nusxalandi!",
+    "helpful": "Foydali",
+    "notHelpful": "Foydali emas",
+    "feedbackReasonPlaceholder": "Nima noto'g'ri edi? (ixtiyoriy)",
+    "feedbackSend": "Fikrni yuborish",
+    "feedbackThanks": "Fikringiz uchun rahmat!",
+    "deleteTitle": "Suhbat o'chirilsinmi?",
+    "deleteBody": "Suhbat va undagi barcha xabarlar butunlay o'chiriladi.",
+    "deleted": "Suhbat o'chirildi.",
+    "tooLong": "Xabar juda uzun — ko'pi bilan {{max}} ta belgi."
   },
   "scenarios": {
     "title": "Stsenariylar katalogi",
@@ -126,6 +141,8 @@
   "errors": {
     "network": "Tarmoq xatosi — backend ishlayaptimi?",
     "loadScenarios": "Katalogni yuklab bo'lmadi.",
-    "loadChat": "Suhbatni yuklab bo'lmadi."
+    "loadChat": "Suhbatni yuklab bo'lmadi.",
+    "feedback": "Fikringizni saqlab bo'lmadi.",
+    "delete": "Suhbatni o'chirib bo'lmadi."
   }
 }

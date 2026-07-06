@@ -40,19 +40,21 @@ export const chatApi = {
   deleteConversation: (id) => api.delete(`/conversations/${id}/`),
   sendMessage: (id, content, language) =>
     api.post(`/conversations/${id}/messages/`, { content, language }),
+  sendFeedback: (messageId, rating, reason = "") =>
+    api.post(`/messages/${messageId}/feedback/`, { rating, reason }),
 };
 
 /**
  * Stream an assistant reply via Server-Sent Events using fetch (axios can't stream
  * bodies in the browser). Calls callbacks as events arrive.
  *
- * @returns {Promise<{assistantMessageId:number, content:string}>}
+ * @returns {Promise<{assistantMessageId:number, content:string, sources:Array}>}
  */
 export async function streamMessage(
   conversationId,
   content,
   language,
-  { onDelta, onMeta } = {}
+  { onDelta, onMeta, onSources } = {}
 ) {
   const resp = await fetch(
     `${API_BASE_URL}/conversations/${conversationId}/messages/stream/`,
@@ -73,7 +75,7 @@ export async function streamMessage(
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let result = { assistantMessageId: null, content: "" };
+  let result = { assistantMessageId: null, content: "", sources: [] };
 
   // Parse the SSE stream frame by frame (frames separated by a blank line).
   for (;;) {
@@ -97,10 +99,14 @@ export async function streamMessage(
       const payload = JSON.parse(dataLine);
       if (event === "meta") {
         onMeta?.(payload);
+      } else if (event === "sources") {
+        result.sources = Array.isArray(payload) ? payload : [];
+        onSources?.(result.sources);
       } else if (event === "done") {
         result = {
           assistantMessageId: payload.assistant_message_id,
           content: payload.content,
+          sources: result.sources,
         };
       } else if (payload.delta !== undefined) {
         result.content += payload.delta;

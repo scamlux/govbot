@@ -1,13 +1,30 @@
+from django.conf import settings
 from rest_framework import serializers
 
-from .models import Conversation, Message
+from .i18n import MESSAGE_EMPTY, MESSAGE_TOO_LONG, resolve_language
+from .models import Conversation, Message, MessageFeedback
+
+
+class MessageFeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MessageFeedback
+        fields = ["rating", "reason", "created_at", "updated_at"]
+        read_only_fields = fields
 
 
 class MessageSerializer(serializers.ModelSerializer):
+    feedback = serializers.SerializerMethodField()
+
     class Meta:
         model = Message
-        fields = ["id", "role", "content", "model", "tokens", "created_at"]
+        fields = ["id", "role", "content", "model", "tokens", "feedback", "created_at"]
         read_only_fields = fields
+
+    def get_feedback(self, obj):
+        # Reverse OneToOne: missing feedback raises RelatedObjectDoesNotExist, which
+        # subclasses AttributeError, so getattr degrades to None.
+        feedback = getattr(obj, "feedback", None)
+        return MessageFeedbackSerializer(feedback).data if feedback else None
 
 
 class ConversationListSerializer(serializers.ModelSerializer):
@@ -29,12 +46,34 @@ class ConversationDetailSerializer(serializers.ModelSerializer):
 
 
 class CreateMessageSerializer(serializers.Serializer):
-    content = serializers.CharField(trim_whitespace=True, max_length=4000)
+    content = serializers.CharField(trim_whitespace=True)
     language = serializers.ChoiceField(
         choices=["uz", "ru", "en"], required=False, default="uz"
     )
 
+    def _error_language(self) -> str:
+        candidate = None
+        if isinstance(self.initial_data, dict):
+            candidate = self.initial_data.get("language")
+        return resolve_language(candidate)
+
     def validate_content(self, value):
+        lang = self._error_language()
         if not value.strip():
-            raise serializers.ValidationError("Message content cannot be empty.")
+            raise serializers.ValidationError(MESSAGE_EMPTY[lang])
+        max_length = settings.CHAT_MAX_MESSAGE_LENGTH
+        if len(value) > max_length:
+            raise serializers.ValidationError(
+                MESSAGE_TOO_LONG[lang].format(max=max_length)
+            )
         return value
+
+
+class CreateFeedbackSerializer(serializers.Serializer):
+    rating = serializers.ChoiceField(
+        choices=[MessageFeedback.UP, MessageFeedback.DOWN]
+    )
+    reason = serializers.CharField(
+        required=False, allow_blank=True, trim_whitespace=True, max_length=2000,
+        default="",
+    )

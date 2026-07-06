@@ -27,6 +27,11 @@ SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-change-me")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
+# S1: refuse to boot a production (DEBUG=False) process with an insecure SECRET_KEY.
+from config.security import validate_secret_key  # noqa: E402
+
+validate_secret_key(SECRET_KEY, DEBUG)
+
 # ---------------------------------------------------------------------------
 # Applications
 # ---------------------------------------------------------------------------
@@ -125,7 +130,16 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
     ),
+    # A1: per-user budgets for the chat message endpoints (rate strings like "20/min").
+    # Applied via throttle_classes in chat/views.py, not as a global default.
+    "DEFAULT_THROTTLE_RATES": {
+        "chat_burst": env("CHAT_THROTTLE_BURST", default="20/min"),
+        "chat_sustained": env("CHAT_THROTTLE_SUSTAINED", default="500/day"),
+    },
 }
+
+# S3: server-side cap on chat message length (characters).
+CHAT_MAX_MESSAGE_LENGTH = env.int("CHAT_MAX_MESSAGE_LENGTH", default=4000)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(

@@ -134,15 +134,38 @@ def grounding_message(messages: list[dict], lang: str) -> dict | None:
     return {"role": "system", "content": _format_reference(snippets, lang)}
 
 
-def build_payload(messages: list[dict], language: str) -> list[dict]:
-    """Build the OpenAI `messages` array: system prompt + grounding + recent history."""
-    lang = _lang(language)
+def _sources_from_snippets(snippets: list[dict]) -> list[dict]:
+    """Client-facing source refs (B1): deduped by slug, stripped of prompt-only fields."""
+    seen: set[str] = set()
+    sources = []
+    for snip in snippets:
+        if snip["slug"] in seen:
+            continue
+        seen.add(snip["slug"])
+        sources.append(
+            {
+                "slug": snip["slug"],
+                "title": snip["title"],
+                "source_url": snip.get("source_url", ""),
+            }
+        )
+    return sources
+
+
+def _prepare(messages: list[dict], lang: str) -> tuple[list[dict], list[dict]]:
+    """Retrieve grounding once → (OpenAI payload, structured sources for the client)."""
     history = messages[-HISTORY_LIMIT:]
     payload = [{"role": "system", "content": SYSTEM_PROMPTS[lang]}]
-    grounding = grounding_message(messages, lang)
-    if grounding:
-        payload.append(grounding)
+    snippets = retrieval.retrieve(_latest_user_query(messages), lang)
+    if snippets:
+        payload.append({"role": "system", "content": _format_reference(snippets, lang)})
     payload.extend(history)
+    return payload, _sources_from_snippets(snippets)
+
+
+def build_payload(messages: list[dict], language: str) -> list[dict]:
+    """Build the OpenAI `messages` array: system prompt + grounding + recent history."""
+    payload, _ = _prepare(messages, _lang(language))
     return payload
 
 
@@ -156,14 +179,16 @@ def generate_reply(messages: list[dict], language: str) -> dict:
     """Return a full assistant reply.
 
     `messages` is an ordered list of {"role", "content"} dicts (user/assistant only).
-    Returns {"content", "model", "tokens"}.
+    Returns {"content", "model", "tokens", "sources"} — `sources` is the structured
+    grounding list (B1), empty when the answer is ungrounded.
     """
     lang = _lang(language)
+    payload, sources = _prepare(messages, lang)
 
     if is_mock_mode():
-        return {"content": MOCK_REPLY[lang], "model": "mock", "tokens": None}
+        # Retrieval still ran (keyword mode), so grounding stays demonstrable without a key.
+        return {"content": MOCK_REPLY[lang], "model": "mock", "tokens": None, "sources": sources}
 
-    payload = build_payload(messages, lang)
     try:
         response = _client().chat.completions.create(
             model=settings.OPENAI_MODEL,
@@ -177,26 +202,41 @@ def generate_reply(messages: list[dict], language: str) -> dict:
             "content": choice.message.content or "",
             "model": settings.OPENAI_MODEL,
             "tokens": getattr(usage, "total_tokens", None) if usage else None,
+            "sources": sources,
         }
     except Exception:  # noqa: BLE001 — surface a friendly message, log the detail
         logger.exception("OpenAI request failed")
-        return {"content": FRIENDLY_ERROR[lang], "model": settings.OPENAI_MODEL, "tokens": None}
+        # The friendly error is not a grounded answer — never attach sources to it.
+        return {
+            "content": FRIENDLY_ERROR[lang],
+            "model": settings.OPENAI_MODEL,
+            "tokens": None,
+            "sources": [],
+        }
 
 
-def stream_reply(messages: list[dict], language: str) -> Iterator[str]:
-    """Yield assistant reply text chunks (for Server-Sent Events).
+def stream_reply(messages: list[dict], language: str) -> tuple[Iterator[str], list[dict]]:
+    """Return (chunk iterator, structured sources) for Server-Sent Events.
 
-    The final accumulated text is the assistant message persisted by the caller.
+    Retrieval runs once, up front, so the view can emit an `event: sources` frame (B1)
+    without re-querying. The accumulated chunk text is the assistant message persisted
+    by the caller.
     """
     lang = _lang(language)
+    payload, sources = _prepare(messages, lang)
 
     if is_mock_mode():
-        # Emit the canned reply word-by-word so the UI streaming path is exercised.
-        for word in MOCK_REPLY[lang].split(" "):
-            yield word + " "
-        return
+        return _mock_chunks(lang), sources
+    return _openai_chunks(payload, lang), sources
 
-    payload = build_payload(messages, lang)
+
+def _mock_chunks(lang: str) -> Iterator[str]:
+    # Emit the canned reply word-by-word so the UI streaming path is exercised.
+    for word in MOCK_REPLY[lang].split(" "):
+        yield word + " "
+
+
+def _openai_chunks(payload: list[dict], lang: str) -> Iterator[str]:
     try:
         stream = _client().chat.completions.create(
             model=settings.OPENAI_MODEL,
