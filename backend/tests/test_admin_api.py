@@ -3,9 +3,18 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from accounts.models import User
+from chat.models import Conversation, Message, MessageFeedback
 from scenarios.models import Category, Scenario
 
 pytestmark = pytest.mark.django_db
+
+
+def _feedback(user, rating, answer="An answer.", reason="", language="uz"):
+    conv = Conversation.objects.create(user=user, language=language)
+    msg = Message.objects.create(
+        conversation=conv, role=Message.ASSISTANT, content=answer
+    )
+    return MessageFeedback.objects.create(message=msg, rating=rating, reason=reason)
 
 
 @pytest.fixture
@@ -114,3 +123,51 @@ def test_scenario_order_auto_increments_within_category(admin_client):
     )
     assert resp.status_code == 201
     assert resp.json()["order"] == 8  # max(7) + 1 within the category
+
+
+# --- A3: staff feedback API ---
+
+def test_admin_feedback_requires_staff(user_client):
+    assert user_client.get("/api/admin/feedback/").status_code == 403
+
+
+def test_admin_feedback_lists_newest_first_with_answer_and_language(admin_client):
+    user = User.objects.create_user(email="u@example.com", password="Us3r!12345")
+    _feedback(user, MessageFeedback.UP, answer="Older answer.", language="ru")
+    _feedback(user, MessageFeedback.DOWN, answer="Newer answer.", reason="wrong fee", language="en")
+
+    resp = admin_client.get("/api/admin/feedback/")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["count"] == 2
+    rows = body["results"]
+    # Newest first.
+    assert rows[0]["answer"] == "Newer answer."
+    assert rows[0]["rating"] == "down"
+    assert rows[0]["reason"] == "wrong fee"
+    assert rows[0]["language"] == "en"
+
+
+def test_admin_feedback_rating_filter(admin_client):
+    user = User.objects.create_user(email="u2@example.com", password="Us3r!12345")
+    _feedback(user, MessageFeedback.UP)
+    _feedback(user, MessageFeedback.DOWN, reason="bad")
+    _feedback(user, MessageFeedback.DOWN, reason="also bad")
+
+    resp = admin_client.get("/api/admin/feedback/?rating=down")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["count"] == 2
+    assert all(r["rating"] == "down" for r in body["results"])
+
+
+def test_admin_feedback_list_is_constant_query_count(admin_client, django_assert_max_num_queries):
+    user = User.objects.create_user(email="u3@example.com", password="Us3r!12345")
+    for i in range(6):
+        _feedback(user, MessageFeedback.DOWN, answer=f"Answer {i}", reason=f"r{i}")
+
+    # No N+1: message + conversation are select_related, so the row count doesn't drive queries.
+    with django_assert_max_num_queries(6):
+        resp = admin_client.get("/api/admin/feedback/")
+    assert resp.status_code == 200
+    assert len(resp.json()["results"]) == 6

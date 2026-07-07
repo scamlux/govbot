@@ -30,6 +30,9 @@ export const adminApi = {
   createScenario: (payload) => api.post("/admin/scenarios/", payload),
   updateScenario: (id, payload) => api.patch(`/admin/scenarios/${id}/`, payload),
   deleteScenario: (id) => api.delete(`/admin/scenarios/${id}/`),
+  // Analytics (A3 feedback + C1 questions)
+  feedback: (params = {}) => api.get("/admin/feedback/", { params }),
+  analytics: (days = 30) => api.get("/admin/analytics/questions/", { params: { days } }),
 };
 
 // ---- Chat ----

@@ -43,7 +43,7 @@ assistant's accuracy over time.
   i18n locales, `tests/test_chat.py`, `CLAUDE.md`.
 - **Depends on:** —
 
-### A3 — Feedback visible in admin  *(S, P2)*
+### A3 — Feedback visible in admin ✅ *(S, P2)*
 Surface ratings so admins can find weak answers.
 
 - **Acceptance:** `MessageFeedback` registered in Django admin (list_filter by rating,

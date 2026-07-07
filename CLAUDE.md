@@ -186,6 +186,15 @@ tunable via `CHAT_THROTTLE_BURST` / `CHAT_THROTTLE_SUSTAINED`; 429 bodies are lo
 - `GET /api/scenarios/?category={slug}&lang=ru&search=...`
 - `GET /api/scenarios/{slug}/?lang=en`
 
+**Staff admin API** (all under `/api/admin/`, `IsAdminUser` only — 403 for non-staff)
+- `GET /api/admin/users/`, `GET/POST/PATCH/DELETE /api/admin/categories/` and
+  `/api/admin/scenarios/` — dashboard CRUD.
+- `GET /api/admin/feedback/?rating=up|down` (A3) — all answer feedback, newest first,
+  page-numbered (`page`, `page_size`≤100), each row `{id, rating, reason, created_at,
+  message_id, conversation_id, answer, language}`. `select_related` keeps it to one query
+  per page. `MessageFeedback` is also registered in the Django admin (read-only, filterable
+  by rating).
+
 ### 4.3 OpenAI service (`chat/services.py`)
 - `generate_reply(messages, language)` builds the request and calls the OpenAI Chat
   Completions API; returns `{content, model, tokens, sources}`. The streaming variant

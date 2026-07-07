@@ -4,13 +4,15 @@ from django.db.models import Prefetch
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import services
 from .models import Conversation, Message, MessageFeedback
 from .serializers import (
+    AdminFeedbackSerializer,
     ConversationDetailSerializer,
     ConversationListSerializer,
     CreateFeedbackSerializer,
@@ -192,6 +194,33 @@ class MessageFeedbackView(APIView):
             MessageFeedbackSerializer(feedback).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class AdminFeedbackPagination(PageNumberPagination):
+    page_size = 25
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+class AdminFeedbackListView(generics.ListAPIView):
+    """All answer feedback, newest first — staff only (A3).
+
+    Filter with ``?rating=up|down`` (e.g. surface the down-votes to prioritise fixes).
+    select_related keeps it one query per page — no N+1 on message/conversation.
+    """
+
+    permission_classes = [IsAdminUser]
+    serializer_class = AdminFeedbackSerializer
+    pagination_class = AdminFeedbackPagination
+
+    def get_queryset(self):
+        qs = MessageFeedback.objects.select_related(
+            "message", "message__conversation"
+        ).order_by("-created_at")
+        rating = self.request.query_params.get("rating")
+        if rating in (MessageFeedback.UP, MessageFeedback.DOWN):
+            qs = qs.filter(rating=rating)
+        return qs
 
 
 def _sse_data(payload: dict) -> str:

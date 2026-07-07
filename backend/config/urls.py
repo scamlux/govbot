@@ -4,6 +4,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from accounts.views import AdminUserListView
+from chat.views import AdminFeedbackListView
 from scenarios.views import AdminCategoryViewSet, AdminScenarioViewSet
 
 
@@ -21,6 +22,7 @@ urlpatterns = [
     path("api/health/", health, name="health"),
     path("api/auth/", include("accounts.urls")),
     path("api/admin/users/", AdminUserListView.as_view(), name="admin-users"),
+    path("api/admin/feedback/", AdminFeedbackListView.as_view(), name="admin-feedback"),
     path("api/admin/", include(admin_router.urls)),
     path("api/", include("chat.urls")),
     path("api/scenarios/", include("scenarios.urls")),

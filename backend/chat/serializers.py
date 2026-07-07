@@ -83,3 +83,25 @@ class CreateFeedbackSerializer(serializers.Serializer):
         required=False, allow_blank=True, trim_whitespace=True, max_length=2000,
         default="",
     )
+
+
+class AdminFeedbackSerializer(serializers.ModelSerializer):
+    """One feedback row for the staff dashboard (A3): the verdict plus enough of the rated
+    answer and its language to triage quality without opening each conversation."""
+
+    message_id = serializers.IntegerField(source="message.id", read_only=True)
+    conversation_id = serializers.IntegerField(
+        source="message.conversation_id", read_only=True
+    )
+    answer = serializers.CharField(source="message.content", read_only=True)
+    language = serializers.CharField(
+        source="message.conversation.language", read_only=True
+    )
+
+    class Meta:
+        model = MessageFeedback
+        fields = [
+            "id", "rating", "reason", "created_at",
+            "message_id", "conversation_id", "answer", "language",
+        ]
+        read_only_fields = fields
