@@ -241,6 +241,9 @@ tunable via `CHAT_THROTTLE_BURST` / `CHAT_THROTTLE_SUSTAINED`; 429 bodies are lo
   `CHAT_MAX_MESSAGE_LENGTH`, all env-tunable with sane defaults.
 - Localized API error strings (429 / 400 on chat) live in `chat/i18n.py`; resolution
   order: requested language → user's `preferred_language` → `uz`.
+- **Token storage (S2):** JWTs currently live in `localStorage`. `docs/adr/0001-jwt-token-storage.md`
+  records the decision to move the refresh token to an `httpOnly` cookie (access token in
+  memory) in a dedicated security PR; the migration is staged, not done in M2.
 - CORS for `http://localhost:5173` (Vite) and `FRONTEND_ORIGIN` env var (production).
 - DRF default auth = JWT; default permission = `IsAuthenticated`, except scenario read
   endpoints which are `AllowAny`.

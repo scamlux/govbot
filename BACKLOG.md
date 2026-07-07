@@ -170,9 +170,12 @@ Download a conversation as Markdown/PDF.
   insecure default; documented in `.env.example` / README.
 - **Touches:** `config/settings.py`, `README.md`. **Do alongside A1.**
 
-### S2 — Auth token storage review  *(M, P2)*
+### S2 — Auth token storage review ✅ *(ADR; impl staged)* *(M, P2)*
 Decide JWT-in-localStorage (XSS exposure) vs httpOnly refresh cookie; document the tradeoff
-as an ADR before changing.
+as an ADR before changing. **ADR:** `docs/adr/0001-jwt-token-storage.md` — decision is to
+adopt the httpOnly refresh cookie, but ship the migration in its own security PR (it changes
+the refresh contract + adds CSRF, too destabilising for M2). ADR acceptance met; cookie
+implementation deferred.
 
 - **Acceptance:** short ADR in repo; if adopting cookies: refresh token in httpOnly
   `Secure` `SameSite` cookie, access token in memory, axios interceptor updated, CSRF
