@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import services
+from . import analytics, services
 from .models import Conversation, Message, MessageFeedback
 from .serializers import (
     AdminFeedbackSerializer,
@@ -194,6 +194,24 @@ class MessageFeedbackView(APIView):
             MessageFeedbackSerializer(feedback).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class AdminQuestionAnalyticsView(APIView):
+    """Aggregate question analytics for the dashboard (C1) — staff only.
+
+    ``?days=N`` (default 30, clamped 1..365) sets the window. Everything returned is
+    aggregate; topics come from grounding sources, never raw question text.
+    """
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        try:
+            days = int(request.query_params.get("days", 30))
+        except (TypeError, ValueError):
+            days = 30
+        days = max(1, min(days, 365))
+        return Response(analytics.question_analytics(days))
 
 
 class AdminFeedbackPagination(PageNumberPagination):

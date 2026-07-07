@@ -194,6 +194,13 @@ tunable via `CHAT_THROTTLE_BURST` / `CHAT_THROTTLE_SUSTAINED`; 429 bodies are lo
   message_id, conversation_id, answer, language}`. `select_related` keeps it to one query
   per page. `MessageFeedback` is also registered in the Django admin (read-only, filterable
   by rating).
+- `GET /api/admin/analytics/questions/?days=N` (C1, default 30, clamped 1..365) — aggregate
+  dashboard data: `totals` (conversations / questions / answers), `by_language`
+  (conversations + questions per uz/ru/en), `feedback` (up / down / total / satisfaction),
+  `grounding` (grounded / ungrounded / rate), `top_topics` (top 10 cited scenario slugs).
+  **All aggregate** — topics come from persisted grounding sources (B3), never raw question
+  text, so no PII leaks; ungrounded count is the catalog-gap signal C2 builds on. Logic
+  lives in `chat/analytics.py` (service layer).
 
 ### 4.3 OpenAI service (`chat/services.py`)
 - `generate_reply(messages, language)` builds the request and calls the OpenAI Chat

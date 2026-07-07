@@ -104,7 +104,7 @@ Make `TOP_K` / `MIN_SCORE` env-tunable and add a tiny offline eval to catch regr
 
 Turn chat traffic into insight: what citizens ask most, and where the catalog has gaps.
 
-### C1 — Question analytics API  *(M, P2)*
+### C1 — Question analytics API ✅ *(M, P2)*
 Aggregate what's being asked, by language and period.
 
 - **Acceptance:** staff-only `GET /api/admin/analytics/questions/?days=30` returning top
