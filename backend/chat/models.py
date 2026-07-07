@@ -39,6 +39,10 @@ class Message(models.Model):
     content = models.TextField()
     tokens = models.PositiveIntegerField(null=True, blank=True)
     model = models.CharField(max_length=80, blank=True)
+    # Grounding sources for assistant replies (B3): [{slug, title, source_url}], empty when
+    # ungrounded. Persisted so source chips render on reloaded history, not just live streams,
+    # and so analytics (C1/C2) can measure grounded vs ungrounded questions.
+    sources = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

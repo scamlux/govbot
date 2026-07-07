@@ -81,7 +81,7 @@ Render the sources from B1 as clickable chips (catalog link + official `source_u
   `styles/global.css`.
 - **Depends on:** B1
 
-### B3 — Persist sources on the Message  *(S, P2)*
+### B3 — Persist sources on the Message ✅ *(S, P2)*
 So reopened conversations still show citations (otherwise sources vanish on reload).
 
 - **Acceptance:** nullable `sources` JSON on `chat.Message`, populated when the assistant

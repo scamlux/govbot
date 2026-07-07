@@ -17,7 +17,9 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ["id", "role", "content", "model", "tokens", "feedback", "created_at"]
+        fields = [
+            "id", "role", "content", "model", "tokens", "sources", "feedback", "created_at"
+        ]
         read_only_fields = fields
 
     def get_feedback(self, obj):

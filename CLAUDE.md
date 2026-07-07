@@ -116,6 +116,10 @@ umar/                              # repo root (the GovBot project)
 **`chat.Message`**:
 - `conversation` (FK), `role` (`user` / `assistant`), `content` (text), `created_at`,
   optional `tokens` (int, nullable), `model` (char, nullable).
+- `sources` (JSON, default `[]`, B3): grounding cited for assistant replies —
+  `[{slug, title, source_url}]`, empty when ungrounded. Persisted so source chips render on
+  reloaded history (not just live streams) and so analytics (C1/C2) can distinguish grounded
+  from ungrounded questions. User messages keep it empty.
 
 **`chat.MessageFeedback`** (A2 — answer-quality signal):
 - `message` (OneToOne → Message), `rating` (`up`/`down`), `reason` (text, optional),

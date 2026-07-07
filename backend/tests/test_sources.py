@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from accounts.models import User
-from chat.models import Conversation
+from chat.models import Conversation, Message
 from scenarios.models import Category, Scenario
 
 pytestmark = pytest.mark.django_db
@@ -102,3 +102,57 @@ def test_stream_sources_frame_empty_when_ungrounded(auth_client, passport_scenar
     )
     body = b"".join(resp.streaming_content).decode()
     assert "event: sources\ndata: []" in body
+
+
+# --- B3: sources persisted on the Message row (chips on reloaded history) ---
+
+EXPECTED_PASSPORT_SOURCES = [
+    {
+        "slug": "passport-renewal",
+        "title": "Passport renewal",
+        "source_url": "https://gov.uz/passport",
+    }
+]
+
+
+def test_sources_persisted_on_message_plain(auth_client, passport_scenario):
+    client, user = auth_client
+    conv = Conversation.objects.create(user=user, language="en")
+    url = reverse("message-create", args=[conv.id])
+
+    client.post(
+        url, {"content": "How do I renew my passport?", "language": "en"}, format="json"
+    )
+    assistant = Message.objects.filter(
+        conversation=conv, role=Message.ASSISTANT
+    ).latest("created_at")
+    assert assistant.sources == EXPECTED_PASSPORT_SOURCES
+
+
+def test_sources_persisted_on_message_stream(auth_client, passport_scenario):
+    client, user = auth_client
+    conv = Conversation.objects.create(user=user, language="en")
+    url = reverse("message-stream", args=[conv.id])
+
+    resp = client.post(
+        url, {"content": "How do I renew my passport?", "language": "en"}, format="json"
+    )
+    b"".join(resp.streaming_content)  # drain the generator so the message is written
+    assistant = Message.objects.filter(
+        conversation=conv, role=Message.ASSISTANT
+    ).latest("created_at")
+    assert assistant.sources == EXPECTED_PASSPORT_SOURCES
+
+
+def test_conversation_detail_returns_persisted_sources(auth_client, passport_scenario):
+    client, user = auth_client
+    conv = Conversation.objects.create(user=user, language="en")
+    client.post(
+        reverse("message-create", args=[conv.id]),
+        {"content": "How do I renew my passport?", "language": "en"},
+        format="json",
+    )
+    # Reload the conversation the way the UI does on open — chips must survive the round-trip.
+    detail = client.get(reverse("conversation-detail", args=[conv.id])).json()
+    assistant = [m for m in detail["messages"] if m["role"] == "assistant"][-1]
+    assert assistant["sources"] == EXPECTED_PASSPORT_SOURCES

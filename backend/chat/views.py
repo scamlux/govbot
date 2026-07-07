@@ -101,6 +101,7 @@ class MessageCreateView(LocalizedThrottledMixin, APIView):
             content=reply["content"],
             model=reply.get("model", ""),
             tokens=reply.get("tokens"),
+            sources=reply.get("sources", []),
         )
         conversation.save(update_fields=["updated_at"])
 
@@ -156,6 +157,7 @@ class MessageStreamView(LocalizedThrottledMixin, APIView):
                 role=Message.ASSISTANT,
                 content=full,
                 model=services.settings.OPENAI_MODEL if not services.is_mock_mode() else "mock",
+                sources=sources,
             )
             conversation.save(update_fields=["updated_at"])
             yield _sse("done", {"assistant_message_id": assistant_msg.id, "content": full})
