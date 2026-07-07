@@ -575,6 +575,13 @@ h1, h2, h3 { font-family: var(--font-display); line-height: 1.16; color: var(--i
   margin: 0 0 var(--space-3);
   font-size: var(--text-md);
 }
+/* The shared .data-table sets min-width:560px for the wide users/scenarios grids; inside the
+   narrow analytics columns it must instead fit its cell so it can't overflow the neighbour. */
+.analytics-block .data-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+.analytics-block { min-width: 0; }
 .fb-summary,
 .topic-list {
   list-style: none;
