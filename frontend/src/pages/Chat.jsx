@@ -30,6 +30,12 @@ export default function Chat() {
   const inputRef = useRef(null);
   const prefillConsumed = useRef(false);
   const toastTimer = useRef(null);
+  // Tracks the currently-mounted conversation so in-flight stream callbacks can tell
+  // whether the user has since switched away (and must not write into the wrong thread).
+  const activeIdRef = useRef(null);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   const showToast = useCallback((text, kind = "ok") => {
     clearTimeout(toastTimer.current);
@@ -93,21 +99,27 @@ export default function Chat() {
   }, []);
 
   const startNewChat = useCallback(() => {
+    activeIdRef.current = null;
     setActiveId(null);
     setMessages([]);
+    // Drop any in-flight streaming bubble so it can't bleed into the new view.
+    setStreamingText(null);
     setInput("");
     resetInputHeight();
     setSidebarOpen(false);
   }, [resetInputHeight]);
 
   const openConversation = useCallback((id) => {
+    activeIdRef.current = id;
     setActiveId(id);
+    setStreamingText(null);
     setSidebarOpen(false);
   }, []);
 
   const ensureConversation = useCallback(async () => {
     if (activeId) return activeId;
     const { data } = await chatApi.createConversation(i18n.language);
+    activeIdRef.current = data.id;
     setActiveId(data.id);
     setConversations((prev) => [data, ...prev]);
     return data.id;
@@ -132,38 +144,48 @@ export default function Chat() {
       setStreamingText("");
       scrollToBottom();
 
+      let convId = activeId;
       try {
-        const convId = await ensureConversation();
+        convId = await ensureConversation();
         const result = await streamMessage(convId, content, i18n.language, {
           onDelta: (delta) => {
+            // Ignore deltas if the user has navigated to another conversation mid-stream.
+            if (activeIdRef.current !== convId) return;
             setStreamingText((prev) => (prev ?? "") + delta);
             scrollToBottom();
           },
         });
-        // Commit final assistant message (with its grounding sources, B1/B2).
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: result.assistantMessageId ?? `a-${Date.now()}`,
-            role: "assistant",
-            content: result.content,
-            sources: result.sources ?? [],
-            created_at: new Date().toISOString(),
-          },
-        ]);
-        setStreamingText(null);
+        // Only commit into the view if this conversation is still active. Otherwise the
+        // reply is already persisted server-side and will load when the user returns —
+        // committing here would append it to whatever thread is now on screen.
+        if (activeIdRef.current === convId) {
+          // Commit final assistant message (with its grounding sources, B1/B2).
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: result.assistantMessageId ?? `a-${Date.now()}`,
+              role: "assistant",
+              content: result.content,
+              sources: result.sources ?? [],
+              created_at: new Date().toISOString(),
+            },
+          ]);
+          setStreamingText(null);
+        }
         refreshConversations();
       } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `err-${Date.now()}`,
-            role: "assistant",
-            content: t("errors.loadChat"),
-            created_at: new Date().toISOString(),
-          },
-        ]);
-        setStreamingText(null);
+        if (activeIdRef.current === convId) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `err-${Date.now()}`,
+              role: "assistant",
+              content: t("errors.loadChat"),
+              created_at: new Date().toISOString(),
+            },
+          ]);
+          setStreamingText(null);
+        }
       } finally {
         setSending(false);
         scrollToBottom();

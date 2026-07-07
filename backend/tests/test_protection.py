@@ -9,7 +9,7 @@ from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.test import APIClient
 
 from accounts.models import User
-from chat.i18n import MESSAGE_TOO_LONG, THROTTLED_MESSAGE
+from chat.i18n import MESSAGE_EMPTY, MESSAGE_TOO_LONG, THROTTLED_MESSAGE
 from chat.models import Conversation
 
 pytestmark = pytest.mark.django_db
@@ -131,3 +131,35 @@ def test_message_at_limit_accepted(auth_client):
     with mock.patch("chat.views.services.generate_reply", return_value=MOCK_REPLY):
         resp = client.post(url, {"content": "x" * 50, "language": "en"}, format="json")
     assert resp.status_code == 201
+
+
+def test_blank_message_returns_localized_empty_error(auth_client):
+    client, user = auth_client
+    conv = Conversation.objects.create(user=user, language="ru")
+    url = reverse("message-create", args=[conv.id])
+
+    # Whitespace-only content must yield the localized MESSAGE_EMPTY string, not DRF's
+    # untranslated "This field may not be blank." (regression guard for the allow_blank fix).
+    resp = client.post(url, {"content": "   ", "language": "ru"}, format="json")
+    assert resp.status_code == 400
+    assert MESSAGE_EMPTY["ru"] in resp.json()["content"]
+
+
+@override_settings(CHAT_MAX_MESSAGE_LENGTH=50)
+def test_error_language_falls_back_to_user_preferred():
+    # No `language` in the request body → the resolver must fall back to the user's
+    # preferred_language before defaulting to uz (regression guard for the context fix).
+    user = User.objects.create_user(
+        email="pref@example.com",
+        full_name="P",
+        password="pw-123-strong",
+        preferred_language="ru",
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    conv = Conversation.objects.create(user=user, language="ru")
+    url = reverse("message-create", args=[conv.id])
+
+    resp = client.post(url, {"content": "x" * 51}, format="json")
+    assert resp.status_code == 400
+    assert MESSAGE_TOO_LONG["ru"].format(max=50) in resp.json()["content"]

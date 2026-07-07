@@ -46,7 +46,9 @@ class ConversationDetailSerializer(serializers.ModelSerializer):
 
 
 class CreateMessageSerializer(serializers.Serializer):
-    content = serializers.CharField(trim_whitespace=True)
+    # allow_blank so DRF hands blank/whitespace input to validate_content, which raises the
+    # localized MESSAGE_EMPTY instead of DRF's untranslated "This field may not be blank."
+    content = serializers.CharField(trim_whitespace=True, allow_blank=True)
     language = serializers.ChoiceField(
         choices=["uz", "ru", "en"], required=False, default="uz"
     )
@@ -55,7 +57,9 @@ class CreateMessageSerializer(serializers.Serializer):
         candidate = None
         if isinstance(self.initial_data, dict):
             candidate = self.initial_data.get("language")
-        return resolve_language(candidate)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return resolve_language(candidate, user)
 
     def validate_content(self, value):
         lang = self._error_language()
