@@ -20,7 +20,7 @@ export default function Admin() {
       </div>
 
       <div className="admin-tabs" role="tablist">
-        {["users", "categories", "scenarios"].map((key) => (
+        {["users", "categories", "scenarios", "analytics"].map((key) => (
           <button
             key={key}
             role="tab"
@@ -36,6 +36,149 @@ export default function Admin() {
       {tab === "users" && <UsersPanel />}
       {tab === "categories" && <CategoriesPanel />}
       {tab === "scenarios" && <ScenariosPanel />}
+      {tab === "analytics" && <AnalyticsPanel />}
+    </div>
+  );
+}
+
+/* --------------------------- Analytics (C1/C3) --------------------------- */
+const RANGES = [
+  { days: 7, key: "last7" },
+  { days: 30, key: "last30" },
+  { days: 90, key: "last90" },
+];
+
+function pct(value) {
+  return value == null ? "—" : `${Math.round(value * 100)}%`;
+}
+
+function AnalyticsPanel() {
+  const { t } = useTranslation();
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setData(null);
+    setError(false);
+    adminApi
+      .analytics(days)
+      .then(({ data }) => active && setData(data))
+      .catch(() => active && setError(true));
+    return () => {
+      active = false;
+    };
+  }, [days]);
+
+  const metrics = data && [
+    { label: t("admin.mConversations"), value: data.totals.conversations },
+    { label: t("admin.mQuestions"), value: data.totals.questions },
+    { label: t("admin.mAnswers"), value: data.totals.answers },
+    { label: t("admin.mSatisfaction"), value: pct(data.feedback.satisfaction) },
+    { label: t("admin.mGrounded"), value: pct(data.grounding.rate) },
+  ];
+
+  const isEmpty = data && data.totals.answers === 0 && data.totals.questions === 0;
+
+  return (
+    <div className="admin-card">
+      <div className="admin-card-head">
+        <h2>{t("admin.analytics")}</h2>
+        <div className="range-toggle" role="group" aria-label={t("admin.period")}>
+          {RANGES.map((r) => (
+            <button
+              key={r.days}
+              className={days === r.days ? "range-btn active" : "range-btn"}
+              aria-pressed={days === r.days}
+              onClick={() => setDays(r.days)}
+            >
+              {t(`admin.${r.key}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error ? (
+        <p className="muted">{t("admin.analyticsError")}</p>
+      ) : !data ? (
+        <Spinner />
+      ) : isEmpty ? (
+        <p className="muted">{t("admin.analyticsEmpty")}</p>
+      ) : (
+        <>
+          <div className="metric-grid">
+            {metrics.map((m) => (
+              <div className="metric-card" key={m.label}>
+                <div className="metric-value">{m.value}</div>
+                <div className="metric-label">{m.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="analytics-cols">
+            <section className="analytics-block">
+              <h3>{t("admin.byLanguage")}</h3>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{t("admin.lang")}</th>
+                    <th>{t("admin.chatsCol")}</th>
+                    <th>{t("admin.questionsCol")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.by_language.map((row) => (
+                    <tr key={row.language}>
+                      <td>{row.language.toUpperCase()}</td>
+                      <td>{row.conversations}</td>
+                      <td>{row.questions}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+
+            <section className="analytics-block">
+              <h3>{t("admin.feedbackTitle")}</h3>
+              <ul className="fb-summary">
+                <li>
+                  <span className="fb-dot up" aria-hidden="true" />
+                  {t("admin.upVotes")}
+                  <strong>{data.feedback.up}</strong>
+                </li>
+                <li>
+                  <span className="fb-dot down" aria-hidden="true" />
+                  {t("admin.downVotes")}
+                  <strong>{data.feedback.down}</strong>
+                </li>
+                <li>
+                  {t("admin.mSatisfaction")}
+                  <strong>{pct(data.feedback.satisfaction)}</strong>
+                </li>
+              </ul>
+            </section>
+
+            <section className="analytics-block">
+              <h3>{t("admin.topTopics")}</h3>
+              {data.top_topics.length === 0 ? (
+                <p className="muted">{t("admin.analyticsEmpty")}</p>
+              ) : (
+                <ul className="topic-list">
+                  {data.top_topics.map((topic) => (
+                    <li key={topic.slug}>
+                      <span className="topic-title">{topic.title || topic.slug}</span>
+                      <span className="topic-count">
+                        {topic.count} {t("admin.citations")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        </>
+      )}
     </div>
   );
 }

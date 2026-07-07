@@ -123,7 +123,7 @@ Find frequent questions that retrieved **no** grounding — these are missing sc
 - **Touches:** `chat/models.py` (grounded flag) or reuse B3, analytics view, admin frontend.
 - **Depends on:** B1, C1
 
-### C3 — Analytics dashboard tab  *(M, P2)*
+### C3 — Analytics dashboard tab ✅ *(M, P2)*
 Visualize C1/C2 in the existing admin panel.
 
 - **Acceptance:** new "Analytics" tab in `Admin.jsx`: top-questions table, language split,

@@ -267,6 +267,11 @@ tunable via `CHAT_THROTTLE_BURST` / `CHAT_THROTTLE_SUSTAINED`; 429 bodies are lo
 - `/scenarios` — Scenario Catalog: category grid, search box, language-aware.
 - `/scenarios/:slug` — scenario detail rendered from markdown, with an "Ask the AI about
   this" button that opens chat pre-filled.
+- `/admin` (staff only) — dashboard with tabs: **Users**, **Categories**, **Scenarios**,
+  and **Analytics** (C3). The Analytics tab has a 7/30/90-day range toggle and shows metric
+  cards (conversations / questions / answers / satisfaction / grounding rate), a per-language
+  table, a feedback summary, and top cited topics — all from `GET /api/admin/analytics/questions/`
+  with loading / empty / error states.
 
 ### 5.2 Auth & i18n
 - Auth context: `user`, `login`, `logout`, token handling. Axios interceptor attaches the
