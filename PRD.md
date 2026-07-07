@@ -1,6 +1,6 @@
 # GovBot — Product Requirements Document (PRD)
 
-**Status:** Living document · **Owner:** Product/Eng · **Last updated:** 2026-07-06
+**Status:** Living document · **Owner:** Product/Eng · **Last updated:** 2026-07-08
 **Related docs:** [`CLAUDE.md`](CLAUDE.md) (technical spec — *how*) ·
 [`BACKLOG.md`](BACKLOG.md) (task breakdown — *when*). This PRD is the *why / what*; it does
 not repeat the data model or endpoint list — those live in `CLAUDE.md`.
@@ -152,7 +152,7 @@ Status legend: ✅ shipped · 🔧 partial · 🗓️ planned (see `BACKLOG.md` 
 | FR-M1 | CRUD categories & scenarios with multilingual fields | ✅ |
 | FR-M2 | Manage users (staff view) | ✅ |
 | FR-M3 | **Answer feedback** (👍/👎 + reason) captured per message | ✅ A2 |
-| FR-M4 | Feedback + **question analytics** visible to admins | 🗓️ A3, C1, C3 |
+| FR-M4 | Feedback + **question analytics** visible to admins | ✅ A3, C1, C3 |
 | FR-M5 | **Catalog-gap** report (frequent questions with no grounding) | 🗓️ C2 |
 
 ### 6.6 Reach & accessibility
@@ -213,7 +213,8 @@ Milestones map to `BACKLOG.md`; each ends with tests + a `CLAUDE.md` update.
   S1 secret-key guard (+S3 pulled forward). ✅ shipped — users see sources, rate answers,
   budget protected.
 - **M2 — Operate & learn (P2):** A3 feedback in admin · C1/C3 analytics dashboard · B3
-  persisted sources · S2/S3 security hardening. → admins monitor quality and demand.
+  persisted sources · S2 token-storage ADR. ✅ shipped — admins monitor quality and demand
+  (S2 cookie migration staged to its own security PR per the ADR).
 - **M3 — Reach (P3):** C2 gap report · D1 PWA/offline · D2 voice · D3 export · B4 retrieval
   eval harness. → broader audience and self-improving catalog.
 
