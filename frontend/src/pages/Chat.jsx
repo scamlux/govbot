@@ -28,6 +28,11 @@ export default function Chat() {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const prefillConsumed = useRef(false);
+  // Mirrors activeId so an in-flight stream can tell if the user switched away.
+  const activeIdRef = useRef(null);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   const autoGrowInput = useCallback(() => {
     const el = inputRef.current;
@@ -126,36 +131,46 @@ export default function Chat() {
         const convId = await ensureConversation();
         const result = await streamMessage(convId, content, i18n.language, {
           onDelta: (delta) => {
+            // Ignore chunks if the user switched conversations mid-stream.
+            if (activeIdRef.current !== convId) return;
             setStreamingText((prev) => (prev ?? "") + delta);
             scrollToBottom();
           },
-          onSources: (srcs) => setStreamingSources(srcs), // B2
-        });
-        // Commit the final assistant message (with its grounding sources).
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: result.assistantMessageId ?? `a-${Date.now()}`,
-            role: "assistant",
-            content: result.content,
-            sources: result.sources || [],
-            created_at: new Date().toISOString(),
+          onSources: (srcs) => {
+            if (activeIdRef.current !== convId) return;
+            setStreamingSources(srcs); // B2
           },
-        ]);
-        setStreamingText(null);
-        setStreamingSources([]);
+        });
+        // Commit the final assistant message only if this conversation is still
+        // on screen; otherwise it is already persisted and reloads on return.
+        if (activeIdRef.current === convId) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: result.assistantMessageId ?? `a-${Date.now()}`,
+              role: "assistant",
+              content: result.content,
+              sources: result.sources || [],
+              created_at: new Date().toISOString(),
+            },
+          ]);
+          setStreamingText(null);
+          setStreamingSources([]);
+        }
         refreshConversations();
       } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `err-${Date.now()}`,
-            role: "assistant",
-            content: t("errors.loadChat"),
-            created_at: new Date().toISOString(),
-          },
-        ]);
-        setStreamingText(null);
+        if (activeIdRef.current === convId) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `err-${Date.now()}`,
+              role: "assistant",
+              content: t("errors.loadChat"),
+              created_at: new Date().toISOString(),
+            },
+          ]);
+          setStreamingText(null);
+        }
       } finally {
         setSending(false);
         scrollToBottom();

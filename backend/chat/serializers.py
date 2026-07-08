@@ -10,6 +10,15 @@ TOO_LONG_MESSAGE = {
     "en": "Message is too long. Please shorten it.",
 }
 
+# Localized message when a chat message is blank/empty.
+EMPTY_MESSAGE = {
+    "uz": "Xabar bo'sh bo'lishi mumkin emas.",
+    "ru": "Сообщение не может быть пустым.",
+    "en": "Message cannot be empty.",
+}
+
+_LANGS = ("uz", "ru", "en")
+
 
 class MessageFeedbackSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,19 +59,28 @@ class ConversationDetailSerializer(serializers.ModelSerializer):
 
 
 class CreateMessageSerializer(serializers.Serializer):
-    content = serializers.CharField(trim_whitespace=True)
+    # allow_blank so a blank body reaches validate_content (which raises a
+    # localized error) instead of DRF's untranslated "may not be blank".
+    content = serializers.CharField(trim_whitespace=True, allow_blank=True)
     language = serializers.ChoiceField(
         choices=["uz", "ru", "en"], required=False, default="uz"
     )
 
+    def _error_lang(self):
+        """Resolve the error language: request body -> user's preferred -> uz."""
+        lang = None
+        if isinstance(self.initial_data, dict):
+            lang = self.initial_data.get("language")
+        if lang not in _LANGS:
+            user = getattr(self.context.get("request"), "user", None)
+            lang = getattr(user, "preferred_language", None)
+        return lang if lang in _LANGS else "uz"
+
     def validate_content(self, value):
         if not value.strip():
-            raise serializers.ValidationError("Message content cannot be empty.")
+            raise serializers.ValidationError(EMPTY_MESSAGE[self._error_lang()])
         # S3 — enforce the length cap server-side with a localized message.
         max_chars = getattr(settings, "CHAT_MAX_MESSAGE_CHARS", 4000)
         if len(value) > max_chars:
-            lang = self.initial_data.get("language")
-            if lang not in TOO_LONG_MESSAGE:
-                lang = "uz"
-            raise serializers.ValidationError(TOO_LONG_MESSAGE[lang])
+            raise serializers.ValidationError(TOO_LONG_MESSAGE[self._error_lang()])
         return value

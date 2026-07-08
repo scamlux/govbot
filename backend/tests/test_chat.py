@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from chat.models import Conversation, Message, MessageFeedback
+from chat.serializers import EMPTY_MESSAGE
 from scenarios.models import Category, Scenario
 
 pytestmark = pytest.mark.django_db
@@ -66,8 +67,31 @@ def test_send_message_persists_and_returns_reply(mock_gen, auth_client):
 def test_empty_message_rejected(auth_client):
     client, user = auth_client
     conv = Conversation.objects.create(user=user, language="en")
-    resp = client.post(reverse("message-create", args=[conv.id]), {"content": "   "}, format="json")
+    resp = client.post(
+        reverse("message-create", args=[conv.id]),
+        {"content": "   ", "language": "en"},
+        format="json",
+    )
     assert resp.status_code == 400
+    # blank body must surface the localized empty-message error, not DRF's
+    # untranslated "This field may not be blank."
+    assert EMPTY_MESSAGE["en"] in str(resp.json())
+
+
+@pytest.mark.django_db
+def test_empty_message_error_falls_back_to_preferred_language():
+    """No language in the body -> error uses the user's preferred_language."""
+    ru_user = User.objects.create_user(
+        email="ru@example.com", password="pw", preferred_language="ru"
+    )
+    client = APIClient()
+    client.force_authenticate(user=ru_user)
+    conv = Conversation.objects.create(user=ru_user, language="ru")
+    resp = client.post(
+        reverse("message-create", args=[conv.id]), {"content": ""}, format="json"
+    )
+    assert resp.status_code == 400
+    assert EMPTY_MESSAGE["ru"] in str(resp.json())
 
 
 def test_user_cannot_access_others_conversation(auth_client):

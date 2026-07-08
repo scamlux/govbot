@@ -93,7 +93,7 @@ class MessageCreateView(_ThrottledChatView):
 
     def post(self, request, pk):
         conversation = _get_conversation(request.user, pk)
-        serializer = CreateMessageSerializer(data=request.data)
+        serializer = CreateMessageSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         content = serializer.validated_data["content"]
         language = serializer.validated_data.get("language") or conversation.language
@@ -140,7 +140,7 @@ class MessageStreamView(_ThrottledChatView):
 
     def post(self, request, pk):
         conversation = _get_conversation(request.user, pk)
-        serializer = CreateMessageSerializer(data=request.data)
+        serializer = CreateMessageSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         content = serializer.validated_data["content"]
         language = serializer.validated_data.get("language") or conversation.language
