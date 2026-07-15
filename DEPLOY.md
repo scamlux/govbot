@@ -1,4 +1,4 @@
-# Deploying GovBot (Path A: Railway backend + Vercel frontend)
+# Deploying GovBot — Vercel frontend + Render backend
 
 This is the cloud deploy that keeps the app exactly as architected — native Django on
 gunicorn (so **SSE streaming chat keeps working**), managed Postgres, and the Vite SPA on
@@ -6,45 +6,50 @@ Vercel's CDN.
 
 ```
   ┌─────────────┐        https        ┌──────────────────────┐
-  │   Vercel    │  ── API calls ──▶   │       Railway        │
+  │   Vercel    │  ── API calls ──▶   │        Render         │
   │  Vite SPA   │                     │  Django + gunicorn   │
-  │  (static)   │  ◀── SSE stream ──  │  + Postgres plugin   │
+  │  (static)   │  ◀── SSE stream ──  │  + managed Postgres  │
   └─────────────┘                     └──────────────────────┘
 ```
 
 Order matters: **deploy the backend first** so you know its URL before building the
 frontend (the SPA bakes `VITE_API_BASE_URL` in at build time).
 
-The backend can go on **Render** (recommended — one-click Blueprint, no API token) or
-**Railway**. Pick one for section 1, then do Vercel in section 2.
+The backend goes on **Render** via the one-click `render.yaml` Blueprint (section 1a,
+recommended). **Railway** (1b) and **Supabase Postgres** (note in 1a) are alternatives.
+Then deploy the frontend on **Vercel** (section 2).
 
 ---
 
-## 1a. Backend on Render + Postgres on Supabase (recommended — Blueprint)
+## 1a. Backend on Render — one-click Blueprint (recommended)
 
-DB lives on **Supabase**; Render runs only the Django web service (via the `render.yaml`
-Blueprint). No API token or CLI needed.
+The `render.yaml` Blueprint provisions **both** the Django web service **and** a
+Render-managed Postgres, and wires `DATABASE_URL` between them automatically. No external
+DB account, API token, or CLI needed.
 
-0. **Supabase DB**: create a project at [supabase.com](https://supabase.com) → Project
-   Settings → Database → copy the connection string. Use the **Direct connection**
-   (`...:5432/postgres`) or the **Session pooler** — NOT the transaction pooler (6543),
-   which breaks Django's persistent `CONN_MAX_AGE` connections.
 1. Create an account at [render.com](https://render.com) and connect your GitHub.
 2. Dashboard → **New +** → **Blueprint** → select this repo → **Apply**.
-   Render reads `render.yaml`: builds `backend/Dockerfile` and generates a strong
-   `SECRET_KEY`.
-3. On the `govbot-backend` service → **Environment**, set the `sync: false` vars:
-   - `DATABASE_URL=postgresql://postgres:<pwd>@<host>:5432/postgres` (from Supabase, step 0)
-   - `OPENAI_API_KEY=sk-...` (omit → chat runs in mock mode)
+   Render reads `render.yaml`: creates the `govbot-db` Postgres, builds `backend/Dockerfile`,
+   generates a strong `SECRET_KEY`, and injects `DATABASE_URL` from the database.
+3. On the `govbot-backend` service → **Environment**, set the two `sync: false` vars:
+   - `OPENAI_API_KEY=sk-...` (omit → chat runs in mock mode with canned replies)
    - `FRONTEND_ORIGIN=https://<your-vercel-app>.vercel.app` (fill after section 2 below)
 4. The service auto-deploys. Entrypoint runs `migrate` + `seed_scenarios` +
    `collectstatic`; healthcheck hits `/api/scenarios/categories/`. Note the URL, e.g.
    `https://govbot-backend.onrender.com`.
-5. (If a real key was set) build vector embeddings once: service → **Shell** →
-   `python manage.py embed_scenarios`.
+5. (If a real key was set) build vector embeddings once for vector RAG: service →
+   **Shell** → `python manage.py embed_scenarios`. Without a key, grounding falls back to
+   keyword retrieval — still works.
 
 `RENDER_EXTERNAL_HOSTNAME` is auto-trusted by settings for `ALLOWED_HOSTS`/CSRF — nothing
 to wire by hand. Then skip to **section 2 (Vercel)**.
+
+> **Postgres lifespan:** Render's **free** Postgres is deleted ~90 days after creation.
+> For a long-lived deployment, either bump the database `plan` in `render.yaml` (e.g.
+> `basic-256mb`), or delete the `databases:` block and instead set `DATABASE_URL`
+> (`sync: false`) to an external **Supabase** connection string — use the **Direct
+> connection** (`...:5432/postgres`) or **Session pooler**, NOT the transaction pooler
+> (6543), which breaks Django's persistent `CONN_MAX_AGE` connections.
 
 ---
 

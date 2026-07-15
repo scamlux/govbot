@@ -1,4 +1,4 @@
-import api, { API_BASE_URL, tokenStore } from "./client";
+import api, { API_BASE_URL, tokenStore, refreshAccessToken } from "./client";
 
 // ---- Auth ----
 export const authApi = {
@@ -62,17 +62,28 @@ export async function streamMessage(
   language,
   { onDelta, onMeta, onSources } = {}
 ) {
-  const resp = await fetch(
-    `${API_BASE_URL}/conversations/${conversationId}/messages/stream/`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenStore.getAccess()}`,
-      },
-      body: JSON.stringify({ content, language }),
-    }
-  );
+  const doFetch = (token) =>
+    fetch(
+      `${API_BASE_URL}/conversations/${conversationId}/messages/stream/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content, language }),
+      }
+    );
+
+  let resp = await doFetch(tokenStore.getAccess());
+
+  // The stream bypasses the axios interceptor, so handle an expired access token
+  // here: refresh once and retry (mirrors client.js). A failed refresh throws and
+  // dispatches `govbot:logout`, forcing re-login instead of a silent dead chat.
+  if (resp.status === 401 && tokenStore.getRefresh()) {
+    const access = await refreshAccessToken();
+    resp = await doFetch(access);
+  }
 
   if (!resp.ok || !resp.body) {
     throw new Error(`Stream failed with status ${resp.status}`);
