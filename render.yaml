@@ -45,9 +45,10 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o-mini
-      # Vercel frontend origin — REQUIRED for browser CORS + SSE from the deployed SPA.
-      # Set in the dashboard once you know the Vercel URL (deploy backend first — see
-      # DEPLOY.md). e.g. https://<your-app>.vercel.app  (no trailing slash).
+      # Vercel frontend origin for browser CORS + SSE. OPTIONAL: any *.vercel.app origin
+      # is auto-trusted by settings, so the SPA works without this. Set it to your exact
+      # URL (comma-separate several) to also allow a custom domain or to lock CORS down.
+      # e.g. https://<your-app>.vercel.app  (no trailing slash).
       - key: FRONTEND_ORIGIN
         sync: false
       - key: WEB_CONCURRENCY
