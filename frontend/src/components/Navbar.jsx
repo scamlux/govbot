@@ -28,7 +28,7 @@ export default function Navbar() {
     <header className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="brand" onClick={() => setMenuOpen(false)}>
-          <span className="brand-mark" aria-hidden="true">🏛️</span>
+          <span className="brand-mark" aria-hidden="true" />
           <span className="brand-name">{t("brand")}</span>
         </Link>
 

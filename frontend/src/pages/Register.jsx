@@ -46,7 +46,7 @@ export default function Register() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <div className="login-mark" aria-hidden="true">🏛️</div>
+        <div className="login-mark" aria-hidden="true" />
         <h1>{t("auth.registerTitle")}</h1>
         <p className="login-sub">{t("auth.registerSubtitle")}</p>
 

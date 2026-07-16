@@ -37,7 +37,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <div className="login-mark" aria-hidden="true">🏛️</div>
+        <div className="login-mark" aria-hidden="true" />
         <h1>{t("auth.loginTitle")}</h1>
         <p className="login-sub">{t("auth.loginSubtitle")}</p>
 
