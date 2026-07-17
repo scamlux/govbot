@@ -41,7 +41,14 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ConversationListSerializer(serializers.ModelSerializer):
-    message_count = serializers.IntegerField(source="messages.count", read_only=True)
+    message_count = serializers.SerializerMethodField()
+
+    def get_message_count(self, obj):
+        # Prefer the annotation from ConversationListView (list path, no per-row query);
+        # fall back to a direct count for the freshly-created, un-annotated instance
+        # returned by the create response.
+        count = getattr(obj, "message_count", None)
+        return count if count is not None else obj.messages.count()
 
     class Meta:
         model = Conversation

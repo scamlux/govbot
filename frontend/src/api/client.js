@@ -30,9 +30,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// On 401, try a single refresh, then replay the original request.
+// Single-flight access-token refresh, shared by the axios interceptor AND the SSE
+// stream (which bypasses axios and so cannot rely on the interceptor). Concurrent
+// callers await the same in-flight request. Returns the fresh access token; on
+// failure it clears tokens, signals a logout, and re-throws.
 let refreshing = null;
 
+export async function refreshAccessToken() {
+  const refresh = tokenStore.getRefresh();
+  if (!refresh) throw new Error("No refresh token");
+  try {
+    refreshing =
+      refreshing || axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh });
+    const { data } = await refreshing;
+    refreshing = null;
+    tokenStore.set({ access: data.access, refresh: data.refresh });
+    return data.access;
+  } catch (refreshError) {
+    refreshing = null;
+    tokenStore.clear();
+    // Surface a recognizable event so the auth context can log out.
+    window.dispatchEvent(new CustomEvent("govbot:logout"));
+    throw refreshError;
+  }
+}
+
+// On 401, try a single refresh, then replay the original request.
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -50,21 +73,10 @@ api.interceptors.response.use(
 
     original._retry = true;
     try {
-      refreshing =
-        refreshing ||
-        axios.post(`${API_BASE_URL}/auth/refresh/`, {
-          refresh: tokenStore.getRefresh(),
-        });
-      const { data } = await refreshing;
-      refreshing = null;
-      tokenStore.set({ access: data.access, refresh: data.refresh });
-      original.headers.Authorization = `Bearer ${data.access}`;
+      const access = await refreshAccessToken();
+      original.headers.Authorization = `Bearer ${access}`;
       return api(original);
     } catch (refreshError) {
-      refreshing = null;
-      tokenStore.clear();
-      // Surface a recognizable event so the auth context can log out.
-      window.dispatchEvent(new CustomEvent("govbot:logout"));
       return Promise.reject(refreshError);
     }
   }

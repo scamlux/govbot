@@ -182,18 +182,34 @@ SIMPLE_JWT = {
 # ---------------------------------------------------------------------------
 # CORS
 # ---------------------------------------------------------------------------
-FRONTEND_ORIGIN = env("FRONTEND_ORIGIN", default="http://localhost:5173")
+# FRONTEND_ORIGIN accepts a single origin OR a comma-separated list (prod + previews),
+# each normalised (trimmed, no trailing slash) so a stray "/" can't silently break CORS.
+_frontend_origins = [
+    o.strip().rstrip("/")
+    for o in env("FRONTEND_ORIGIN", default="http://localhost:5173").replace(" ", ",").split(",")
+    if o.strip()
+]
+FRONTEND_ORIGIN = _frontend_origins[0] if _frontend_origins else "http://localhost:5173"
 CORS_ALLOWED_ORIGINS = list(
     {
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        FRONTEND_ORIGIN,
+        *_frontend_origins,
     }
 )
+# Auto-trust Vercel deployments (the documented frontend host) so the SPA and its preview
+# URLs work without hand-wiring the exact origin — the same "trust the PaaS host" pattern
+# used for Render/Railway below. Auth is a Bearer token in localStorage, not a cookie, so
+# this doesn't open a credentialed-cookie surface. To lock it to one origin, set
+# FRONTEND_ORIGIN to the exact URL and remove this regex.
+CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://[a-z0-9-]+\.vercel\.app$"]
 CORS_ALLOW_CREDENTIALS = True
 
-# Trusted origins for unsafe (POST) requests to Django admin behind a proxy.
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[FRONTEND_ORIGIN])
+# Trusted origins for unsafe (POST) requests to Django admin behind a proxy. Django 5
+# accepts a wildcard subdomain here, so Vercel preview URLs are covered too.
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS", default=[*_frontend_origins, "https://*.vercel.app"]
+)
 
 # Respect the X-Forwarded-Proto header set by the nginx reverse proxy / PaaS load balancer.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

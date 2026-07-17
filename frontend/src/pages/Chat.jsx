@@ -313,7 +313,7 @@ export default function Chat() {
             <Spinner />
           ) : showEmpty ? (
             <div className="chat-empty">
-              <div className="chat-empty-mark" aria-hidden="true">🏛️</div>
+              <div className="chat-empty-mark" aria-hidden="true" />
               <h2>{t("chat.emptyTitle")}</h2>
               <p>{t("chat.emptySubtitle")}</p>
               <div className="suggestions">

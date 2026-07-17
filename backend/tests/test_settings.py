@@ -28,3 +28,31 @@ def test_insecure_key_allowed_in_debug():
 
 def test_strong_key_allowed_in_production():
     require_secure_secret_key(debug=False, secret_key="a-real-long-random-production-key")
+
+
+# --- CORS: the deployed Vercel SPA must be allowed to read the API (the "scenarios
+#     don't load" class of bug is a missing Access-Control-Allow-Origin header). ---
+
+def _acao_for(client, origin):
+    """Return the Access-Control-Allow-Origin header the API sends back for `origin`."""
+    resp = client.get(
+        "/api/scenarios/categories/", HTTP_ORIGIN=origin, secure=True
+    )
+    return resp.headers.get("Access-Control-Allow-Origin")
+
+
+@pytest.mark.django_db
+def test_vercel_origin_is_cors_allowed(client):
+    origin = "https://govbot-web.vercel.app"
+    assert _acao_for(client, origin) == origin
+
+
+@pytest.mark.django_db
+def test_vercel_preview_subdomain_is_cors_allowed(client):
+    origin = "https://govbot-web-git-feature-team.vercel.app"
+    assert _acao_for(client, origin) == origin
+
+
+@pytest.mark.django_db
+def test_unknown_origin_is_not_cors_allowed(client):
+    assert _acao_for(client, "https://evil.example.com") is None

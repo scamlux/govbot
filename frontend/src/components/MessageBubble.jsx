@@ -28,7 +28,7 @@ export default function MessageBubble({
   return (
     <div className={isUser ? "bubble-row user" : "bubble-row assistant"}>
       {!isUser && (
-        <div className="bubble-avatar" aria-hidden="true">🏛️</div>
+        <div className="bubble-avatar" aria-hidden="true" />
       )}
       <div className="bubble">
         <div className="bubble-author">

@@ -1,10 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#1b5e9c"/>
-  <g fill="#ffffff" transform="translate(64 64) scale(0.75)">
-    <rect x="120" y="232" width="40" height="150"/>
-    <rect x="236" y="232" width="40" height="150"/>
-    <rect x="352" y="232" width="40" height="150"/>
-    <rect x="96" y="382" width="320" height="34" rx="8"/>
-    <path d="M256 96 96 200v20h320v-20L256 96z"/>
+  <rect width="512" height="512" fill="#0c6c8a"/>
+  <g fill="none" stroke="#f3e6c2" stroke-width="17" stroke-linejoin="round">
+    <polygon points="256,120 392,256 256,392 120,256"/>
+    <polygon points="158,158 354,158 354,354 158,354"/>
   </g>
 </svg>

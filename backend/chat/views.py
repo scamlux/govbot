@@ -1,5 +1,6 @@
 import json
 
+from django.db.models import Count
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -34,9 +35,11 @@ class ConversationListCreateView(generics.ListCreateAPIView):
         return ConversationListSerializer
 
     def get_queryset(self):
+        # Annotate the count in SQL rather than prefetching every message just to call
+        # .count() per row (an N+1 COUNT). The list view never serializes message bodies.
         return (
             Conversation.objects.filter(user=self.request.user)
-            .prefetch_related("messages")
+            .annotate(message_count=Count("messages"))
         )
 
     def perform_create(self, serializer):

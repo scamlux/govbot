@@ -1,24 +1,28 @@
 # Render Blueprint — GovBot backend (Django + gunicorn) + managed Postgres.
-# One-click provisioning: Render dashboard → New → Blueprint → connect this repo.
+# One-click provisioning: Render dashboard → New → Blueprint → connect this repo → Apply.
 # The Vite frontend is deployed separately on Vercel (see DEPLOY.md).
 #
 # Native container (not serverless) so SSE streaming chat keeps working. The backend
 # Dockerfile CMD binds $PORT (Render injects it); entrypoint runs migrate + seed +
 # collectstatic on each boot. RENDER_EXTERNAL_HOSTNAME is auto-trusted by settings for
 # ALLOWED_HOSTS / CSRF, so no manual host wiring is needed.
+#
+# This Blueprint provisions a Render-managed Postgres (govbot-db) and injects its
+# connection string as DATABASE_URL automatically — no external DB account required.
+# NOTE: Render's FREE Postgres plan is deleted ~90 days after creation. For a long-lived
+# deployment, upgrade the database `plan` (e.g. `basic-256mb`) or point DATABASE_URL at an
+# external managed Postgres (e.g. Supabase direct/session-pooler — see DEPLOY.md).
 
-# DB is external (Supabase). No Render-managed Postgres — DATABASE_URL is set as a
-# dashboard secret (sync: false) pointing at the Supabase connection string.
-# Use Supabase's DIRECT connection (port 5432) or the SESSION pooler — NOT the transaction
-# pooler (6543), which is incompatible with Django's persistent CONN_MAX_AGE connections.
+databases:
+  - name: govbot-db
+    plan: free
+    region: oregon
 
 services:
   - type: web
     name: govbot-backend
     runtime: docker
-    # Code currently lives on the PR branch (not yet merged to main). Switch this to
-    # `main` once PR #1 is merged.
-    branch: worktree-backlog-impl
+    branch: main
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
@@ -26,22 +30,27 @@ services:
     healthCheckPath: /api/scenarios/categories/
     autoDeploy: true
     envVars:
-      # Render generates a strong secret → satisfies the S1 insecure-key guard.
+      # Render generates a strong secret → satisfies the insecure-key boot guard.
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "0"
-      # Supabase Postgres connection string (direct 5432 / session pooler). Set in dashboard.
+      # Wired automatically from the managed database above.
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: govbot-db
+          property: connectionString
       # OpenAI — set in the dashboard (kept out of the repo). Omit → chat runs in mock mode.
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o-mini
-      # Vercel frontend origin — allows browser CORS + SSE from the deployed SPA.
+      # Vercel frontend origin for browser CORS + SSE. OPTIONAL: any *.vercel.app origin
+      # is auto-trusted by settings, so the SPA works without this. Set it to your exact
+      # URL (comma-separate several) to also allow a custom domain or to lock CORS down.
+      # e.g. https://<your-app>.vercel.app  (no trailing slash).
       - key: FRONTEND_ORIGIN
-        value: https://frontend-snowy-eight-17.vercel.app
+        sync: false
       - key: WEB_CONCURRENCY
         value: "3"
       - key: PYTHONUNBUFFERED
