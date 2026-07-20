@@ -137,52 +137,25 @@ Add `?lang=uz|ru|en` to scenario endpoints to localize content.
 
 ## Production deployment
 
-The app ships a **single-origin** production stack: one public port (default **6969**)
-serves the React build via nginx, which reverse-proxies `/api` and `/admin` to the internal
-Django container (so SSE streaming and the admin both work behind the proxy).
+Runs entirely on **managed platforms — no VPS**:
 
-```bash
-# on the server
-git clone https://github.com/uztm/muhammadumar.git /opt/govbot && cd /opt/govbot
-cp .env.prod.example .env        # fill SECRET_KEY, POSTGRES_PASSWORD, OPENAI_API_KEY, IP/host
-./deploy.sh                      # build + start, then health-check
-```
+- **Frontend → Vercel** (project `govbot-web`). `git push` to `main` auto-builds the Vite
+  SPA. Set `VITE_API_BASE_URL` (the Render backend URL) in the Vercel project env.
+- **Backend → Render** via the `render.yaml` Blueprint: a Django web service `govbot-backend`
+  plus a managed Postgres `govbot-db` (its `DATABASE_URL` is injected automatically). `git push`
+  auto-deploys. Set `SECRET_KEY`, `OPENAI_API_KEY`, `FRONTEND_ORIGIN` in the Render dashboard.
+- **Keep-alive → UptimeRobot**: ping `/api/scenarios/categories/` every ~5 min so the Render
+  free tier doesn't sleep (otherwise the next request pays a 30–60s cold start).
 
-App → `http://<server-ip>:6969` · Admin → `http://<server-ip>:6969/admin`
+One-click: import this repo on **Render** (Blueprint reads `render.yaml`) and on **Vercel**
+(frontend root). See `DEPLOY.md` for the full walkthrough.
 
-### Domain + HTTPS
+Live: frontend **https://govbot-web.vercel.app** · backend **https://govbot-backend-3utu.onrender.com**
 
-The frontend is built single-origin (`VITE_API_BASE_URL=/api`), so it works behind any
-domain with no rebuild. To serve it over HTTPS, point a reverse proxy with automatic TLS at
-the published port. With **Caddy** (auto Let's Encrypt) it's one site block:
+### CI
 
-```caddy
-govbot.example.com {
-    encode zstd gzip
-    reverse_proxy <host-or-gateway>:6969 {
-        flush_interval -1     # keep SSE streaming working
-    }
-}
-```
-
-Then add the domain to the backend `.env`: `ALLOWED_HOSTS`, `FRONTEND_ORIGIN=https://...`,
-and `CSRF_TRUSTED_ORIGINS=https://...` (so the Django admin works), and recreate the
-backend. Live example: **https://govbot.pdpjunior.uz**.
-
-### CI/CD
-
-- **CI** — `.github/workflows/deploy.yml` runs the backend test suite on every push/PR.
-- **CD (server-side, zero-config)** — a `systemd` timer (`deploy/govbot-deploy.timer`)
-  polls `origin/main` every ~2 min and runs `auto-deploy.sh`, which redeploys only when the
-  commit changed. Install once:
-
-  ```bash
-  cp /opt/govbot/deploy/govbot-deploy.* /etc/systemd/system/
-  systemctl daemon-reload && systemctl enable --now govbot-deploy.timer
-  ```
-
-- **CD (instant, optional)** — add repo secrets `SERVER_HOST`, `SERVER_USER`,
-  `SERVER_PASSWORD` and the workflow also deploys over SSH immediately on push to `main`.
+`.github/workflows` runs the backend test suite (`pytest`) on push/PR. The deploy itself is
+handled by the Vercel/Render git integrations (no server-side scripts).
 
 ## Tests
 

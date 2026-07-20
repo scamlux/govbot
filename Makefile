@@ -18,7 +18,7 @@ BACKEND_PORT  := 8000
 FRONTEND_PORT := 5173
 
 .PHONY: dev run install env migrate seed backend frontend test admin stop \
-        up docker down docker-down build logs prod-up prod-down prod-logs clean help
+        up docker down docker-down build logs clean help
 
 ## dev: install + migrate + seed, then start backend & frontend together (default)
 dev run: install migrate seed stop
@@ -102,18 +102,6 @@ build: env
 ## logs: tail Docker Compose logs
 logs:
 	docker compose logs -f
-
-## prod-up: build + run the PRODUCTION stack (single port 6969)
-prod-up:
-	docker compose -f docker-compose.prod.yml up -d --build
-
-## prod-down: stop the production stack
-prod-down:
-	docker compose -f docker-compose.prod.yml down
-
-## prod-logs: tail production logs
-prod-logs:
-	docker compose -f docker-compose.prod.yml logs -f
 
 ## clean: remove venv, node_modules, sqlite db, build artifacts
 clean:
