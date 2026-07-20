@@ -332,16 +332,3 @@ git-ignored.
   component modules. ES modules.
 - Commit secrets never. Document every env var in `.env.example`.
 - Language fallback order everywhere: requested → uz → en → ru → first available.
-
-<!-- AIOFFICE:CONSTITUTION:START -->
-# 🏛️ Конституция AI Office
-
-Глобальные правила и ресурсы, которые подмешиваются в каждую сессию Claude Code
-(и записываются блоком в CLAUDE.md проекта).
-
-## Правила
-- (добавь свои правила здесь — например: всегда отвечать по-русски)
-
-## Ресурсы
-- (ссылки на доки, дашборды, тикеты, контекст)
-<!-- AIOFFICE:CONSTITUTION:END -->
