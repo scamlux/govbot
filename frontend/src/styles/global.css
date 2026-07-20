@@ -138,11 +138,11 @@ select:focus-visible,
 .navbar-inner { max-width: var(--maxw); margin: 0 auto; height: 100%; padding: 0 1.25rem; display: flex; align-items: center; gap: 1.1rem; }
 .brand { display: flex; align-items: center; gap: 0.55rem; font-weight: 800; font-size: 1.22rem; color: var(--ink); }
 .brand:hover { text-decoration: none; }
-/* The seal — a girih star on glazed teal; the wordmark's anchor, matched to the favicon. */
+/* The seal — a filled girih rosette on glazed teal; the wordmark's anchor, matched to the favicon. */
 .brand-mark {
   width: 30px; height: 30px; flex: none; border-radius: 9px;
   background-color: var(--brand);
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='none'%20stroke='%23f3e6c2'%20stroke-width='1.5'%20stroke-linejoin='round'%3E%3Cpolygon%20points='16,3%2029,16%2016,29%203,16'/%3E%3Cpolygon%20points='7,7%2025,7%2025,25%207,25'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='%23f0d488'%3E%3Cpolygon%20points='16,2.8%2029.2,16%2016,29.2%202.8,16'/%3E%3Cpolygon%20points='6.6,6.6%2025.4,6.6%2025.4,25.4%206.6,25.4'/%3E%3C/g%3E%3Cpolygon%20points='20.3,16%2019.04,19.04%2016,20.3%2012.96,19.04%2011.7,16%2012.96,12.96%2016,11.7%2019.04,12.96'%20fill='%230c6c8a'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.7'%20fill='%23f6e9c6'/%3E%3C/svg%3E");
   background-size: 68%; background-position: center; background-repeat: no-repeat;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 2px 5px -1px rgba(9, 42, 54, 0.35);
 }
@@ -216,7 +216,7 @@ select:focus-visible,
 .login-mark {
   width: 62px; height: 62px; margin: 0 auto; border-radius: 17px;
   background-color: var(--brand);
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='none'%20stroke='%23f3e6c2'%20stroke-width='1.5'%20stroke-linejoin='round'%3E%3Cpolygon%20points='16,3%2029,16%2016,29%203,16'/%3E%3Cpolygon%20points='7,7%2025,7%2025,25%207,25'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='%23f0d488'%3E%3Cpolygon%20points='16,2.8%2029.2,16%2016,29.2%202.8,16'/%3E%3Cpolygon%20points='6.6,6.6%2025.4,6.6%2025.4,25.4%206.6,25.4'/%3E%3C/g%3E%3Cpolygon%20points='20.3,16%2019.04,19.04%2016,20.3%2012.96,19.04%2011.7,16%2012.96,12.96%2016,11.7%2019.04,12.96'%20fill='%230c6c8a'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.7'%20fill='%23f6e9c6'/%3E%3C/svg%3E");
   background-size: 66%; background-position: center; background-repeat: no-repeat;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), var(--shadow);
 }
@@ -295,7 +295,7 @@ select:focus-visible,
 .chat-empty-mark {
   width: 76px; height: 76px; margin: 0 auto 0.9rem; border-radius: 20px;
   background-color: var(--brand);
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='none'%20stroke='%23f3e6c2'%20stroke-width='1.4'%20stroke-linejoin='round'%3E%3Cpolygon%20points='16,3%2029,16%2016,29%203,16'/%3E%3Cpolygon%20points='7,7%2025,7%2025,25%207,25'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='%23f0d488'%3E%3Cpolygon%20points='16,2.8%2029.2,16%2016,29.2%202.8,16'/%3E%3Cpolygon%20points='6.6,6.6%2025.4,6.6%2025.4,25.4%206.6,25.4'/%3E%3C/g%3E%3Cpolygon%20points='20.3,16%2019.04,19.04%2016,20.3%2012.96,19.04%2011.7,16%2012.96,12.96%2016,11.7%2019.04,12.96'%20fill='%230c6c8a'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.7'%20fill='%23f6e9c6'/%3E%3C/svg%3E");
   background-size: 62%; background-position: center; background-repeat: no-repeat;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), var(--shadow);
 }
@@ -310,7 +310,7 @@ select:focus-visible,
 .bubble-avatar {
   width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; margin-top: 2px;
   background-color: var(--brand);
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='none'%20stroke='%23f3e6c2'%20stroke-width='1.6'%20stroke-linejoin='round'%3E%3Cpolygon%20points='16,3%2029,16%2016,29%203,16'/%3E%3Cpolygon%20points='7,7%2025,7%2025,25%207,25'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20fill='%23f0d488'%3E%3Cpolygon%20points='16,2.8%2029.2,16%2016,29.2%202.8,16'/%3E%3Cpolygon%20points='6.6,6.6%2025.4,6.6%2025.4,25.4%206.6,25.4'/%3E%3C/g%3E%3Cpolygon%20points='20.3,16%2019.04,19.04%2016,20.3%2012.96,19.04%2011.7,16%2012.96,12.96%2016,11.7%2019.04,12.96'%20fill='%230c6c8a'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='1.7'%20fill='%23f6e9c6'/%3E%3C/svg%3E");
   background-size: 66%; background-position: center; background-repeat: no-repeat;
 }
 .bubble { border-radius: var(--radius); max-width: 100%; }

@@ -1,7 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#0c6c8a"/>
-  <g fill="none" stroke="#f3e6c2" stroke-width="17" stroke-linejoin="round">
-    <polygon points="256,120 392,256 256,392 120,256"/>
-    <polygon points="158,158 354,158 354,354 158,354"/>
+  <defs>
+    <linearGradient id="tm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f83a7"/><stop offset="1" stop-color="#0a5a75"/></linearGradient>
+    <linearGradient id="gm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7e4ab"/><stop offset="1" stop-color="#e2ba5f"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#tm)"/>
+  <g transform="translate(256,256) scale(4.6) translate(-32,-32)">
+    <g fill="url(#gm)">
+      <polygon points="32,6.5 57.5,32 32,57.5 6.5,32"/>
+      <polygon points="13.5,13.5 50.5,13.5 50.5,50.5 13.5,50.5"/>
+    </g>
+    <polygon points="40.2,32 37.8,37.8 32,40.2 26.2,37.8 23.8,32 26.2,26.2 32,23.8 37.8,26.2" fill="url(#tm)"/>
+    <circle cx="32" cy="32" r="3" fill="#f6e9c6"/>
   </g>
 </svg>
