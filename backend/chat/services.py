@@ -138,25 +138,41 @@ def retrieve_snippets(messages: list[dict], language: str) -> list[dict]:
 
 
 def sources_from_snippets(snippets: list[dict] | None) -> list[dict]:
-    """Project retrieval snippets to the client-facing citation shape (B1).
+    """Project retrieval snippets to the client-facing citation shape (B1/B2).
 
-    ``[{slug, title, source_url}]`` — the heavy ``text``/``score`` fields are dropped and
-    duplicate scenarios (same slug) are removed while preserving rank order.
+    Each source carries a ``type`` discriminator so the client links it correctly:
+    ``{type: "scenario", slug, title, source_url}`` (links to ``/scenarios/{slug}``) or
+    ``{type: "kb", title, source_url}`` (external link only — KB chunks have no slug). The
+    heavy ``text``/``score`` fields are dropped and duplicates are removed while preserving
+    rank order. Snippets without an ``origin`` (legacy) default to ``scenario``.
     """
-    seen: set[str] = set()
+    seen: set = set()
     sources: list[dict] = []
     for snip in snippets or []:
-        slug = snip.get("slug")
-        if not slug or slug in seen:
-            continue
-        seen.add(slug)
-        sources.append(
-            {
-                "slug": slug,
-                "title": snip.get("title", ""),
-                "source_url": snip.get("source_url", ""),
-            }
-        )
+        origin = snip.get("origin") or "scenario"
+        if origin == "kb":
+            url = snip.get("source_url") or ""
+            key = ("kb", url or snip.get("title", ""))
+            if key in seen:
+                continue
+            seen.add(key)
+            sources.append({"type": "kb", "title": snip.get("title", ""), "source_url": url})
+        else:
+            slug = snip.get("slug")
+            if not slug:
+                continue
+            key = ("scenario", slug)
+            if key in seen:
+                continue
+            seen.add(key)
+            sources.append(
+                {
+                    "type": "scenario",
+                    "slug": slug,
+                    "title": snip.get("title", ""),
+                    "source_url": snip.get("source_url", ""),
+                }
+            )
     return sources
 
 
