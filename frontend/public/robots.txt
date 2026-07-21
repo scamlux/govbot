@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /chat
+Disallow: /admin
+
+Sitemap: https://govbot-web.vercel.app/sitemap.xml
