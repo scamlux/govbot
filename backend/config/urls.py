@@ -41,4 +41,5 @@ urlpatterns = [
     path("api/admin/", include(admin_router.urls)),
     path("api/", include("chat.urls")),
     path("api/scenarios/", include("scenarios.urls")),
+    path("api/", include("knowledge.urls")),
 ]
