@@ -263,6 +263,12 @@ KB_FETCH_TIMEOUT = env.int("KB_FETCH_TIMEOUT", default=15)
 KB_FETCH_MAX_BYTES = env.int("KB_FETCH_MAX_BYTES", default=5 * 1024 * 1024)
 KB_MAX_FILE_MB = env.int("KB_MAX_FILE_MB", default=20)
 
+# Live web-search fallback (Phase C) — off by default; app is unaffected until configured.
+KB_SEARCH_PROVIDER = env("KB_SEARCH_PROVIDER", default="none")  # none | tavily
+TAVILY_API_KEY = env("TAVILY_API_KEY", default="")
+KB_SEARCH_DOMAINS = env("KB_SEARCH_DOMAINS", default="gov.uz,uz")
+KB_SEARCH_MAX_RESULTS = env.int("KB_SEARCH_MAX_RESULTS", default=3)
+
 # ---------------------------------------------------------------------------
 # i18n / tz
 # ---------------------------------------------------------------------------
