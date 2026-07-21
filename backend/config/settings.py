@@ -249,6 +249,21 @@ RETRIEVAL_TOP_K = env.int("RETRIEVAL_TOP_K", default=3)
 RETRIEVAL_MIN_SCORE = env.float("RETRIEVAL_MIN_SCORE", default=0.28)
 
 # ---------------------------------------------------------------------------
+# Knowledge Base ingestion (admin-managed RAG sources)
+# ---------------------------------------------------------------------------
+KB_CHUNK_TOKENS = env.int("KB_CHUNK_TOKENS", default=800)
+KB_CHUNK_OVERLAP = env.int("KB_CHUNK_OVERLAP", default=100)
+KB_EMBED_BATCH = env.int("KB_EMBED_BATCH", default=64)
+# Sources processed per reindex tick (bounded so each web request stays short on free infra).
+KB_TICK_BATCH = env.int("KB_TICK_BATCH", default=1)
+# Shared secret guarding the pg_cron-called tick endpoint (unset ⇒ endpoint refuses all).
+KB_TICK_SECRET = env("KB_TICK_SECRET", default="")
+# Server-side URL fetch limits (SSRF-guarded fetcher).
+KB_FETCH_TIMEOUT = env.int("KB_FETCH_TIMEOUT", default=15)
+KB_FETCH_MAX_BYTES = env.int("KB_FETCH_MAX_BYTES", default=5 * 1024 * 1024)
+KB_MAX_FILE_MB = env.int("KB_MAX_FILE_MB", default=20)
+
+# ---------------------------------------------------------------------------
 # i18n / tz
 # ---------------------------------------------------------------------------
 LANGUAGE_CODE = "en-us"
