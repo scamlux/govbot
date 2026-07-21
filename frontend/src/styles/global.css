@@ -478,6 +478,7 @@ select:focus-visible,
 .source-chip-link:hover { text-decoration: underline; }
 .source-chip-ext { color: var(--muted); font-weight: 700; text-decoration: none; }
 .source-chip-ext:hover { color: var(--brand-700); }
+.source-chip-badge { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; color: var(--brand-700); background: var(--brand-50, rgba(12,108,138,0.12)); border-radius: 999px; padding: 0.05rem 0.4rem; }
 
 /* A2 — feedback thumbs */
 .msg-feedback { margin-top: 0.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
