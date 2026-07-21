@@ -125,16 +125,50 @@ def _format_reference(snippets: list[dict], lang: str) -> str:
     return f"{GROUNDING_HEADER[lang]}\n\n{body}\n\n{GROUNDING_INSTRUCTION[lang]}"
 
 
+def _web_fallback_snippets(query: str) -> list[dict]:
+    """Live web-search fallback (C2): used only when catalog + KB retrieval came up empty.
+
+    Returns snippet dicts with ``origin="web"``, shaped like retrieval output so the same
+    ``build_payload`` / ``sources_from_snippets`` path renders them as a "live search"
+    reference block and ``web`` citations. ``[]`` when no provider is configured
+    (``web_search`` returns nothing) — the assistant then simply answers ungrounded.
+    """
+    from .search import web_search
+
+    snippets: list[dict] = []
+    for result in web_search(query):
+        url = result.get("url") or ""
+        snippets.append(
+            {
+                "origin": "web",
+                "slug": None,
+                "title": result.get("title") or url,
+                "text": result.get("content") or "",
+                "url": url,
+                "source_url": url,
+                "score": None,
+                "mode": "web",
+            }
+        )
+    return snippets
+
+
 def retrieve_snippets(messages: list[dict], language: str) -> list[dict]:
     """Retrieve grounding snippets for the latest user query in ``messages``.
 
     Returns the raw retrieval output (``[{slug, title, text, source_url, score, mode}]``),
     empty when nothing relevant was found. Callers pass the result to ``build_payload`` /
     ``generate_reply`` / ``stream_reply`` so the catalog is queried exactly once per reply
-    and the same snippets can be surfaced to the client as sources (B1).
+    and the same snippets can be surfaced to the client as sources (B1). When neither the
+    catalog nor the KB clears ``RETRIEVAL_MIN_SCORE``, a live web search is attempted (C2) —
+    a no-op unless a provider is configured.
     """
     lang = _lang(language)
-    return retrieval.retrieve(_latest_user_query(messages), lang)
+    query = _latest_user_query(messages)
+    snippets = retrieval.retrieve(query, lang)
+    if not snippets:
+        snippets = _web_fallback_snippets(query)
+    return snippets
 
 
 def sources_from_snippets(snippets: list[dict] | None) -> list[dict]:
@@ -157,6 +191,13 @@ def sources_from_snippets(snippets: list[dict] | None) -> list[dict]:
                 continue
             seen.add(key)
             sources.append({"type": "kb", "title": snip.get("title", ""), "source_url": url})
+        elif origin == "web":
+            url = snip.get("url") or snip.get("source_url") or ""
+            key = ("web", url or snip.get("title", ""))
+            if key in seen:
+                continue
+            seen.add(key)
+            sources.append({"type": "web", "title": snip.get("title", ""), "url": url})
         else:
             slug = snip.get("slug")
             if not slug:
