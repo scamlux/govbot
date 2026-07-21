@@ -266,3 +266,56 @@ def test_oversized_message_rejected_localized(auth_client):
     )
     assert resp.status_code == 400
     assert "длинное" in str(resp.json())
+
+
+# --------------------------------------------------------------------------- #
+# C2 — live web-search fallback
+# --------------------------------------------------------------------------- #
+@override_settings(KB_SEARCH_PROVIDER="tavily", TAVILY_API_KEY="k")
+def test_web_fallback_adds_web_sources(monkeypatch):
+    """Empty catalog + KB and a configured provider -> reply carries web-typed sources."""
+    from chat import search, services
+
+    monkeypatch.setattr(
+        search,
+        "web_search",
+        lambda query, language=None: [
+            {"title": "Gov visa page", "url": "https://gov.uz/visa", "content": "Official visa info."}
+        ],
+    )
+    reply = services.generate_reply(
+        [{"role": "user", "content": "obscure uncovered question"}], "en"
+    )
+    web = [s for s in reply["sources"] if s["type"] == "web"]
+    assert web and web[0]["url"] == "https://gov.uz/visa"
+
+
+@override_settings(KB_SEARCH_PROVIDER="none")
+def test_no_web_fallback_when_provider_none():
+    """Provider off -> no web search, no web sources (unchanged behavior)."""
+    from chat import services
+
+    reply = services.generate_reply(
+        [{"role": "user", "content": "obscure uncovered question"}], "en"
+    )
+    assert all(s.get("type") != "web" for s in reply["sources"])
+
+
+@override_settings(KB_SEARCH_PROVIDER="tavily", TAVILY_API_KEY="k")
+def test_web_block_reaches_payload(monkeypatch):
+    """The live-search material is injected into the model payload as a system block."""
+    from chat import search, services
+
+    monkeypatch.setattr(
+        search,
+        "web_search",
+        lambda query, language=None: [
+            {"title": "Gov visa page", "url": "https://gov.uz/visa", "content": "Official visa info block."}
+        ],
+    )
+    payload = services.build_payload(
+        [{"role": "user", "content": "obscure uncovered question"}], "en"
+    )
+    assert any(
+        m["role"] == "system" and "Official visa info block." in m["content"] for m in payload
+    )
