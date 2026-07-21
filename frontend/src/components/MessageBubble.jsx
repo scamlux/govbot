@@ -60,26 +60,61 @@ function Sources({ sources, label }) {
     <div className="msg-sources">
       <span className="msg-sources-label">{label}</span>
       <div className="msg-sources-chips">
-        {sources.map((s) => (
-          <span className="source-chip" key={s.slug}>
-            <Link className="source-chip-link" to={`/scenarios/${s.slug}`}>
-              {s.title || s.slug}
-            </Link>
-            {s.source_url && (
-              <a
-                className="source-chip-ext"
-                href={s.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${s.title || s.slug} — official source`}
-              >
-                ↗
-              </a>
-            )}
-          </span>
+        {sources.map((s, i) => (
+          <SourceChip
+            key={`${s.type || "scenario"}-${s.slug || s.source_url || s.url || i}`}
+            source={s}
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * A single citation chip. Renders by source type:
+ *  - scenario (or legacy, no type): internal link to /scenarios/{slug} + external ↗;
+ *  - kb: external link to the official source only (KB chunks have no catalog slug);
+ *  - web (C3): external link + a "live search" badge.
+ */
+function SourceChip({ source }) {
+  const { t } = useTranslation();
+  const type = source.type || "scenario";
+  const title = source.title || source.slug || source.source_url || source.url || "";
+
+  if (type === "scenario" && source.slug) {
+    return (
+      <span className="source-chip">
+        <Link className="source-chip-link" to={`/scenarios/${source.slug}`}>
+          {title}
+        </Link>
+        {source.source_url && (
+          <a
+            className="source-chip-ext"
+            href={source.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${title} — official source`}
+          >
+            ↗
+          </a>
+        )}
+      </span>
+    );
+  }
+
+  const href = source.source_url || source.url;
+  return (
+    <span className="source-chip">
+      {href ? (
+        <a className="source-chip-link" href={href} target="_blank" rel="noopener noreferrer">
+          {title}
+        </a>
+      ) : (
+        <span className="source-chip-link">{title}</span>
+      )}
+      {type === "web" && <span className="source-chip-badge">{t("chat.liveBadge")}</span>}
+    </span>
   );
 }
 
