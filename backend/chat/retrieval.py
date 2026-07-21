@@ -136,13 +136,65 @@ def _keyword_retrieve(query, language, k):
 
 
 # ---------------------------------------------------------------------------
+# Knowledge Base (admin-managed sources) — same two modes as scenarios
+# ---------------------------------------------------------------------------
+def _vector_kb(query_vec, k):
+    """Rank active KnowledgeChunk rows by cosine similarity (pgvector ANN or brute-force)."""
+    from knowledge import vectorstore
+    from knowledge.models import KnowledgeChunk
+
+    if vectorstore.pgvector_available():
+        pairs = vectorstore.ann_search(query_vec, k)
+        keep = [(cid, sim) for cid, sim in pairs if sim >= MIN_SCORE]
+        chunks = {
+            c.id: c
+            for c in KnowledgeChunk.objects.filter(
+                id__in=[cid for cid, _ in keep]
+            ).select_related("source")
+        }
+        return [(chunks[cid], sim) for cid, sim in keep if cid in chunks]
+
+    rows = (
+        KnowledgeChunk.objects.filter(source__is_active=True)
+        .exclude(embedding=[])
+        .select_related("source")
+    )
+    scored = []
+    for chunk in rows:
+        score = cosine(query_vec, chunk.embedding)
+        if score >= MIN_SCORE:
+            scored.append((chunk, score))
+    scored.sort(key=lambda pair: pair[1], reverse=True)
+    return scored[:k]
+
+
+def _keyword_kb(query, k):
+    """Fallback: rank active KnowledgeChunk rows by distinct query-term overlap."""
+    from knowledge.models import KnowledgeChunk
+
+    q_tokens = _tokens(query)
+    if not q_tokens:
+        return []
+    scored = []
+    for chunk in KnowledgeChunk.objects.filter(source__is_active=True).select_related("source"):
+        overlap = len(q_tokens & _tokens(chunk.text))
+        if overlap:
+            scored.append((chunk, float(overlap)))
+    scored.sort(key=lambda pair: pair[1], reverse=True)
+    return scored[:k]
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 def retrieve(query: str, language: str, k: int = TOP_K) -> list[dict]:
     """Return up to ``k`` grounding snippets for ``query`` in ``language``.
 
-    Each snippet: ``{slug, title, text, source_url, score, mode}``. Empty list means
-    nothing relevant was found — the caller should then answer without grounding.
+    Merges the Scenario Catalog and the admin Knowledge Base, ranked together in one mode
+    (vector cosine, or keyword overlap as fallback). Each snippet:
+    ``{origin, slug, title, text, source_url, score, mode}`` where ``origin`` is
+    ``"scenario"`` or ``"kb"`` (KB snippets have ``slug=None``). Empty list means nothing
+    relevant was found — the caller should then answer without grounding.
     """
     from scenarios.models import localize
 
@@ -151,17 +203,23 @@ def retrieve(query: str, language: str, k: int = TOP_K) -> list[dict]:
         return []
 
     query_vec = embed_text(query)
+    mode = "keyword"
+    scenario_pairs: list = []
+    kb_pairs: list = []
     if query_vec is not None:
-        pairs, mode = _vector_retrieve(query_vec, language, k), "vector"
-        if not pairs:  # embeddings exist but nothing cleared the floor — try keywords
-            pairs, mode = _keyword_retrieve(query, language, k), "keyword"
-    else:
-        pairs, mode = _keyword_retrieve(query, language, k), "keyword"
+        scenario_pairs = _vector_retrieve(query_vec, language, k)
+        kb_pairs = _vector_kb(query_vec, k)
+        if scenario_pairs or kb_pairs:
+            mode = "vector"
+    if mode == "keyword":  # no key, or vector cleared nothing — fall back to term overlap
+        scenario_pairs = _keyword_retrieve(query, language, k)
+        kb_pairs = _keyword_kb(query, k)
 
     snippets = []
-    for scenario, score in pairs:
+    for scenario, score in scenario_pairs:
         snippets.append(
             {
+                "origin": "scenario",
                 "slug": scenario.slug,
                 "title": localize(scenario.title, language),
                 "text": localize(scenario.body, language),
@@ -170,4 +228,18 @@ def retrieve(query: str, language: str, k: int = TOP_K) -> list[dict]:
                 "mode": mode,
             }
         )
-    return snippets
+    for chunk, score in kb_pairs:
+        source = chunk.source
+        snippets.append(
+            {
+                "origin": "kb",
+                "slug": None,
+                "title": source.title or source.url or "Knowledge base",
+                "text": chunk.text,
+                "source_url": source.url,
+                "score": round(float(score), 4),
+                "mode": mode,
+            }
+        )
+    snippets.sort(key=lambda snip: snip["score"], reverse=True)
+    return snippets[:k]
