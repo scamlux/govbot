@@ -35,11 +35,15 @@ services:
         generateValue: true
       - key: DEBUG
         value: "0"
-      # Wired automatically from the managed database above.
+      # Production DB — Supabase session pooler (set in the dashboard, kept out of the
+      # repo). The Render-managed govbot-db below is retired but kept as a rollback until
+      # its free-plan expiry; repoint this var at it to roll back.
       - key: DATABASE_URL
-        fromDatabase:
-          name: govbot-db
-          property: connectionString
+        sync: false
+      # Shared secret for POST /api/internal/kb/tick/ — a Supabase pg_cron job drains the
+      # Knowledge Base reindex queue through it every 2 minutes (set in the dashboard).
+      - key: KB_TICK_SECRET
+        sync: false
       # OpenAI — set in the dashboard (kept out of the repo). Omit → chat runs in mock mode.
       - key: OPENAI_API_KEY
         sync: false
