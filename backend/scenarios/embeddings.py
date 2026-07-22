@@ -6,6 +6,7 @@ embedding call is delegated to ``chat.retrieval`` (single owner of the OpenAI cl
 """
 import logging
 
+from . import vectorstore
 from .models import LANGUAGE_CODES, ScenarioEmbedding
 
 logger = logging.getLogger(__name__)
@@ -42,10 +43,18 @@ def embed_scenario(scenario) -> int:
 
     written = 0
     for lang, vector in zip(langs, vectors):
-        ScenarioEmbedding.objects.update_or_create(
+        row, _ = ScenarioEmbedding.objects.update_or_create(
             scenario=scenario,
             language=lang,
             defaults={"vector": vector, "model": retrieval.EMBEDDING_MODEL},
         )
         written += 1
+        try:
+            # Best-effort mirror into the optional pgvector column; the JSON row above is
+            # canonical, so a pgvector hiccup must never block the save.
+            vectorstore.sync_embedding_vector(row)
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "pgvector sync failed for scenario %s [%s]", scenario.pk, lang
+            )
     return written

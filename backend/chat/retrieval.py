@@ -9,8 +9,10 @@ numbers come from).
 Two retrieval modes, chosen automatically:
 
 * **vector**  — when an OpenAI key is configured we embed the query and rank stored
-  ``ScenarioEmbedding`` vectors by cosine similarity, brute-force in Python. At catalog
-  scale this is effectively free and needs no pgvector / external index.
+  ``ScenarioEmbedding`` vectors by cosine similarity. On PostgreSQL with pgvector the
+  ranking is an ANN index scan over the mirrored ``vector_vec`` column; everywhere else
+  it is brute-force cosine over the canonical JSON vectors, which at catalog scale is
+  effectively free.
 * **keyword** — fallback used in mock mode (no key) or before embeddings are built:
   case-insensitive term overlap against the scenario text in the requested language. This
   keeps grounding demonstrable in local development without a key or network access.
@@ -101,8 +103,20 @@ def _tokens(text: str) -> set[str]:
 
 
 def _vector_retrieve(query_vec, language, k):
-    """Rank stored embeddings for ``language`` by cosine similarity to the query."""
+    """Rank stored embeddings for ``language`` by cosine similarity (pgvector ANN or brute-force)."""
+    from scenarios import vectorstore
     from scenarios.models import ScenarioEmbedding
+
+    if vectorstore.pgvector_available():
+        pairs = vectorstore.ann_search(query_vec, language, k)
+        keep = [(eid, sim) for eid, sim in pairs if sim >= MIN_SCORE]
+        rows = {
+            row.id: row
+            for row in ScenarioEmbedding.objects.filter(
+                id__in=[eid for eid, _ in keep]
+            ).select_related("scenario")
+        }
+        return [(rows[eid].scenario, sim) for eid, sim in keep if eid in rows]
 
     rows = ScenarioEmbedding.objects.filter(
         language=language, scenario__is_published=True

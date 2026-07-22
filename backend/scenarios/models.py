@@ -80,9 +80,10 @@ class Scenario(models.Model):
 class ScenarioEmbedding(models.Model):
     """A stored vector for one scenario in one language.
 
-    Vectors are kept as a plain JSON list of floats (not pgvector): at catalog scale
-    (tens–hundreds of rows) brute-force cosine in Python is effectively free and keeps the
-    SQLite dev fallback working. Swap in pgvector here once the catalog grows to thousands.
+    Vectors are kept as a plain JSON list of floats — the canonical, engine-portable form
+    that keeps the SQLite dev/test path working. On PostgreSQL a parallel ``vector_vec``
+    pgvector column (added by migration 0003, optional) accelerates retrieval; the JSON
+    stays the source of truth (mirrors ``knowledge.KnowledgeChunk``).
     """
 
     scenario = models.ForeignKey(
