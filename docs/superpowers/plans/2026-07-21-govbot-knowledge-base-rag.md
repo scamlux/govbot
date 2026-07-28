@@ -274,7 +274,7 @@ Executed after code is green + merged. Requires the user's Render `DATABASE_URL`
    ```
 6. **Set env** on Render: `KB_TICK_SECRET` (random), optionally `KB_SEARCH_PROVIDER=tavily` + `TAVILY_API_KEY`.
 7. **Verify live:** add one URL + one PDF source in admin → within a few ticks `status=indexed`; ask a question covered by them → answer cites a `kb` source; ask an uncovered question → (if Tavily set) live-search answer with `web` badge.
-8. Keep Render Postgres until Supabase verified (rollback = repoint back).
+8. Keep Render Postgres until Supabase verified (rollback = repoint back). *(закрыто 2026-07: Supabase — единственная БД, Render Postgres выведен)*
 
 ---
 

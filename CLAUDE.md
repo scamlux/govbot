@@ -37,7 +37,7 @@ the user writes in (or the language they selected). Default UI language: `uz`.
 - `react-i18next` for UI strings (uz / ru / en)
 - Plain modern CSS / CSS modules — clean, accessible, responsive, mobile-first
 - `axios` for API calls, with a JWT interceptor (attach access token, refresh on 401)
-- Google Identity Services for sign-in
+- Email + password forms → app-issued JWT
 
 ### Backend
 - Python 3.12, Django 5.x, Django REST Framework
@@ -78,7 +78,7 @@ umar/                              # repo root (the GovBot project)
 │   ├── .env.example
 │   ├── pytest.ini / conftest.py
 │   ├── config/                    # Django project: settings, urls, wsgi/asgi
-│   ├── accounts/                  # Google OAuth + JWT, custom User
+│   ├── accounts/                  # email+password auth + JWT, custom User
 │   ├── chat/                      # conversations, messages, OpenAI service
 │   └── scenarios/                 # Scenario Catalog: categories + multilingual entries
 └── frontend/
@@ -90,7 +90,7 @@ umar/                              # repo root (the GovBot project)
     ├── .env.example
     └── src/
         ├── api/                   # axios client + endpoint helpers
-        ├── auth/                  # Google sign-in, auth context, protected routes
+        ├── auth/                  # login/register forms, auth context, protected routes
         ├── components/            # ChatWindow, MessageBubble, LanguageSwitcher, etc.
         ├── pages/                 # Landing, Chat, ScenarioCatalog, ScenarioDetail, Login
         ├── i18n/                  # locales: uz.json, ru.json, en.json + config
@@ -309,7 +309,7 @@ git-ignored.
 - Backend: clear DRF serializers/viewsets, proper status codes, input validation, no N+1
   on conversation/message lists (use `select_related`/`prefetch_related`).
 - Frontend: no console errors, loading + empty states, graceful API/auth failure handling.
-- Tests (pytest + pytest-django): Google auth flow (mocked Google token), message creation
+- Tests (pytest + pytest-django): email+password auth flow (register/login/refresh), message creation
   (mocked OpenAI), scenario list/filter.
 
 ---
@@ -318,7 +318,7 @@ git-ignored.
 1. `CLAUDE.md`, `.gitignore`, root `README.md` skeleton, `.env.example`.
 2. Django project + apps (`config`, `accounts`, `chat`, `scenarios`), custom user model,
    settings wired to env, PostgreSQL, CORS, DRF, SimpleJWT. `migrate` succeeds.
-3. Google OAuth → JWT auth (`accounts`) + `/auth/me`.
+3. Email+password → JWT auth (`accounts`) + `/auth/me`.
 4. `scenarios` models, admin, serializers, public endpoints, multilingual seed command.
 5. `chat` models, OpenAI service (mockable), chat endpoints (streaming via SSE).
 6. Backend tests; confirm everything runs.

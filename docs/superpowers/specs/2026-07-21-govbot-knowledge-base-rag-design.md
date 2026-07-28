@@ -324,7 +324,7 @@ critical flow before calling it done (per CLAUDE.md "готово" = verified en
 
 - **DB migration is the one irreversible step** — mitigated by dump/restore (data preserved) and
   a preview + explicit go-ahead before repointing `DATABASE_URL`. Rollback = repoint back to
-  Render Postgres (kept until Supabase is verified).
+  Render Postgres (kept until Supabase is verified). *(закрыто 2026-07: Supabase — единственная БД, Render Postgres выведен)*
 - **Bounded ticks mean indexing is not instant** — a large backlog drains over minutes, not
   seconds. Acceptable on free infra; a paid worker would make it one-click-instant later.
 - **pgvector shadow column adds a small dual-write** — contained in the indexing/retrieval layer;
