@@ -25,12 +25,31 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Tunables (overridable via env / settings — B4).
+# Tunables (overridable via env / settings — B4). Read at *call time* through the helpers
+# below so that ``RETRIEVAL_TOP_K`` / ``RETRIEVAL_MIN_SCORE`` (env → settings) actually govern
+# retrieval — including under ``override_settings`` in tests — instead of being frozen into
+# module constants at import.
 EMBEDDING_MODEL = getattr(settings, "OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
-TOP_K = getattr(settings, "RETRIEVAL_TOP_K", 3)
-# cosine floor: below this a scenario is treated as irrelevant.
-MIN_SCORE = getattr(settings, "RETRIEVAL_MIN_SCORE", 0.28)
+_DEFAULT_TOP_K = 3
+# cosine floor: below this a scenario / chunk is treated as irrelevant.
+_DEFAULT_MIN_SCORE = 0.28
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
+
+
+def _top_k() -> int:
+    """Number of grounding snippets to return (env ``RETRIEVAL_TOP_K`` → settings)."""
+    return int(getattr(settings, "RETRIEVAL_TOP_K", _DEFAULT_TOP_K))
+
+
+def _min_score() -> float:
+    """Cosine floor below which a match is dropped (env ``RETRIEVAL_MIN_SCORE`` → settings)."""
+    return float(getattr(settings, "RETRIEVAL_MIN_SCORE", _DEFAULT_MIN_SCORE))
+
+
+# Import-time snapshots kept as the module's public defaults (referenced by tests / callers
+# that only need the configured value, not a per-request read).
+TOP_K = _top_k()
+MIN_SCORE = _min_score()
 
 
 def embeddings_enabled() -> bool:
@@ -107,9 +126,10 @@ def _vector_retrieve(query_vec, language, k):
     from scenarios import vectorstore
     from scenarios.models import ScenarioEmbedding
 
+    min_score = _min_score()
     if vectorstore.pgvector_available():
         pairs = vectorstore.ann_search(query_vec, language, k)
-        keep = [(eid, sim) for eid, sim in pairs if sim >= MIN_SCORE]
+        keep = [(eid, sim) for eid, sim in pairs if sim >= min_score]
         rows = {
             row.id: row
             for row in ScenarioEmbedding.objects.filter(
@@ -125,7 +145,7 @@ def _vector_retrieve(query_vec, language, k):
     scored = []
     for row in rows:
         score = cosine(query_vec, row.vector)
-        if score >= MIN_SCORE:
+        if score >= min_score:
             scored.append((row.scenario, score))
     scored.sort(key=lambda pair: pair[1], reverse=True)
     return scored[:k]
@@ -157,9 +177,10 @@ def _vector_kb(query_vec, k):
     from knowledge import vectorstore
     from knowledge.models import KnowledgeChunk
 
+    min_score = _min_score()
     if vectorstore.pgvector_available():
         pairs = vectorstore.ann_search(query_vec, k)
-        keep = [(cid, sim) for cid, sim in pairs if sim >= MIN_SCORE]
+        keep = [(cid, sim) for cid, sim in pairs if sim >= min_score]
         chunks = {
             c.id: c
             for c in KnowledgeChunk.objects.filter(
@@ -176,7 +197,7 @@ def _vector_kb(query_vec, k):
     scored = []
     for chunk in rows:
         score = cosine(query_vec, chunk.embedding)
-        if score >= MIN_SCORE:
+        if score >= min_score:
             scored.append((chunk, score))
     scored.sort(key=lambda pair: pair[1], reverse=True)
     return scored[:k]
@@ -201,12 +222,34 @@ def _keyword_kb(query, k):
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-def retrieve(query: str, language: str, k: int = TOP_K) -> list[dict]:
+def _dedup_keys(origin: str, obj) -> set:
+    """Identity keys for a candidate, so the same scenario or source url can't repeat in the top.
+
+    A scenario is keyed by its slug; a KB chunk by its source id (collapses several matching
+    chunks of one source). Both also contribute their ``source_url`` when present, so a
+    scenario and a KB source pointing at the *same* url deduplicate against each other too.
+    A blank url is never a key (distinct url-less sources must not collapse together).
+    """
+    if origin == "scenario":
+        keys = {("scenario", obj.slug)}
+        if obj.source_url:
+            keys.add(("url", obj.source_url))
+        return keys
+    source = obj.source
+    keys = {("kb", source.id)}
+    if source.url:
+        keys.add(("url", source.url))
+    return keys
+
+
+def retrieve(query: str, language: str, k: int | None = None) -> list[dict]:
     """Return up to ``k`` grounding snippets for ``query`` in ``language``.
 
     Merges the Scenario Catalog and the admin Knowledge Base, ranked together in one mode
-    (vector cosine, or keyword overlap as fallback). Each snippet:
-    ``{origin, slug, title, text, source_url, score, mode}`` where ``origin`` is
+    (vector cosine, or keyword overlap as fallback), then **deduplicates**: the same scenario
+    or the same source url never appears twice in the top (the highest-scored occurrence
+    wins). ``k`` defaults to ``RETRIEVAL_TOP_K`` (env → settings), read here at call time.
+    Each snippet: ``{origin, slug, title, text, source_url, score, mode}`` where ``origin`` is
     ``"scenario"`` or ``"kb"`` (KB snippets have ``slug=None``). Empty list means nothing
     relevant was found — the caller should then answer without grounding.
     """
@@ -215,6 +258,8 @@ def retrieve(query: str, language: str, k: int = TOP_K) -> list[dict]:
     query = (query or "").strip()
     if not query:
         return []
+    if k is None:
+        k = _top_k()
 
     query_vec = embed_text(query)
     mode = "keyword"
@@ -229,31 +274,45 @@ def retrieve(query: str, language: str, k: int = TOP_K) -> list[dict]:
         scenario_pairs = _keyword_retrieve(query, language, k)
         kb_pairs = _keyword_kb(query, k)
 
-    snippets = []
-    for scenario, score in scenario_pairs:
-        snippets.append(
-            {
-                "origin": "scenario",
-                "slug": scenario.slug,
-                "title": localize(scenario.title, language),
-                "text": localize(scenario.body, language),
-                "source_url": scenario.source_url,
-                "score": round(float(score), 4),
-                "mode": mode,
-            }
-        )
-    for chunk, score in kb_pairs:
-        source = chunk.source
-        snippets.append(
-            {
-                "origin": "kb",
-                "slug": None,
-                "title": source.title or source.url or "Knowledge base",
-                "text": chunk.text,
-                "source_url": source.url,
-                "score": round(float(score), 4),
-                "mode": mode,
-            }
-        )
-    snippets.sort(key=lambda snip: snip["score"], reverse=True)
-    return snippets[:k]
+    # Merge both origins into one scored pool, tagged so we can build the snippet and derive
+    # dedup keys from the underlying object. Scenarios are listed first so that on an exact
+    # score tie the richer scenario (which links to /scenarios/{slug}) wins over a KB chunk.
+    merged = [("scenario", obj, score) for obj, score in scenario_pairs]
+    merged += [("kb", obj, score) for obj, score in kb_pairs]
+    merged.sort(key=lambda item: item[2], reverse=True)
+
+    snippets: list[dict] = []
+    seen: set = set()
+    for origin, obj, score in merged:
+        keys = _dedup_keys(origin, obj)
+        if keys & seen:  # this scenario / source url is already represented by a better score
+            continue
+        seen |= keys
+        if origin == "scenario":
+            snippets.append(
+                {
+                    "origin": "scenario",
+                    "slug": obj.slug,
+                    "title": localize(obj.title, language),
+                    "text": localize(obj.body, language),
+                    "source_url": obj.source_url,
+                    "score": round(float(score), 4),
+                    "mode": mode,
+                }
+            )
+        else:
+            source = obj.source
+            snippets.append(
+                {
+                    "origin": "kb",
+                    "slug": None,
+                    "title": source.title or source.url or "Knowledge base",
+                    "text": obj.text,
+                    "source_url": source.url,
+                    "score": round(float(score), 4),
+                    "mode": mode,
+                }
+            )
+        if len(snippets) >= k:
+            break
+    return snippets
