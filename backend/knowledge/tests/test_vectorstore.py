@@ -30,3 +30,11 @@ def test_sync_and_search_are_noops_without_pgvector():
 
 def test_vector_literal_format():
     assert vectorstore._to_literal([1, 2.5, 3]) == "[1.0,2.5,3.0]"
+
+
+@pytest.mark.django_db
+def test_write_vec_skips_wrong_dimensionality(caplog):
+    # vector(1536) column can't hold a 3-d vector — _write_vec must skip, not raise.
+    with caplog.at_level("WARNING", logger="knowledge.vectorstore"):
+        vectorstore._write_vec(1, [0.1, 0.2, 0.3])
+    assert "Skipping pgvector mirror" in caplog.text

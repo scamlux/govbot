@@ -50,6 +50,16 @@ def _to_literal(vector) -> str:
 def _write_vec(chunk_id: int, embedding) -> None:
     if not embedding:
         return
+    if len(embedding) != VECTOR_DIM:
+        # The shadow column is fixed at vector(1536); mirroring a different dimensionality
+        # would raise on Postgres. The JSON stays canonical, so skipping is safe.
+        logger.warning(
+            "Skipping pgvector mirror for KnowledgeChunk %s: %sd vector != %sd column",
+            chunk_id,
+            len(embedding),
+            VECTOR_DIM,
+        )
+        return
     chunk_table, _ = _table_names()
     with connection.cursor() as cur:
         cur.execute(
