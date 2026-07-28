@@ -1,7 +1,9 @@
 """Tests for RAG grounding: keyword fallback, vector ranking, and payload injection."""
 import pytest
+from django.test import override_settings
 
 from chat import retrieval, services
+from knowledge.models import KnowledgeChunk, KnowledgeSource
 from scenarios.models import Category, Scenario, ScenarioEmbedding
 
 pytestmark = pytest.mark.django_db
@@ -184,3 +186,104 @@ def test_vector_mode_hit_rate(catalog, monkeypatch):
         got = (retrieval.retrieve(query, "en") or [{}])[0].get("slug")
         results.append((expected, got))
     assert _hit_rate(results) == 1.0, results
+
+
+# ---------------------------------------------------------------------------
+# R3 — env/settings overrides actually govern retrieval (read at call time)
+# ---------------------------------------------------------------------------
+def _two_scenario_vectors(monkeypatch):
+    """Passport ⟂-ish Business: cosine([1,0], v) is 1.0 and 0.6, both above the 0.28 floor."""
+    passport = Scenario.objects.get(slug="passport-renewal")
+    business = Scenario.objects.get(slug="business-registration")
+    ScenarioEmbedding.objects.create(scenario=passport, language="en", vector=[1.0, 0.0])
+    ScenarioEmbedding.objects.create(scenario=business, language="en", vector=[0.6, 0.8])
+    monkeypatch.setattr(retrieval, "embeddings_enabled", lambda: True)
+    monkeypatch.setattr(retrieval, "embed_text", lambda text: [1.0, 0.0])
+
+
+def test_env_override_top_k_limits_results(catalog, monkeypatch):
+    _two_scenario_vectors(monkeypatch)
+    # Both scenarios clear the default floor, so the default top-k returns both, ranked.
+    baseline = retrieval.retrieve("anything", "en")
+    assert [r["slug"] for r in baseline] == ["passport-renewal", "business-registration"]
+
+    # override_settings drives settings.RETRIEVAL_TOP_K, which retrieve() reads at call time —
+    # the same setting the RETRIEVAL_TOP_K env var feeds. It must now cap the output.
+    with override_settings(RETRIEVAL_TOP_K=1):
+        limited = retrieval.retrieve("anything", "en")
+    assert [r["slug"] for r in limited] == ["passport-renewal"]
+
+
+def test_env_override_min_score_filters_results(catalog, monkeypatch):
+    _two_scenario_vectors(monkeypatch)
+    # Raising the cosine floor above 0.6 must drop the weaker (0.6) match at call time.
+    with override_settings(RETRIEVAL_MIN_SCORE=0.7):
+        filtered = retrieval.retrieve("anything", "en")
+    assert [r["slug"] for r in filtered] == ["passport-renewal"]
+
+    # And a floor below both keeps both — proving the knob, not a fixed constant, decides.
+    with override_settings(RETRIEVAL_MIN_SCORE=0.5):
+        kept = retrieval.retrieve("anything", "en")
+    assert [r["slug"] for r in kept] == ["passport-renewal", "business-registration"]
+
+
+# ---------------------------------------------------------------------------
+# R3 — merge deduplication (no duplicate scenario / source url in the top)
+# ---------------------------------------------------------------------------
+def test_merge_dedupes_same_url_and_keeps_distinct_sources(catalog):
+    # A KB source whose url collides with the passport scenario's source_url, plus two chunks:
+    # scenario + both chunks all point at gov.uz/passport and must collapse to one snippet.
+    dup = KnowledgeSource.objects.create(
+        source_type=KnowledgeSource.URL,
+        title="KB Passport",
+        url="https://gov.uz/passport",
+        is_active=True,
+    )
+    KnowledgeChunk.objects.create(source=dup, order=0, text="passport passport office")
+    KnowledgeChunk.objects.create(source=dup, order=1, text="passport renewal office")
+    # A distinct KB source (different url) that also matches — must survive alongside.
+    other = KnowledgeSource.objects.create(
+        source_type=KnowledgeSource.URL,
+        title="KB Other",
+        url="https://gov.uz/other-office",
+        is_active=True,
+    )
+    KnowledgeChunk.objects.create(source=other, order=0, text="office help desk")
+
+    results = retrieval.retrieve("passport office", "en")
+    assert all(r["mode"] == "keyword" for r in results)
+    urls = [r["source_url"] for r in results if r["source_url"]]
+    assert len(urls) == len(set(urls)), f"duplicate source_url in top: {urls}"
+    assert set(urls) == {"https://gov.uz/passport", "https://gov.uz/other-office"}
+
+
+def test_merge_dedupes_kb_chunks_of_same_source(catalog):
+    # Two chunks of one KB source, matched by keyword, must yield a single snippet.
+    src = KnowledgeSource.objects.create(
+        source_type=KnowledgeSource.URL,
+        title="Visa KB",
+        url="https://kb.gov.uz/visa",
+        is_active=True,
+    )
+    KnowledgeChunk.objects.create(source=src, order=0, text="visa visa application")
+    KnowledgeChunk.objects.create(source=src, order=1, text="visa requirements checklist")
+
+    results = retrieval.retrieve("visa requirements", "en")
+    kb = [r for r in results if r["origin"] == "kb"]
+    assert len(kb) == 1
+    assert kb[0]["source_url"] == "https://kb.gov.uz/visa"
+
+
+# ---------------------------------------------------------------------------
+# R3 — keyless degradation (keyword mode) stays intact
+# ---------------------------------------------------------------------------
+def test_keyword_degradation_preserved_without_key(catalog):
+    # conftest clears OPENAI_API_KEY, so vector mode is impossible and we must fall back.
+    assert retrieval.embeddings_enabled() is False
+    results = retrieval.retrieve("How do I renew my passport?", "en")
+    assert results, "keyword fallback must still ground without an OpenAI key"
+    assert results[0]["mode"] == "keyword"
+    assert results[0]["slug"] == "passport-renewal"
+    # The dedup invariant holds on the keyless path too.
+    urls = [r["source_url"] for r in results if r["source_url"]]
+    assert len(urls) == len(set(urls))
