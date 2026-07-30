@@ -51,6 +51,19 @@ export const chatApi = {
 };
 
 /**
+ * R4/R5 — up to 3 catalog questions related to the user's message, shown as
+ * chips after an assistant reply. Goes through the shared axios instance, so it
+ * inherits the same auth pattern as every other call (JWT via the request
+ * interceptor + single-flight 401-refresh + replay via the response interceptor).
+ *
+ * @returns {Promise<Array<{slug:string, title:string}>>} empty array when nothing related.
+ */
+export async function fetchRelated(message, lang) {
+  const res = await api.get("/chat/related/", { params: { message, lang } });
+  return res.data?.related_questions ?? [];
+}
+
+/**
  * Stream an assistant reply via Server-Sent Events using fetch (axios can't stream
  * bodies in the browser). Calls callbacks as events arrive.
  *
