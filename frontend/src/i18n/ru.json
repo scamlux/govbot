@@ -135,7 +135,8 @@
     "feedbackDown": "Не помогло",
     "feedbackReasonPlaceholder": "Что было не так? (необязательно)",
     "export": "Экспорт чата",
-    "voiceInput": "Голосовой ввод"
+    "voiceInput": "Голосовой ввод",
+    "relatedTitle": "Похожие вопросы"
   },
   "scenarios": {
     "title": "Каталог сценариев",

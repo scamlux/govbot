@@ -135,7 +135,8 @@
     "feedbackDown": "Foydasiz",
     "feedbackReasonPlaceholder": "Nima noto'g'ri edi? (ixtiyoriy)",
     "export": "Suhbatni yuklab olish",
-    "voiceInput": "Ovozli kiritish"
+    "voiceInput": "Ovozli kiritish",
+    "relatedTitle": "O'xshash savollar"
   },
   "scenarios": {
     "title": "Stsenariylar katalogi",

@@ -135,7 +135,8 @@
     "feedbackDown": "Not helpful",
     "feedbackReasonPlaceholder": "What was wrong? (optional)",
     "export": "Export chat",
-    "voiceInput": "Voice input"
+    "voiceInput": "Voice input",
+    "relatedTitle": "Related questions"
   },
   "scenarios": {
     "title": "Scenario Catalog",
