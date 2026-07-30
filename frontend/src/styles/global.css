@@ -473,6 +473,10 @@ select:focus-visible,
 .msg-sources { margin-top: 0.6rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .msg-sources-label { font-size: 0.74rem; font-weight: 700; color: var(--muted); }
 .msg-sources-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.related-questions { margin: 0.4rem 0 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.related-questions-label { font-size: 0.74rem; font-weight: 700; color: var(--muted); }
+.related-questions-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.related-questions-chips .chip { padding: 0.4rem 0.85rem; font-size: 0.85rem; }
 .source-chip { display: inline-flex; align-items: center; gap: 0.25rem; background: var(--surface-3); border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.78rem; }
 .source-chip-link { color: var(--brand-700); font-weight: 600; }
 .source-chip-link:hover { text-decoration: underline; }

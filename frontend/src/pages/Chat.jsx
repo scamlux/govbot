@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { chatApi, streamMessage } from "../api/endpoints";
+import { chatApi, streamMessage, fetchRelated } from "../api/endpoints";
 import MessageBubble from "../components/MessageBubble";
+import RelatedQuestions from "../components/RelatedQuestions";
 import Spinner from "../components/Spinner";
 import { useSpeechInput } from "../hooks/useSpeechInput";
 import { exportConversationMarkdown } from "../utils/exportConversation";
@@ -23,6 +24,8 @@ export default function Chat() {
   const [loadingConv, setLoadingConv] = useState(false);
   const [streamingText, setStreamingText] = useState(null);
   const [streamingSources, setStreamingSources] = useState([]);
+  // R5 — related-question chips shown under the last assistant reply.
+  const [relatedQuestions, setRelatedQuestions] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const scrollRef = useRef(null);
@@ -90,12 +93,14 @@ export default function Chat() {
     setActiveId(null);
     setMessages([]);
     setInput("");
+    setRelatedQuestions([]);
     resetInputHeight();
     setSidebarOpen(false);
   }, [resetInputHeight]);
 
   const openConversation = useCallback((id) => {
     setActiveId(id);
+    setRelatedQuestions([]);
     setSidebarOpen(false);
   }, []);
 
@@ -125,6 +130,7 @@ export default function Chat() {
       setMessages((prev) => [...prev, optimistic]);
       setStreamingText("");
       setStreamingSources([]);
+      setRelatedQuestions([]);
       scrollToBottom();
 
       try {
@@ -156,6 +162,17 @@ export default function Chat() {
           ]);
           setStreamingText(null);
           setStreamingSources([]);
+          // R5 — fetch related catalog questions for the just-asked message.
+          // Same activeId guard as the commit above: a mid-flight conversation
+          // switch must not attach stale chips to the wrong chat. Degrade
+          // silently to no chips on any error.
+          fetchRelated(content, i18n.language)
+            .then((qs) => {
+              if (activeIdRef.current === convId) setRelatedQuestions(qs);
+            })
+            .catch(() => {
+              if (activeIdRef.current === convId) setRelatedQuestions([]);
+            });
         }
         refreshConversations();
       } catch {
@@ -349,6 +366,9 @@ export default function Chat() {
                   sources={streamingSources}
                   pending
                 />
+              )}
+              {streamingText === null && !sending && (
+                <RelatedQuestions items={relatedQuestions} onPick={send} />
               )}
             </>
           )}
