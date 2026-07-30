@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import services
+from . import retrieval, services
 from .models import Conversation, Message, MessageFeedback
 from .serializers import (
     ConversationDetailSerializer,
@@ -213,6 +213,29 @@ class MessageFeedbackView(APIView):
         return Response(
             MessageFeedbackSerializer(feedback).data, status=status.HTTP_200_OK
         )
+
+
+class RelatedQuestionsView(APIView):
+    """Up to 3 catalog questions related to a message — shown after an assistant reply.
+
+    ``GET /api/chat/related/?message=...&lang=uz&exclude=<slug>``. Reuses the Scenario
+    retrieval (vector with a keyword fallback, no external key required) and returns
+    ``{"related_questions": [{slug, title}, ...]}`` localized to the requested language, with
+    the just-asked question excluded. Keyless: it degrades to keyword overlap in mock mode.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        message = request.query_params.get("message", "")
+        language = request.query_params.get("lang", "")
+        if language not in ("uz", "ru", "en"):
+            language = "uz"
+        exclude_slug = request.query_params.get("exclude") or None
+        questions = retrieval.related_questions(
+            message, language, exclude_slug=exclude_slug
+        )
+        return Response({"related_questions": questions})
 
 
 def _sse_data(payload: dict) -> str:

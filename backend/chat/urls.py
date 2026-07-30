@@ -6,6 +6,7 @@ from .views import (
     MessageCreateView,
     MessageFeedbackView,
     MessageStreamView,
+    RelatedQuestionsView,
 )
 
 urlpatterns = [
@@ -15,4 +16,6 @@ urlpatterns = [
     path("conversations/<int:pk>/messages/stream/", MessageStreamView.as_view(), name="message-stream"),
     # A2 — rate an assistant reply (owner-only, idempotent upsert).
     path("messages/<int:pk>/feedback/", MessageFeedbackView.as_view(), name="message-feedback"),
+    # R4 — related questions from the scenario catalog, shown after an assistant reply.
+    path("chat/related/", RelatedQuestionsView.as_view(), name="chat-related"),
 ]
