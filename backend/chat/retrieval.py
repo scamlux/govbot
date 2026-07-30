@@ -316,3 +316,50 @@ def retrieve(query: str, language: str, k: int | None = None) -> list[dict]:
         if len(snippets) >= k:
             break
     return snippets
+
+
+def related_questions(
+    query: str,
+    language: str,
+    k: int = 3,
+    exclude_slug: str | None = None,
+) -> list[dict]:
+    """Return up to ``k`` catalog questions related to ``query`` in ``language``.
+
+    Powers the "people also ask" hint shown after an assistant reply. It reuses the same
+    Scenario retrieval as grounding — embed the query and rank ``ScenarioEmbedding`` vectors
+    (pgvector ANN or brute-force cosine), or fall back to keyword overlap when no OpenAI key
+    is configured (keyless degradation) — but keeps only the scenario *titles* and drops the
+    already-asked question. The asked question is excluded two ways: any scenario whose
+    localized title equals ``query`` (case-insensitively), and ``exclude_slug`` when the
+    caller already knows the answer's source scenario. Results are deduplicated by slug and
+    each is ``{slug, title}``. Empty list means nothing related was found.
+    """
+    from scenarios.models import localize
+
+    query = (query or "").strip()
+    if not query:
+        return []
+
+    # Fetch a few extra candidates so that dropping the asked question still leaves room for k.
+    fetch = k + 3
+    query_vec = embed_text(query)
+    if query_vec is not None:
+        pairs = _vector_retrieve(query_vec, language, fetch)
+    else:
+        pairs = _keyword_retrieve(query, language, fetch)
+
+    asked = query.casefold()
+    results: list[dict] = []
+    seen: set[str] = set()
+    for scenario, _score in pairs:
+        if scenario.slug in seen or scenario.slug == exclude_slug:
+            continue
+        title = localize(scenario.title, language).strip()
+        if not title or title.casefold() == asked:  # skip the already-asked question
+            continue
+        seen.add(scenario.slug)
+        results.append({"slug": scenario.slug, "title": title})
+        if len(results) >= k:
+            break
+    return results
