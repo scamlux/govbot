@@ -36,6 +36,13 @@ export default function Chat() {
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
+  // Id of a conversation we just created locally (first message of a new chat).
+  // The load effect must NOT refetch it — the server row is still empty at that
+  // moment, so fetching would overwrite the optimistic user message with [] and
+  // the user's own question would vanish from the thread (only the streamed
+  // assistant reply would remain). Cleared after being honoured once so a later
+  // reopen of the same conversation still loads its persisted messages.
+  const justCreatedRef = useRef(null);
 
   const autoGrowInput = useCallback(() => {
     const el = inputRef.current;
@@ -67,6 +74,13 @@ export default function Chat() {
   useEffect(() => {
     if (!activeId) {
       setMessages([]);
+      return;
+    }
+    // Skip the fetch for a conversation we just created for this send — its
+    // server row has no messages yet and the optimistic state is already on
+    // screen. Honour the skip once, then clear so a later reopen refetches.
+    if (justCreatedRef.current === activeId) {
+      justCreatedRef.current = null;
       return;
     }
     let active = true;
@@ -107,6 +121,10 @@ export default function Chat() {
   const ensureConversation = useCallback(async () => {
     if (activeId) return activeId;
     const { data } = await chatApi.createConversation(i18n.language);
+    // Mark before setActiveId so the load effect (which fires on the id change)
+    // skips refetching this still-empty conversation and preserves the
+    // optimistic user message. See justCreatedRef.
+    justCreatedRef.current = data.id;
     setActiveId(data.id);
     setConversations((prev) => [data, ...prev]);
     return data.id;

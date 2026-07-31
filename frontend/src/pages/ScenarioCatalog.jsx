@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { scenariosApi } from "../api/endpoints";
 import Spinner from "../components/Spinner";
+import { stripMarkdown } from "../utils/stripMarkdown";
 
 export default function ScenarioCatalog() {
   const { t, i18n } = useTranslation();
@@ -92,7 +93,7 @@ export default function ScenarioCatalog() {
           {scenarios.map((s) => (
             <Link to={`/scenarios/${s.slug}`} className="scenario-card" key={s.slug}>
               <h3>{s.title}</h3>
-              <p className="scenario-excerpt">{s.excerpt}</p>
+              <p className="scenario-excerpt">{stripMarkdown(s.excerpt)}</p>
               <div className="scenario-tags">
                 {s.tags?.slice(0, 3).map((tag) => (
                   <span className="tag" key={tag}>#{tag}</span>
