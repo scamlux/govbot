@@ -137,6 +137,10 @@ export default function Chat() {
       setSending(true);
       setInput("");
       resetInputHeight();
+      // Keep the caret in the input so the user can keep typing after sending
+      // — including when send was triggered from a suggestion/related chip,
+      // which would otherwise leave focus on the clicked button.
+      inputRef.current?.focus();
 
       // Optimistically show the user's message.
       const optimistic = {
@@ -151,8 +155,12 @@ export default function Chat() {
       setRelatedQuestions([]);
       scrollToBottom();
 
+      // Declared before the try so the catch/finally blocks below can reference
+      // it (a `const` inside try is not in scope there — referencing it would
+      // throw a ReferenceError and swallow the real error / focus restore).
+      let convId;
       try {
-        const convId = await ensureConversation();
+        convId = await ensureConversation();
         const result = await streamMessage(convId, content, i18n.language, {
           onDelta: (delta) => {
             // Ignore chunks if the user switched conversations mid-stream.
@@ -209,6 +217,10 @@ export default function Chat() {
       } finally {
         setSending(false);
         scrollToBottom();
+        // Return the caret to the input once the reply is done so a follow-up
+        // can be typed straight away — unless the user has moved to another
+        // conversation in the meantime.
+        if (activeIdRef.current === convId) inputRef.current?.focus();
       }
     },
     [sending, ensureConversation, i18n.language, refreshConversations, scrollToBottom, resetInputHeight, t]
