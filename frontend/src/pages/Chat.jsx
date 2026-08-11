@@ -36,6 +36,13 @@ export default function Chat() {
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
+  // Id of a conversation we just created locally (first message of a new chat).
+  // The load effect must NOT refetch it — the server row is still empty at that
+  // moment, so fetching would overwrite the optimistic user message with [] and
+  // the user's own question would vanish from the thread (only the streamed
+  // assistant reply would remain). Cleared after being honoured once so a later
+  // reopen of the same conversation still loads its persisted messages.
+  const justCreatedRef = useRef(null);
 
   const autoGrowInput = useCallback(() => {
     const el = inputRef.current;
@@ -67,6 +74,13 @@ export default function Chat() {
   useEffect(() => {
     if (!activeId) {
       setMessages([]);
+      return;
+    }
+    // Skip the fetch for a conversation we just created for this send — its
+    // server row has no messages yet and the optimistic state is already on
+    // screen. Honour the skip once, then clear so a later reopen refetches.
+    if (justCreatedRef.current === activeId) {
+      justCreatedRef.current = null;
       return;
     }
     let active = true;
@@ -107,6 +121,10 @@ export default function Chat() {
   const ensureConversation = useCallback(async () => {
     if (activeId) return activeId;
     const { data } = await chatApi.createConversation(i18n.language);
+    // Mark before setActiveId so the load effect (which fires on the id change)
+    // skips refetching this still-empty conversation and preserves the
+    // optimistic user message. See justCreatedRef.
+    justCreatedRef.current = data.id;
     setActiveId(data.id);
     setConversations((prev) => [data, ...prev]);
     return data.id;
@@ -119,6 +137,10 @@ export default function Chat() {
       setSending(true);
       setInput("");
       resetInputHeight();
+      // Keep the caret in the input so the user can keep typing after sending
+      // — including when send was triggered from a suggestion/related chip,
+      // which would otherwise leave focus on the clicked button.
+      inputRef.current?.focus();
 
       // Optimistically show the user's message.
       const optimistic = {
@@ -133,8 +155,12 @@ export default function Chat() {
       setRelatedQuestions([]);
       scrollToBottom();
 
+      // Declared before the try so the catch/finally blocks below can reference
+      // it (a `const` inside try is not in scope there — referencing it would
+      // throw a ReferenceError and swallow the real error / focus restore).
+      let convId;
       try {
-        const convId = await ensureConversation();
+        convId = await ensureConversation();
         const result = await streamMessage(convId, content, i18n.language, {
           onDelta: (delta) => {
             // Ignore chunks if the user switched conversations mid-stream.
@@ -191,6 +217,10 @@ export default function Chat() {
       } finally {
         setSending(false);
         scrollToBottom();
+        // Return the caret to the input once the reply is done so a follow-up
+        // can be typed straight away — unless the user has moved to another
+        // conversation in the meantime.
+        if (activeIdRef.current === convId) inputRef.current?.focus();
       }
     },
     [sending, ensureConversation, i18n.language, refreshConversations, scrollToBottom, resetInputHeight, t]
