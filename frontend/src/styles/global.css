@@ -441,9 +441,23 @@ select:focus-visible,
     border: 1px solid var(--line); background: var(--surface); border-radius: 9px;
     width: 40px; height: 36px; font-size: 1.15rem; line-height: 1; cursor: pointer; color: var(--ink);
   }
-  .chat-mobilebar-title { font-weight: 600; font-size: 0.95rem; color: var(--ink-soft); }
+  .chat-mobilebar-title {
+    flex: 1; min-width: 0; font-weight: 600; font-size: 0.95rem; color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .chat-mobilebar-action {
+    flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 9px;
+    width: 40px; height: 36px; font-size: 1.05rem; line-height: 1; cursor: pointer; color: var(--ink);
+  }
+  .chat-mobilebar-action:active { background: var(--surface-2); }
   .chat-messages { padding: 1.4rem 1rem; gap: 1.4rem; }
   .bubble-row.user .bubble { max-width: 90%; }
+
+  /* Composer: drop the redundant language pill (language lives in the navbar)
+     to give the textarea room, and enlarge tap targets to ~44px. */
+  .chat-input-bar { padding: 0.4rem 0.4rem 0.4rem 0.65rem; gap: 0.4rem; }
+  .lang-indicator { display: none; }
+  .chat-mic { width: 2.75rem; height: 2.75rem; font-size: 1.1rem; }
 }
 
 @media (max-width: 640px) {
