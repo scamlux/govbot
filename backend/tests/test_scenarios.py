@@ -58,6 +58,32 @@ def test_scenario_filter_by_category_and_search(catalog):
     assert len(resp.json()) == 1
 
 
+def test_search_ranks_title_matches_above_body_matches(catalog):
+    # A body-only mention must not outrank a title match for the same term.
+    Scenario.objects.create(
+        category=catalog,
+        slug="passport-renewal",
+        title={"uz": "Pasport", "ru": "Замена паспорта", "en": "Passport renewal"},
+        body={"uz": "matn", "ru": "как заменить документ", "en": "renew it"},
+        tags=["passport"],
+        order=5,
+        is_published=True,
+    )
+    Scenario.objects.create(
+        category=catalog,
+        slug="driving-licence",
+        title={"uz": "Guvohnoma", "ru": "Водительское удостоверение", "en": "Driving licence"},
+        body={"uz": "matn", "ru": "нужен паспорт как документ", "en": "bring your passport"},
+        tags=["driving"],
+        order=1,  # lower order — would sort first without relevance ranking
+        is_published=True,
+    )
+    resp = APIClient().get(reverse("scenario-list"), {"lang": "ru", "search": "паспорт"})
+    assert resp.status_code == 200
+    slugs = [s["slug"] for s in resp.json()]
+    assert slugs.index("passport-renewal") < slugs.index("driving-licence")
+
+
 def test_scenario_detail_localized(catalog):
     resp = APIClient().get(reverse("scenario-detail", args=["tourist-visa"]), {"lang": "en"})
     assert resp.status_code == 200

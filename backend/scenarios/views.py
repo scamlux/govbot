@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from rest_framework import generics, viewsets
 from rest_framework.permissions import AllowAny, IsAdminUser
 
@@ -47,13 +47,28 @@ class ScenarioListView(LangSerializerContextMixin, generics.ListAPIView):
         if category:
             qs = qs.filter(category__slug=category)
 
-        search = self.request.query_params.get("search")
+        search = (self.request.query_params.get("search") or "").strip()
         if search:
             lang = resolve_lang(self.request)
-            qs = qs.filter(
-                Q(**{f"title__{lang}__icontains": search})
-                | Q(**{f"body__{lang}__icontains": search})
-                | Q(tags__icontains=search)
+            title_match = Q(**{f"title__{lang}__icontains": search})
+            tags_match = Q(tags__icontains=search)
+            body_match = Q(**{f"body__{lang}__icontains": search})
+            # Rank by where the term hit: a title match is far more relevant than
+            # a passing mention in the body (e.g. "паспорт" as a required
+            # document inside the driving-licence scenario). Title > tags > body,
+            # then the catalog's own order. Without this, results came back in
+            # plain catalog order and body-only matches outranked title matches.
+            qs = (
+                qs.filter(title_match | body_match | tags_match)
+                .annotate(
+                    search_rank=Case(
+                        When(title_match, then=Value(3)),
+                        When(tags_match, then=Value(2)),
+                        default=Value(1),
+                        output_field=IntegerField(),
+                    )
+                )
+                .order_by("-search_rank", "order", "slug")
             )
         return qs
 
