@@ -7,7 +7,14 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <meta name="theme-color" content="#0c6c8a" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- interactive-widget=resizes-content: when the on-screen keyboard opens,
+         the browser shrinks the layout viewport instead of overlaying it, so the
+         chat composer stays visible above the keyboard. Ignored where
+         unsupported (no regression). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"
+    />
     <meta
       name="description"
       content="GovBot — Government Information Made Simple Through AI. Multilingual answers about Uzbekistan public services."
