@@ -297,6 +297,7 @@ export default function Chat() {
   const showEmpty = messages.length === 0 && streamingText === null;
   const canExport = messages.length > 0 && !sending;
   const nearLimit = input.length > MAX_CHARS * 0.8;
+  const activeTitle = conversations.find((c) => c.id === activeId)?.title || t("chat.newChat");
 
   return (
     <div className="chat-layout">
@@ -342,7 +343,18 @@ export default function Chat() {
           >
             ☰
           </button>
-          <span className="chat-mobilebar-title">{t("chat.conversations")}</span>
+          <span className="chat-mobilebar-title">{activeTitle}</span>
+          {activeId && (
+            <button
+              type="button"
+              className="chat-mobilebar-action"
+              onClick={startNewChat}
+              aria-label={t("chat.newChat")}
+              title={t("chat.newChat")}
+            >
+              ✎
+            </button>
+          )}
           {canExport && (
             <button
               type="button"
