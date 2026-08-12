@@ -7,7 +7,9 @@
     "scenarios": "Katalog",
     "admin": "Admin",
     "login": "Kirish",
-    "logout": "Chiqish"
+    "logout": "Chiqish",
+    "menu": "Menyu",
+    "primary": "Asosiy navigatsiya"
   },
   "admin": {
     "title": "Administrator paneli",
@@ -77,11 +79,12 @@
     "send": "Yuborish",
     "cancel": "Bekor qilish",
     "delete": "O'chirish",
-    "offline": "Siz oflaynsiz — saqlangan kontent ko'rsatilmoqda."
+    "offline": "Siz oflaynsiz — saqlangan kontent ko'rsatilmoqda.",
+    "close": "Yopish"
   },
   "landing": {
     "heroTitle": "Davlat xizmatlari haqidagi savollarga sodda javoblar",
-    "heroSubtitle": "Davlat xizmatlari, hujjatlar, soliqlar, vizalar va boshqalar haqida o'zbek, rus yoki ingliz tilida so'rang — rasmiy saytlar orasida sarson bo'lmang.",
+    "heroSubtitle": "Davlat xizmatlari, hujjatlar, soliqlar, vizalar — o'z tilingizda so'rang.",
     "ctaChat": "AI dan so'rash",
     "ctaScenarios": "Katalogni ochish",
     "feature1Title": "Suhbatlashuvchi AI",
@@ -136,7 +139,8 @@
     "feedbackReasonPlaceholder": "Nima noto'g'ri edi? (ixtiyoriy)",
     "export": "Suhbatni yuklab olish",
     "voiceInput": "Ovozli kiritish",
-    "relatedTitle": "O'xshash savollar"
+    "relatedTitle": "O'xshash savollar",
+    "officialSourceLabel": "{{title}} — rasmiy manba"
   },
   "scenarios": {
     "title": "Stsenariylar katalogi",
@@ -148,7 +152,8 @@
     "askPrefill": "Bu haqida batafsil ayting: {{title}}",
     "updated": "Yangilangan",
     "backToCatalog": "Katalogga qaytish",
-    "itemsCount": "{{count}} ta mavzu"
+    "itemsCount_one": "{{count}} ta mavzu",
+    "itemsCount_other": "{{count}} ta mavzu"
   },
   "errors": {
     "network": "Tarmoq xatosi — backend ishlayaptimi?",

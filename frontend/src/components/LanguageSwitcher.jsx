@@ -4,7 +4,7 @@ import { SUPPORTED_LANGUAGES } from "../i18n";
 import { useAuth } from "../auth/AuthContext";
 
 export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, updatePreferredLanguage } = useAuth();
 
   const change = (code) => {
@@ -13,7 +13,7 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <div className="lang-switcher" role="group" aria-label="Language">
+    <div className="lang-switcher" role="group" aria-label={t("common.language")}>
       {SUPPORTED_LANGUAGES.map((lang) => (
         <button
           key={lang.code}

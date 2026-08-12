@@ -7,7 +7,9 @@
     "scenarios": "Catalog",
     "admin": "Admin",
     "login": "Sign in",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "menu": "Menu",
+    "primary": "Primary"
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -77,11 +79,12 @@
     "send": "Send",
     "cancel": "Cancel",
     "delete": "Delete",
-    "offline": "You are offline — showing saved content."
+    "offline": "You are offline — showing saved content.",
+    "close": "Close"
   },
   "landing": {
     "heroTitle": "Plain-language answers to your government questions",
-    "heroSubtitle": "Ask in Uzbek, Russian or English about public services, documents, taxes, visas and more — no more jumping between official sites.",
+    "heroSubtitle": "Public services, documents, taxes, visas — just ask in your language.",
     "ctaChat": "Ask the AI",
     "ctaScenarios": "Browse the catalog",
     "feature1Title": "Conversational AI",
@@ -136,7 +139,8 @@
     "feedbackReasonPlaceholder": "What was wrong? (optional)",
     "export": "Export chat",
     "voiceInput": "Voice input",
-    "relatedTitle": "Related questions"
+    "relatedTitle": "Related questions",
+    "officialSourceLabel": "{{title}} — official source"
   },
   "scenarios": {
     "title": "Scenario Catalog",
@@ -148,7 +152,8 @@
     "askPrefill": "Tell me more about: {{title}}",
     "updated": "Updated",
     "backToCatalog": "Back to catalog",
-    "itemsCount": "{{count}} topics"
+    "itemsCount_one": "{{count}} topic",
+    "itemsCount_other": "{{count}} topics"
   },
   "errors": {
     "network": "Network error — is the backend running?",

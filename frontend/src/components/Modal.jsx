@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function Modal({ title, onClose, children, footer, wide = false }) {
+  const { t } = useTranslation();
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -22,7 +24,7 @@ export default function Modal({ title, onClose, children, footer, wide = false }
       >
         <header className="modal-head">
           <h3>{title}</h3>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+          <button type="button" className="modal-close" onClick={onClose} aria-label={t("common.close")}>
             ×
           </button>
         </header>

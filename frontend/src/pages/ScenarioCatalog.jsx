@@ -66,6 +66,8 @@ export default function ScenarioCatalog() {
 
       <div className="filter-row" role="tablist">
         <button
+          role="tab"
+          aria-selected={!activeCategory}
           className={!activeCategory ? "filter-pill active" : "filter-pill"}
           onClick={() => selectCategory("")}
         >
@@ -74,6 +76,8 @@ export default function ScenarioCatalog() {
         {categories.map((c) => (
           <button
             key={c.slug}
+            role="tab"
+            aria-selected={activeCategory === c.slug}
             className={activeCategory === c.slug ? "filter-pill active" : "filter-pill"}
             onClick={() => selectCategory(c.slug)}
           >

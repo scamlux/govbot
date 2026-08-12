@@ -32,7 +32,7 @@ export default function Navbar() {
           <span className="brand-name">{t("brand")}</span>
         </Link>
 
-        <nav className={menuOpen ? "nav-links open" : "nav-links"} aria-label="Primary">
+        <nav className={menuOpen ? "nav-links open" : "nav-links"} aria-label={t("nav.primary")}>
           {links.map((l) => (
             <NavLink
               key={l.to}
@@ -69,7 +69,7 @@ export default function Navbar() {
           <button
             type="button"
             className="nav-burger"
-            aria-label="Menu"
+            aria-label={t("nav.menu")}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
           >
