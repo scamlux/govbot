@@ -36,6 +36,8 @@ export default function MessageBubble({
         </div>
         {isUser ? (
           <p className="bubble-plain">{content}</p>
+        ) : pending && !content ? (
+          <TypingDots label={t("common.loading")} />
         ) : (
           <div className="bubble-md markdown">
             <ReactMarkdown>{content || ""}</ReactMarkdown>
@@ -169,6 +171,17 @@ function FeedbackBar({ feedback, onFeedback }) {
           </button>
         </span>
       )}
+    </div>
+  );
+}
+
+/** "Assistant is typing" indicator: three brand-colored dots pulsing in sequence. */
+function TypingDots({ label }) {
+  return (
+    <div className="typing-dots" role="status" aria-label={label}>
+      <span />
+      <span />
+      <span />
     </div>
   );
 }
