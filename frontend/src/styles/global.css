@@ -1,7 +1,7 @@
 /* ===========================================================================
    GovBot — "Warm civic helper" identity, built for everyone aged 7 to 100.
-   Samarkand teal + madrasah gold on cool porcelain; a friendly rounded display
-   (Nunito) over a clean UI sans (Manrope); girih star-tile as the signature.
+   Samarkand teal + madrasah gold on cool porcelain; Verdana throughout for a
+   plain, highly legible system typeface; girih star-tile as the signature.
    Grounded in Uzbek ceramic heritage; tuned for large type, high contrast,
    big touch targets, and plain language so a child and an elder both feel at home.
    =========================================================================== */
@@ -50,8 +50,8 @@
   --read: 768px;
   --nav-h: 64px;
 
-  --font-sans: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Nunito", "Manrope", system-ui, sans-serif;
+  --font-sans: Verdana, Geneva, Tahoma, sans-serif;
+  --font-display: Verdana, Geneva, Tahoma, sans-serif;
   font-family: var(--font-sans);
 }
 
@@ -281,7 +281,7 @@ select:focus-visible,
 .markdown a { color: var(--brand-700); text-decoration: underline; }
 .markdown blockquote { border-left: 3px solid var(--brand); background: var(--brand-tint); margin: 1rem 0; padding: 0.7rem 1rem; border-radius: 0 var(--radius-xs) var(--radius-xs) 0; color: var(--ink-soft); }
 .markdown blockquote p { margin: 0.25rem 0; }
-.markdown code { background: var(--surface-3); padding: 0.1rem 0.4rem; border-radius: 6px; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.markdown code { background: var(--surface-3); padding: 0.1rem 0.4rem; border-radius: 6px; font-size: 0.88em; font-family: inherit; }
 .markdown strong { font-weight: 700; }
 
 /* ---- Chat ---- */
