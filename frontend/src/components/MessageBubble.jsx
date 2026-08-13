@@ -96,7 +96,7 @@ function SourceChip({ source }) {
             href={source.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`${title} — official source`}
+            aria-label={t("chat.officialSourceLabel", { title })}
           >
             ↗
           </a>

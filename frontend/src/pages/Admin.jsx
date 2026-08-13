@@ -149,8 +149,8 @@ function AnalyticsPanel({ onCreateScenario }) {
                 ) : gaps.length === 0 ? (
                   <li className="muted">—</li>
                 ) : (
-                  gaps.map((g, i) => (
-                    <li key={i}>
+                  gaps.map((g) => (
+                    <li key={g.question}>
                       <button
                         type="button"
                         className="gap-q gap-create"

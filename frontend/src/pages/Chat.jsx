@@ -317,7 +317,16 @@ export default function Chat() {
             <li
               key={c.id}
               className={c.id === activeId ? "conv-item active" : "conv-item"}
+              role="button"
+              tabIndex={0}
+              aria-current={c.id === activeId}
               onClick={() => openConversation(c.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openConversation(c.id);
+                }
+              }}
             >
               <span className="conv-title">{c.title || t("chat.newChat")}</span>
               <button
