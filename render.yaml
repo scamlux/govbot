@@ -44,6 +44,12 @@ services:
       # Knowledge Base reindex queue through it every 2 minutes (set in the dashboard).
       - key: KB_TICK_SECRET
         sync: false
+      # Admin account — set in the dashboard. entrypoint runs `ensure_admin` on boot to
+      # provision a staff/superuser. Email = login; password must pass Django validators.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       # OpenAI — set in the dashboard (kept out of the repo). Omit → chat runs in mock mode.
       - key: OPENAI_API_KEY
         sync: false

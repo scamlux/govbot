@@ -6,8 +6,12 @@ from rest_framework.routers import DefaultRouter
 from accounts.views import AdminUserListView
 from chat.admin_views import (
     AdminCatalogGapsView,
+    AdminConversationDetailView,
+    AdminConversationListView,
     AdminFeedbackListView,
+    AdminHealthView,
     AdminQuestionAnalyticsView,
+    AdminUsageAnalyticsView,
 )
 from scenarios.views import AdminCategoryViewSet, AdminScenarioViewSet
 
@@ -37,6 +41,22 @@ urlpatterns = [
         "api/admin/analytics/gaps/",
         AdminCatalogGapsView.as_view(),
         name="admin-analytics-gaps",
+    ),
+    path(
+        "api/admin/analytics/usage/",
+        AdminUsageAnalyticsView.as_view(),
+        name="admin-analytics-usage",
+    ),
+    path("api/admin/health/", AdminHealthView.as_view(), name="admin-health"),
+    path(
+        "api/admin/conversations/",
+        AdminConversationListView.as_view(),
+        name="admin-conversations",
+    ),
+    path(
+        "api/admin/conversations/<int:pk>/",
+        AdminConversationDetailView.as_view(),
+        name="admin-conversation-detail",
     ),
     path("api/admin/", include(admin_router.urls)),
     path("api/", include("chat.urls")),

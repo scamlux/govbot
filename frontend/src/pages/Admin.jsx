@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { adminApi } from "../api/endpoints";
 import Spinner from "../components/Spinner";
 import Modal from "../components/Modal";
+import MessageBubble from "../components/MessageBubble";
 import MultiLangField from "../components/admin/MultiLangField";
 
 const EMPTY_TR = { uz: "", ru: "", en: "" };
@@ -27,7 +28,7 @@ export default function Admin() {
       </div>
 
       <div className="admin-tabs" role="tablist">
-        {["users", "categories", "scenarios", "analytics"].map((key) => (
+        {["users", "conversations", "categories", "scenarios", "analytics", "usage", "system"].map((key) => (
           <button
             key={key}
             role="tab"
@@ -41,6 +42,7 @@ export default function Admin() {
       </div>
 
       {tab === "users" && <UsersPanel />}
+      {tab === "conversations" && <ConversationsPanel />}
       {tab === "categories" && <CategoriesPanel />}
       {tab === "scenarios" && (
         <ScenariosPanel
@@ -49,6 +51,8 @@ export default function Admin() {
         />
       )}
       {tab === "analytics" && <AnalyticsPanel onCreateScenario={createScenarioFrom} />}
+      {tab === "usage" && <UsagePanel />}
+      {tab === "system" && <SystemPanel />}
     </div>
   );
 }
@@ -560,5 +564,292 @@ function ScenarioForm({ initial, categories, onClose, onSaved, prefillTitle }) {
         {error && <p className="form-error">{error}</p>}
       </form>
     </Modal>
+  );
+}
+
+
+// ---- C3: Conversations viewer ----
+function ConversationsPanel() {
+  const { t, i18n } = useTranslation();
+  const [data, setData] = useState(null);
+  const [page, setPage] = useState(1);
+  const [openId, setOpenId] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    setData(null);
+    adminApi
+      .conversations(page)
+      .then(({ data }) => active && setData(data))
+      .catch(() => active && setData({ results: [], count: 0 }));
+    return () => {
+      active = false;
+    };
+  }, [page]);
+
+  const fmt = (iso) => new Date(iso).toLocaleString(i18n.language);
+
+  if (!data) return <Spinner />;
+  const rows = data.results ?? [];
+
+  return (
+    <section className="admin-card">
+      <div className="admin-card-head">
+        <h2>{t("admin.conversations")}</h2>
+        <span className="count-badge">{data.count ?? rows.length}</span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="muted">{t("admin.noConversations")}</p>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t("admin.user")}</th>
+                <th>{t("admin.convTitle")}</th>
+                <th>{t("admin.language")}</th>
+                <th>{t("admin.messages")}</th>
+                <th>{t("admin.updated")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((c) => (
+                <tr
+                  key={c.id}
+                  className="row-click"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setOpenId(c.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setOpenId(c.id);
+                    }
+                  }}
+                >
+                  <td>{c.user_email}</td>
+                  <td>{c.title || t("admin.untitled")}</td>
+                  <td>{c.language?.toUpperCase()}</td>
+                  <td>{c.message_count}</td>
+                  <td>{fmt(c.updated_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(data.next || data.previous) && (
+        <div className="pager">
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            disabled={!data.previous}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            {t("common.back")}
+          </button>
+          <span className="muted">{page}</span>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            disabled={!data.next}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            {t("common.next")}
+          </button>
+        </div>
+      )}
+      {openId != null && <ConversationModal id={openId} onClose={() => setOpenId(null)} />}
+    </section>
+  );
+}
+
+function ConversationModal({ id, onClose }) {
+  const { t } = useTranslation();
+  const [conv, setConv] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    adminApi
+      .conversation(id)
+      .then(({ data }) => active && setConv(data))
+      .catch(() => active && setConv({ messages: [] }));
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  return (
+    <Modal title={conv?.title || t("admin.conversation")} onClose={onClose} wide>
+      {!conv ? (
+        <Spinner />
+      ) : (
+        <div className="admin-thread">
+          {conv.messages.map((m) => (
+            <div key={m.id} className="admin-thread-item">
+              <MessageBubble role={m.role} content={m.content} sources={m.sources || []} />
+              {m.feedback && (
+                <span className={`fb-badge fb-${m.feedback.rating}`}>
+                  {m.feedback.rating === "up" ? "👍" : "👎"}
+                  {m.feedback.reason ? ` — ${m.feedback.reason}` : ""}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// ---- C3: Usage statistics ----
+function UsagePanel() {
+  const { t } = useTranslation();
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    setData(null);
+    adminApi
+      .analyticsUsage(days)
+      .then(({ data }) => active && setData(data))
+      .catch(() => active && setData(null));
+    return () => {
+      active = false;
+    };
+  }, [days]);
+
+  const maxMsg = data ? Math.max(1, ...data.series.map((d) => d.messages)) : 1;
+
+  return (
+    <section className="admin-card">
+      <div className="admin-card-head">
+        <h2>{t("admin.usage")}</h2>
+        <label className="field field-sm analytics-period">
+          <span>{t("admin.period")}</span>
+          <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+            <option value={7}>7</option>
+            <option value={30}>30</option>
+            <option value={90}>90</option>
+          </select>
+        </label>
+      </div>
+      {!data ? (
+        <Spinner />
+      ) : (
+        <>
+          <div className="kpi-row">
+            <div className="kpi-tile">
+              <span className="kpi-value">{data.totals.messages}</span>
+              <span className="kpi-label">{t("admin.messages")}</span>
+            </div>
+            <div className="kpi-tile">
+              <span className="kpi-value">{data.totals.conversations}</span>
+              <span className="kpi-label">{t("admin.conversationsShort")}</span>
+            </div>
+            <div className="kpi-tile">
+              <span className="kpi-value">{data.totals.active_users}</span>
+              <span className="kpi-label">{t("admin.activeUsers")}</span>
+            </div>
+          </div>
+
+          <div className="analytics-grid">
+            <section className="analytics-block">
+              <h3>{t("admin.messagesPerDay")}</h3>
+              <div className="bar-chart" role="img" aria-label={t("admin.messagesPerDay")}>
+                {data.series.map((d) => (
+                  <div
+                    key={d.date}
+                    className="bar"
+                    style={{ height: `${Math.round((d.messages / maxMsg) * 100)}%` }}
+                    title={`${d.date}: ${d.messages}`}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section className="analytics-block">
+              <h3>{t("admin.byLanguage")}</h3>
+              {data.by_language.length === 0 ? (
+                <p className="muted">—</p>
+              ) : (
+                <ul className="term-list">
+                  {data.by_language.map((l) => (
+                    <li key={l.language}>
+                      <span>{l.language?.toUpperCase()}</span>
+                      <span className="count-badge">{l.messages}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+// ---- C3: System health ----
+function SystemPanel() {
+  const { t } = useTranslation();
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    adminApi
+      .health()
+      .then(({ data }) => active && setData(data))
+      .catch(() => active && setError(true));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (error) return <p className="form-error">{t("errors.generic")}</p>;
+  if (!data) return <Spinner />;
+
+  const embedOk = data.embeddings.present >= data.embeddings.expected && data.embeddings.expected > 0;
+
+  return (
+    <section className="admin-card">
+      <div className="admin-card-head">
+        <h2>{t("admin.system")}</h2>
+      </div>
+      <div className="status-grid">
+        <div className={`status-card ${data.database.ok ? "ok" : "bad"}`}>
+          <span className="status-label">{t("admin.database")}</span>
+          <span className="status-value">{data.database.ok ? "OK" : "DOWN"}</span>
+        </div>
+        <div className={`status-card ${data.openai.mode === "live" ? "ok" : "warn"}`}>
+          <span className="status-label">OpenAI</span>
+          <span className="status-value">{data.openai.mode.toUpperCase()}</span>
+        </div>
+        <div className={`status-card ${embedOk ? "ok" : "warn"}`}>
+          <span className="status-label">{t("admin.embeddings")}</span>
+          <span className="status-value">
+            {data.embeddings.present}/{data.embeddings.expected}
+          </span>
+        </div>
+        <div className="status-card">
+          <span className="status-label">{t("admin.rateLimit")}</span>
+          <span className="status-value">{data.throttles.burst || "—"}</span>
+        </div>
+      </div>
+
+      <div className="analytics-grid">
+        <section className="analytics-block">
+          <h3>{t("admin.totals")}</h3>
+          <ul className="term-list">
+            <li><span>{t("admin.users")}</span><span className="count-badge">{data.counts.users}</span></li>
+            <li><span>{t("admin.conversationsShort")}</span><span className="count-badge">{data.counts.conversations}</span></li>
+            <li><span>{t("admin.messages")}</span><span className="count-badge">{data.counts.messages}</span></li>
+            <li><span>{t("admin.scenarios")}</span><span className="count-badge">{data.counts.scenarios_published}</span></li>
+          </ul>
+        </section>
+      </div>
+    </section>
   );
 }

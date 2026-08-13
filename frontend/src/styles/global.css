@@ -589,3 +589,53 @@ select:focus-visible,
 .error-boundary__card p { margin: 0 0 1.25rem; color: var(--muted, #6b7280); font-size: 0.9rem; }
 .error-boundary__card button { font: inherit; font-weight: 700; cursor: pointer; padding: 0.6rem 1.1rem; border-radius: 999px; border: none; color: #fff; background: var(--brand, #2563eb); }
 .error-boundary__card button:hover { filter: brightness(0.95); }
+
+/* ---- Admin monitoring (C3): usage, health, conversation viewer ---- */
+.kpi-row { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-bottom: 1.2rem; }
+.kpi-tile {
+  flex: 1 1 140px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 1rem 1.1rem; display: flex; flex-direction: column;
+  gap: 0.25rem; box-shadow: var(--shadow-sm);
+}
+.kpi-value { font-size: 1.7rem; font-weight: 800; color: var(--ink); line-height: 1; }
+.kpi-label { font-size: 0.82rem; color: var(--ink-soft); }
+
+.bar-chart {
+  display: flex; align-items: flex-end; gap: 2px; height: 140px; padding-top: 0.5rem;
+  overflow-x: auto;
+}
+.bar-chart .bar {
+  flex: 1 0 4px; min-height: 2px; background: var(--brand); border-radius: 2px 2px 0 0;
+  opacity: 0.85; transition: opacity 0.15s ease;
+}
+.bar-chart .bar:hover { opacity: 1; }
+
+.status-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.9rem; margin-bottom: 1.2rem;
+}
+.status-card {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line);
+  border-radius: var(--radius-sm); padding: 0.9rem 1rem; display: flex; flex-direction: column;
+  gap: 0.35rem;
+}
+.status-card.ok { border-left-color: #2fa36b; }
+.status-card.warn { border-left-color: #d9a441; }
+.status-card.bad { border-left-color: var(--danger); }
+.status-label { font-size: 0.8rem; color: var(--ink-soft); }
+.status-value { font-size: 1.15rem; font-weight: 700; color: var(--ink); }
+
+.data-table tr.row-click { cursor: pointer; }
+.data-table tr.row-click:hover { background: var(--surface-2); }
+
+.pager { display: flex; align-items: center; gap: 0.9rem; margin-top: 1rem; }
+
+.admin-thread { display: flex; flex-direction: column; gap: 1.3rem; }
+.admin-thread-item { display: flex; flex-direction: column; gap: 0.3rem; }
+.fb-badge {
+  align-self: flex-start; font-size: 0.82rem; color: var(--ink-soft);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px;
+  padding: 0.15rem 0.6rem; margin-left: 2.4rem;
+}
+.fb-badge.fb-up { color: #2fa36b; }
+.fb-badge.fb-down { color: var(--danger); }

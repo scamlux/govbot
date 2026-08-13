@@ -17,6 +17,9 @@ python manage.py migrate --noinput
 echo "Seeding scenario catalog…"
 python manage.py seed_scenarios || true
 
+echo "Ensuring admin account…"
+python manage.py ensure_admin || true
+
 echo "Collecting static files…"
 python manage.py collectstatic --noinput || true
 

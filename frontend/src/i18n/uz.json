@@ -67,7 +67,23 @@
     "createScenario": "Stsenariy yaratish",
     "noAnalytics": "Bu davr uchun hozircha ma'lumot yo'q.",
     "totalMessages": "Xabarlar",
-    "totalConversations": "Suhbatlar"
+    "totalConversations": "Suhbatlar",
+    "noConversations": "Suhbatlar yo'q",
+    "convTitle": "Sarlavha",
+    "language": "Til",
+    "updated": "Yangilangan",
+    "untitled": "(sarlavhasiz)",
+    "conversation": "Suhbat",
+    "usage": "Statistika",
+    "conversationsShort": "Suhbatlar",
+    "activeUsers": "Faol foydalanuvchilar",
+    "messagesPerDay": "Kunlik xabarlar",
+    "byLanguage": "Til bo'yicha",
+    "system": "Tizim",
+    "database": "Ma'lumotlar bazasi",
+    "embeddings": "Embeddinglar",
+    "rateLimit": "Limit",
+    "totals": "Jami"
   },
   "common": {
     "loading": "Yuklanmoqda…",
@@ -80,7 +96,8 @@
     "cancel": "Bekor qilish",
     "delete": "O'chirish",
     "offline": "Siz oflaynsiz — saqlangan kontent ko'rsatilmoqda.",
-    "close": "Yopish"
+    "close": "Yopish",
+    "next": "Keyingi"
   },
   "landing": {
     "heroTitle": "Davlat xizmatlari haqidagi savollarga sodda javoblar",
@@ -158,6 +175,7 @@
   "errors": {
     "network": "Tarmoq xatosi — backend ishlayaptimi?",
     "loadScenarios": "Katalogni yuklab bo'lmadi.",
-    "loadChat": "Suhbatni yuklab bo'lmadi."
+    "loadChat": "Suhbatni yuklab bo'lmadi.",
+    "generic": "Xatolik yuz berdi"
   }
 }

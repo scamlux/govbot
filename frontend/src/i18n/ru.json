@@ -67,7 +67,23 @@
     "createScenario": "Создать сценарий",
     "noAnalytics": "Пока нет данных за этот период.",
     "totalMessages": "Сообщений",
-    "totalConversations": "Диалогов"
+    "totalConversations": "Диалогов",
+    "noConversations": "Диалогов нет",
+    "convTitle": "Заголовок",
+    "language": "Язык",
+    "updated": "Обновлён",
+    "untitled": "(без заголовка)",
+    "conversation": "Диалог",
+    "usage": "Статистика",
+    "conversationsShort": "Диалоги",
+    "activeUsers": "Активные пользователи",
+    "messagesPerDay": "Сообщений в день",
+    "byLanguage": "По языкам",
+    "system": "Система",
+    "database": "База данных",
+    "embeddings": "Эмбеддинги",
+    "rateLimit": "Лимит",
+    "totals": "Итоги"
   },
   "common": {
     "loading": "Загрузка…",
@@ -80,7 +96,8 @@
     "cancel": "Отмена",
     "delete": "Удалить",
     "offline": "Вы офлайн — показываем сохранённое содержимое.",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "next": "Далее"
   },
   "landing": {
     "heroTitle": "Понятные ответы на вопросы о госуслугах",
@@ -160,6 +177,7 @@
   "errors": {
     "network": "Ошибка сети — бэкенд запущен?",
     "loadScenarios": "Не удалось загрузить каталог.",
-    "loadChat": "Не удалось загрузить диалог."
+    "loadChat": "Не удалось загрузить диалог.",
+    "generic": "Произошла ошибка"
   }
 }
