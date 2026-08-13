@@ -734,3 +734,9 @@ html[data-font="l"] { font-size: 113%; }
 /* Avatar as a profile link */
 .avatar-link { display: inline-flex; border-radius: 50%; transition: transform 0.15s var(--ease-out); }
 .avatar-link:hover { transform: scale(1.06); }
+
+/* ---- Admin CRUD row actions ---- */
+.row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.row-inactive { opacity: 0.55; }
+.pill-ok { background: color-mix(in srgb, var(--success) 18%, var(--surface)); color: var(--success); }
+.pill-off { background: var(--danger-bg); color: var(--danger); }

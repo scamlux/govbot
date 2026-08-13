@@ -84,7 +84,19 @@
     "database": "База данных",
     "embeddings": "Эмбеддинги",
     "rateLimit": "Лимит",
-    "totals": "Итоги"
+    "totals": "Итоги",
+    "status": "Статус",
+    "actions": "Действия",
+    "active": "Активен",
+    "blocked": "Заблокирован",
+    "toggleStaff": "Права админа",
+    "promote": "Сделать админом",
+    "demote": "Снять админа",
+    "block": "Заблокировать",
+    "unblock": "Разблокировать",
+    "confirmDeleteUser": "Удалить {{email}}?",
+    "confirmDeleteConversation": "Удалить диалог?",
+    "deleteConversation": "Удалить диалог"
   },
   "common": {
     "loading": "Загрузка…",

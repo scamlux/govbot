@@ -84,7 +84,19 @@
     "database": "Ma'lumotlar bazasi",
     "embeddings": "Embeddinglar",
     "rateLimit": "Limit",
-    "totals": "Jami"
+    "totals": "Jami",
+    "status": "Holat",
+    "actions": "Amallar",
+    "active": "Faol",
+    "blocked": "Bloklangan",
+    "toggleStaff": "Admin huquqi",
+    "promote": "Admin qilish",
+    "demote": "Adminlikni olish",
+    "block": "Bloklash",
+    "unblock": "Blokdan chiqarish",
+    "confirmDeleteUser": "{{email}} o'chirilsinmi?",
+    "confirmDeleteConversation": "Suhbat o'chirilsinmi?",
+    "deleteConversation": "Suhbatni o'chirish"
   },
   "common": {
     "loading": "Yuklanmoqda…",

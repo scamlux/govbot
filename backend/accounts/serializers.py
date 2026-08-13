@@ -43,6 +43,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "created_at",
             "last_login",
         ]
+        read_only_fields = ["id", "email", "created_at", "last_login"]
 
 
 class RegisterSerializer(serializers.ModelSerializer):

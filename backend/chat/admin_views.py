@@ -142,8 +142,8 @@ class AdminConversationListView(generics.ListAPIView):
         )
 
 
-class AdminConversationDetailView(generics.RetrieveAPIView):
-    """GET /api/admin/conversations/{id}/ — the full thread for oversight."""
+class AdminConversationDetailView(generics.RetrieveDestroyAPIView):
+    """GET/DELETE /api/admin/conversations/{id}/ — view or remove a thread (moderation)."""
 
     permission_classes = [IsAdminUser]
     serializer_class = AdminConversationDetailSerializer

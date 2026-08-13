@@ -84,7 +84,19 @@
     "database": "Database",
     "embeddings": "Embeddings",
     "rateLimit": "Rate limit",
-    "totals": "Totals"
+    "totals": "Totals",
+    "status": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "blocked": "Blocked",
+    "toggleStaff": "Admin rights",
+    "promote": "Make admin",
+    "demote": "Remove admin",
+    "block": "Block",
+    "unblock": "Unblock",
+    "confirmDeleteUser": "Delete {{email}}?",
+    "confirmDeleteConversation": "Delete this conversation?",
+    "deleteConversation": "Delete conversation"
   },
   "common": {
     "loading": "Loading…",

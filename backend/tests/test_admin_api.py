@@ -270,3 +270,37 @@ def test_admin_health(admin_client, user_client):
     assert data["database"]["ok"] is True
     assert data["openai"]["mode"] in ("live", "mock")
     assert "counts" in data and "users" in data["counts"]
+
+
+# ---- Admin CRUD: user management + conversation delete ----
+def test_admin_update_user_flags(admin_client):
+    u = User.objects.create_user(email="target@example.com", password="Targ3t!12345")
+    resp = admin_client.patch(f"/api/admin/users/{u.id}/", {"is_staff": True, "is_active": False}, format="json")
+    assert resp.status_code == 200
+    u.refresh_from_db()
+    assert u.is_staff is True and u.is_active is False
+
+
+def test_admin_delete_user(admin_client):
+    u = User.objects.create_user(email="doomed@example.com", password="Doom3d!12345")
+    assert admin_client.delete(f"/api/admin/users/{u.id}/").status_code == 204
+    assert not User.objects.filter(id=u.id).exists()
+
+
+def test_admin_cannot_demote_or_delete_self(admin_client):
+    me = User.objects.get(email="admin@example.com")
+    assert admin_client.patch(f"/api/admin/users/{me.id}/", {"is_staff": False}, format="json").status_code == 400
+    assert admin_client.delete(f"/api/admin/users/{me.id}/").status_code == 400
+    me.refresh_from_db()
+    assert me.is_staff is True
+
+
+def test_admin_user_detail_requires_staff(user_client):
+    u = User.objects.create_user(email="x2@example.com", password="Xxxx!12345")
+    assert user_client.patch(f"/api/admin/users/{u.id}/", {"is_active": False}, format="json").status_code == 403
+
+
+def test_admin_delete_conversation(admin_client):
+    conv = _seed_conversation()
+    assert admin_client.delete(f"/api/admin/conversations/{conv.id}/").status_code == 204
+    assert not Conversation.objects.filter(id=conv.id).exists()
