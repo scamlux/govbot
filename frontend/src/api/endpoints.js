@@ -35,6 +35,11 @@ export const adminApi = {
   analyticsQuestions: (days) =>
     api.get("/admin/analytics/questions/", { params: { days } }),
   analyticsGaps: (days) => api.get("/admin/analytics/gaps/", { params: { days } }),
+  // C3 monitoring — conversations viewer, usage stats, system health
+  conversations: (page) => api.get("/admin/conversations/", { params: { page } }),
+  conversation: (id) => api.get(`/admin/conversations/${id}/`),
+  analyticsUsage: (days) => api.get("/admin/analytics/usage/", { params: { days } }),
+  health: () => api.get("/admin/health/"),
 };
 
 // ---- Chat ----

@@ -16,6 +16,7 @@ from collections import Counter
 from datetime import timedelta
 
 from django.db.models import Count
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from .models import Conversation, Message
@@ -153,3 +154,73 @@ def _preceding_question(conv_user_msgs, assistant) -> str:
         else:
             break
     return best
+
+
+def usage_analytics(days: int = 30) -> dict:
+    """C3 — usage over the trailing window: per-day volume, language split, totals.
+
+    All aggregates (no per-row Python). Days are zero-filled so the client can
+    chart a continuous series.
+    """
+    since = _since(days)
+    start_day = since.date()
+    today = timezone.now().date()
+
+    # Per-day message volume + distinct active users.
+    msg_rows = (
+        Message.objects.filter(created_at__gte=since)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(messages=Count("id"), active_users=Count("conversation__user", distinct=True))
+    )
+    # Per-day new conversations.
+    conv_rows = (
+        Conversation.objects.filter(created_at__gte=since)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(conversations=Count("id"))
+    )
+
+    by_day: dict = {}
+    cursor = start_day
+    while cursor <= today:
+        by_day[cursor] = {
+            "date": cursor.isoformat(),
+            "messages": 0,
+            "conversations": 0,
+            "active_users": 0,
+        }
+        cursor += timedelta(days=1)
+    for r in msg_rows:
+        d = by_day.get(r["day"])
+        if d is not None:
+            d["messages"] = r["messages"]
+            d["active_users"] = r["active_users"]
+    for r in conv_rows:
+        d = by_day.get(r["day"])
+        if d is not None:
+            d["conversations"] = r["conversations"]
+
+    by_language = [
+        {"language": row["conversation__language"], "messages": row["messages"]}
+        for row in (
+            Message.objects.filter(created_at__gte=since)
+            .values("conversation__language")
+            .annotate(messages=Count("id"))
+            .order_by("-messages")
+        )
+    ]
+
+    return {
+        "days": days,
+        "series": [by_day[k] for k in sorted(by_day)],
+        "by_language": by_language,
+        "totals": {
+            "messages": Message.objects.filter(created_at__gte=since).count(),
+            "conversations": Conversation.objects.filter(created_at__gte=since).count(),
+            "active_users": Message.objects.filter(created_at__gte=since)
+            .values("conversation__user")
+            .distinct()
+            .count(),
+        },
+    }

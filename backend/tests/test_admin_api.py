@@ -213,3 +213,60 @@ def test_catalog_gaps_excludes_error_and_demo_replies(admin_client):
     resp = admin_client.get("/api/admin/analytics/gaps/")
     assert resp.status_code == 200
     assert resp.json()["gaps"] == []
+
+
+# ---- C3 monitoring: conversations viewer, usage, health ----
+def _seed_conversation():
+    owner = User.objects.create_user(email="owner@example.com", password="Own3r!12345")
+    conv = Conversation.objects.create(user=owner, title="Passport", language="ru")
+    Message.objects.create(conversation=conv, role="user", content="Как получить паспорт?")
+    a = Message.objects.create(conversation=conv, role="assistant", content="Вот шаги…", sources=[])
+    MessageFeedback.objects.create(message=a, rating="up")
+    return conv
+
+
+def test_admin_conversations_requires_staff(user_client):
+    assert user_client.get("/api/admin/conversations/").status_code == 403
+
+
+def test_admin_conversations_list_for_staff(admin_client):
+    _seed_conversation()
+    resp = admin_client.get("/api/admin/conversations/")
+    assert resp.status_code == 200
+    rows = resp.json()["results"]
+    row = next(r for r in rows if r["title"] == "Passport")
+    assert row["user_email"] == "owner@example.com"
+    assert row["message_count"] == 2
+    assert "messages" not in row  # list stays lightweight
+
+
+def test_admin_conversation_detail_for_staff(admin_client):
+    conv = _seed_conversation()
+    resp = admin_client.get(f"/api/admin/conversations/{conv.id}/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["messages"]) == 2
+    assistant = next(m for m in data["messages"] if m["role"] == "assistant")
+    assert assistant["feedback"] == {"rating": "up", "reason": ""}
+
+
+def test_admin_usage_analytics(admin_client, user_client):
+    _seed_conversation()
+    assert user_client.get("/api/admin/analytics/usage/").status_code == 403
+    resp = admin_client.get("/api/admin/analytics/usage/?days=7")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["totals"]["messages"] == 2
+    assert data["totals"]["conversations"] == 1
+    assert isinstance(data["series"], list) and data["series"]
+    assert any(l["language"] == "ru" for l in data["by_language"])
+
+
+def test_admin_health(admin_client, user_client):
+    assert user_client.get("/api/admin/health/").status_code == 403
+    resp = admin_client.get("/api/admin/health/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["database"]["ok"] is True
+    assert data["openai"]["mode"] in ("live", "mock")
+    assert "counts" in data and "users" in data["counts"]

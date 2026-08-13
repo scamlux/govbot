@@ -67,7 +67,23 @@
     "createScenario": "Create scenario",
     "noAnalytics": "No data for this period yet.",
     "totalMessages": "Messages",
-    "totalConversations": "Conversations"
+    "totalConversations": "Conversations",
+    "noConversations": "No conversations",
+    "convTitle": "Title",
+    "language": "Language",
+    "updated": "Updated",
+    "untitled": "(untitled)",
+    "conversation": "Conversation",
+    "usage": "Usage",
+    "conversationsShort": "Conversations",
+    "activeUsers": "Active users",
+    "messagesPerDay": "Messages per day",
+    "byLanguage": "By language",
+    "system": "System",
+    "database": "Database",
+    "embeddings": "Embeddings",
+    "rateLimit": "Rate limit",
+    "totals": "Totals"
   },
   "common": {
     "loading": "Loading…",
@@ -80,7 +96,8 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "offline": "You are offline — showing saved content.",
-    "close": "Close"
+    "close": "Close",
+    "next": "Next"
   },
   "landing": {
     "heroTitle": "Plain-language answers to your government questions",
@@ -158,6 +175,7 @@
   "errors": {
     "network": "Network error — is the backend running?",
     "loadScenarios": "Could not load the catalog.",
-    "loadChat": "Could not load the conversation."
+    "loadChat": "Could not load the conversation.",
+    "generic": "Something went wrong"
   }
 }

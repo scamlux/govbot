@@ -89,3 +89,22 @@ def test_me_endpoint_returns_profile_and_updates_language():
 def test_me_requires_auth():
     resp = APIClient().get(reverse("me"))
     assert resp.status_code == 401
+
+
+def test_login_is_rate_limited(db):
+    """The auth throttle returns 429 once the per-IP window is exceeded."""
+    from django.core.cache import cache
+    from rest_framework.test import APIClient
+
+    cache.clear()
+    client = APIClient()
+    codes = [
+        client.post(
+            "/api/auth/login/",
+            {"email": "nobody@example.com", "password": "wrong-password-xyz"},
+            format="json",
+        ).status_code
+        for _ in range(12)
+    ]
+    cache.clear()
+    assert 429 in codes  # brute-force attempts get throttled

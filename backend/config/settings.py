@@ -166,6 +166,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "chat_burst": env("CHAT_THROTTLE_BURST", default="20/min"),
         "chat_sustained": env("CHAT_THROTTLE_SUSTAINED", default="500/day"),
+        # Anti–brute-force on login/register (by IP). Env-tunable.
+        "auth": env("AUTH_THROTTLE", default="10/min"),
     },
 }
 
