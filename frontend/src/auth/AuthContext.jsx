@@ -94,6 +94,12 @@ export function AuthProvider({ children }) {
     [user]
   );
 
+  const updateProfile = useCallback(async (patch) => {
+    const { data } = await authApi.updateMe(patch);
+    setUser(data);
+    return data;
+  }, []);
+
   const value = {
     user,
     loading,
@@ -102,6 +108,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     updatePreferredLanguage,
+    updateProfile,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

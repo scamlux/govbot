@@ -14,6 +14,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const Chat = lazy(() => import("./pages/Chat"));
+const Profile = lazy(() => import("./pages/Profile"));
 const ScenarioCatalog = lazy(() => import("./pages/ScenarioCatalog"));
 const ScenarioDetail = lazy(() => import("./pages/ScenarioDetail"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -44,6 +45,14 @@ export default function App() {
           />
           <Route path="/scenarios" element={<ScenarioCatalog />} />
           <Route path="/scenarios/:slug" element={<ScenarioDetail />} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin"
             element={

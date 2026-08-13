@@ -9,7 +9,8 @@
     "login": "Sign in",
     "logout": "Sign out",
     "menu": "Menu",
-    "primary": "Primary"
+    "primary": "Primary",
+    "profile": "Profile"
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -177,5 +178,34 @@
     "loadScenarios": "Could not load the catalog.",
     "loadChat": "Could not load the conversation.",
     "generic": "Something went wrong"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Account and appearance settings",
+    "account": "Account",
+    "email": "Email",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "language": "Language",
+    "save": "Save",
+    "saved": "Saved",
+    "appearance": "Appearance",
+    "reset": "Reset",
+    "theme": "Theme",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_system": "System",
+    "accent": "Accent",
+    "fontSize": "Font size",
+    "font_s": "Small",
+    "font_m": "Medium",
+    "font_l": "Large",
+    "chatBg": "Chat background",
+    "bg_plain": "Plain",
+    "bg_tile": "Tile",
+    "bg_dots": "Dots",
+    "bg_warm": "Warm",
+    "bg_cool": "Cool",
+    "appearanceHint": "Settings are saved on this device."
   }
 }

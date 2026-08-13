@@ -50,13 +50,15 @@ export default function Navbar() {
           <LanguageSwitcher />
           {user ? (
             <div className="user-chip">
-              {user.avatar_url ? (
-                <img src={user.avatar_url} alt="" className="avatar" />
-              ) : (
-                <span className="avatar avatar-fallback">
-                  {user.display_name?.[0]?.toUpperCase() ?? "U"}
-                </span>
-              )}
+              <Link to="/profile" className="avatar-link" title={t("nav.profile")} aria-label={t("nav.profile")}>
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="" className="avatar" />
+                ) : (
+                  <span className="avatar avatar-fallback">
+                    {user.display_name?.[0]?.toUpperCase() ?? "U"}
+                  </span>
+                )}
+              </Link>
               <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
                 {t("nav.logout")}
               </button>

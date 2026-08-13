@@ -21,8 +21,10 @@
   --brand:      #0c6c8a;
   --brand-600:  #0a586f;
   --brand-700:  #073f51;
-  --brand-soft: #cfe6ea;  /* tinted backgrounds */
-  --brand-tint: #e4f0f2;  /* lighter tint */
+  --brand-soft: #cfe6ea;  /* tinted backgrounds (static fallback) */
+  --brand-soft: color-mix(in srgb, var(--brand) 20%, var(--surface));
+  --brand-tint: #e4f0f2;  /* lighter tint (static fallback) */
+  --brand-tint: color-mix(in srgb, var(--brand) 10%, var(--surface));
 
   /* Madrasah gold — the single warm accent / "seal". Large marks only, never small text on light. */
   --gold:       #b9861a;
@@ -41,7 +43,8 @@
   --shadow-sm: 0 1px 2px rgba(9, 42, 54, 0.05);
   --shadow:    0 1px 3px rgba(9, 42, 54, 0.07), 0 14px 30px -16px rgba(9, 42, 54, 0.22);
   --shadow-lg: 0 30px 66px -28px rgba(9, 42, 54, 0.34);
-  --ring:      0 0 0 4px rgba(12, 108, 138, 0.38);  /* bold, obvious keyboard focus */
+  --ring:      0 0 0 4px rgba(12, 108, 138, 0.38);  /* fallback */
+  --ring:      0 0 0 4px color-mix(in srgb, var(--brand) 40%, transparent);  /* keyboard focus */
 
   /* Girih — seamless 8-point-star tile lattice; the product's signature motif. */
   --tile: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='60'%20height='60'%20viewBox='0%200%2060%2060'%3E%3Cg%20fill='none'%20stroke='%230c6c8a'%20stroke-width='1.1'%20stroke-linejoin='round'%3E%3Cpolygon%20points='30,6%2054,30%2030,54%206,30'/%3E%3Cpolygon%20points='13,13%2047,13%2047,47%2013,47'/%3E%3Cpath%20d='M30,6%2030,0%20M30,54%2030,60%20M6,30%200,30%20M54,30%2060,30%20M13,13%203,3%20M47,13%2057,3%20M47,47%2057,57%20M13,47%203,57'/%3E%3C/g%3E%3C/svg%3E");
@@ -639,3 +642,95 @@ select:focus-visible,
 }
 .fb-badge.fb-up { color: #2fa36b; }
 .fb-badge.fb-down { color: var(--danger); }
+
+/* ===========================================================================
+   Appearance personalisation (Telegram-style): accent colour, dark mode,
+   font scale, chat background. Driven by data-* on <html> from ThemeContext.
+   Neutral tokens are overridden per-theme; brand-soft/tint/ring use color-mix
+   so they follow both the accent and the light/dark surface automatically.
+   =========================================================================== */
+
+/* ---- Accent presets (override the brand ramp; soft/tint/ring derive from it) ---- */
+:root[data-accent="teal"]   { --brand:#0c6c8a; --brand-600:#0a586f; --brand-700:#073f51; }
+:root[data-accent="blue"]   { --brand:#2f6fed; --brand-600:#2559c9; --brand-700:#1d449e; }
+:root[data-accent="violet"] { --brand:#7a5af0; --brand-600:#6544d6; --brand-700:#4f34ad; }
+:root[data-accent="green"]  { --brand:#1f9d57; --brand-600:#178246; --brand-700:#106537; }
+:root[data-accent="rose"]   { --brand:#e0518b; --brand-600:#c73f76; --brand-700:#a12e5d; }
+:root[data-accent="amber"]  { --brand:#c47d16; --brand-600:#a86711; --brand-700:#7c4c0c; }
+
+/* ---- Dark theme: override neutrals only; brand handled by accent + color-mix ---- */
+:root[data-theme="dark"] {
+  --bg:        #0f1720;
+  --surface:   #17212b;
+  --surface-2: #1c2732;
+  --surface-3: #26333f;
+  --ink:       #e7edf2;
+  --ink-soft:  #a9b8c3;
+  --muted:     #7f92a0;
+  --line:      #27333f;
+  --line-soft: #1f2a34;
+  --danger-bg: #3a1a17;
+  /* brand-700 is used only as TEXT (links, badges, active states) on light/tint
+     surfaces — lift it on dark so every such usage stays legible in one move. */
+  --brand-700: color-mix(in srgb, var(--brand) 58%, #ffffff);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow:    0 1px 3px rgba(0, 0, 0, 0.36), 0 14px 30px -16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 30px 66px -28px rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
+}
+:root[data-theme="dark"] .navbar { background: color-mix(in srgb, var(--surface) 82%, transparent); }
+:root[data-theme="dark"] .btn-primary:disabled { background: color-mix(in srgb, var(--brand) 40%, var(--surface)); }
+
+/* ---- Font scale ---- */
+html[data-font="s"] { font-size: 100%; }
+html[data-font="m"] { font-size: 106.25%; }
+html[data-font="l"] { font-size: 113%; }
+
+/* ---- Chat background variants (applied to the message scroll area) ---- */
+[data-chat-bg="tile"] .chat-messages { background-image: var(--tile); background-size: 60px 60px; }
+[data-chat-bg="dots"] .chat-messages {
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 12%, transparent) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+[data-chat-bg="warm"] .chat-messages {
+  background-image: linear-gradient(160deg,
+    color-mix(in srgb, var(--gold) 10%, var(--bg)), var(--bg) 60%);
+}
+[data-chat-bg="cool"] .chat-messages {
+  background-image: linear-gradient(160deg,
+    color-mix(in srgb, var(--brand) 12%, var(--bg)), var(--bg) 60%);
+}
+
+/* ---- Profile & appearance controls ---- */
+.profile { max-width: var(--read); }
+.profile .admin-card { margin-bottom: 1.3rem; }
+.profile-form { display: flex; flex-direction: column; gap: 1.1rem; }
+.field input:disabled { background: var(--surface-2); color: var(--ink-soft); cursor: not-allowed; }
+.profile-actions { display: flex; align-items: center; gap: 1rem; }
+.save-ok { color: var(--success); font-weight: 700; font-size: 0.92rem; }
+.profile-hint { margin-top: 1rem; font-size: 0.86rem; }
+
+/* Segmented control (theme / font / language / chat bg) */
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg-wrap { flex-wrap: wrap; border-radius: var(--radius-sm); }
+.seg-btn {
+  border: none; background: transparent; color: var(--ink-soft); cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: 0.9rem; padding: 0.5rem 1rem;
+  border-radius: 999px; transition: background 0.18s var(--ease-out), color 0.18s ease;
+}
+.seg-btn:hover { color: var(--ink); }
+.seg-btn.active { background: var(--surface); color: var(--brand-700); box-shadow: var(--shadow-sm); }
+
+/* Accent colour swatches */
+.swatch-row { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+.swatch {
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer; padding: 0;
+  background: var(--sw); border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--line); transition: transform 0.15s var(--ease-out), box-shadow 0.15s ease;
+}
+.swatch:hover { transform: translateY(-2px); }
+.swatch.active { box-shadow: 0 0 0 3px var(--sw); transform: translateY(-2px); }
+
+/* Avatar as a profile link */
+.avatar-link { display: inline-flex; border-radius: 50%; transition: transform 0.15s var(--ease-out); }
+.avatar-link:hover { transform: scale(1.06); }

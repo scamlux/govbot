@@ -9,7 +9,8 @@
     "login": "Kirish",
     "logout": "Chiqish",
     "menu": "Menyu",
-    "primary": "Asosiy navigatsiya"
+    "primary": "Asosiy navigatsiya",
+    "profile": "Profil"
   },
   "admin": {
     "title": "Administrator paneli",
@@ -177,5 +178,34 @@
     "loadScenarios": "Katalogni yuklab bo'lmadi.",
     "loadChat": "Suhbatni yuklab bo'lmadi.",
     "generic": "Xatolik yuz berdi"
+  },
+  "profile": {
+    "title": "Profil",
+    "subtitle": "Hisob va ko'rinishni sozlang",
+    "account": "Hisob",
+    "email": "Email",
+    "name": "Ism",
+    "namePlaceholder": "Ismingiz",
+    "language": "Til",
+    "save": "Saqlash",
+    "saved": "Saqlandi",
+    "appearance": "Ko'rinish",
+    "reset": "Tiklash",
+    "theme": "Mavzu",
+    "theme_light": "Yorug'",
+    "theme_dark": "Tungi",
+    "theme_system": "Tizim",
+    "accent": "Urg'u rangi",
+    "fontSize": "Shrift o'lchami",
+    "font_s": "Kichik",
+    "font_m": "O'rta",
+    "font_l": "Katta",
+    "chatBg": "Chat foni",
+    "bg_plain": "Oddiy",
+    "bg_tile": "Naqsh",
+    "bg_dots": "Nuqtalar",
+    "bg_warm": "Iliq",
+    "bg_cool": "Salqin",
+    "appearanceHint": "Sozlamalar shu qurilmada saqlanadi."
   }
 }
