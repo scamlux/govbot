@@ -1,5 +1,6 @@
 from django.db.models import Count
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -57,6 +58,34 @@ class AdminUserListView(generics.ListAPIView):
         return User.objects.annotate(
             conversation_count=Count("conversations")
         ).order_by("-created_at")
+
+
+class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Staff-only: view / edit (is_staff, is_active, …) / delete a user.
+
+    Guards against locking yourself out: you cannot delete your own account or
+    revoke your own staff/active flags.
+    """
+
+    permission_classes = [IsAdminUser]
+    serializer_class = AdminUserSerializer
+    http_method_names = ["get", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        return User.objects.annotate(conversation_count=Count("conversations"))
+
+    def perform_update(self, serializer):
+        obj = serializer.instance
+        if obj == self.request.user:
+            data = serializer.validated_data
+            if data.get("is_staff") is False or data.get("is_active") is False:
+                raise ValidationError({"detail": "You cannot revoke your own access."})
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance == self.request.user:
+            raise ValidationError({"detail": "You cannot delete your own account."})
+        instance.delete()
 
 
 class MeView(generics.RetrieveUpdateAPIView):

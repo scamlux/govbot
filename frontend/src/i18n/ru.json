@@ -9,7 +9,8 @@
     "login": "Войти",
     "logout": "Выйти",
     "menu": "Меню",
-    "primary": "Основная навигация"
+    "primary": "Основная навигация",
+    "profile": "Профиль"
   },
   "admin": {
     "title": "Панель администратора",
@@ -83,7 +84,19 @@
     "database": "База данных",
     "embeddings": "Эмбеддинги",
     "rateLimit": "Лимит",
-    "totals": "Итоги"
+    "totals": "Итоги",
+    "status": "Статус",
+    "actions": "Действия",
+    "active": "Активен",
+    "blocked": "Заблокирован",
+    "toggleStaff": "Права админа",
+    "promote": "Сделать админом",
+    "demote": "Снять админа",
+    "block": "Заблокировать",
+    "unblock": "Разблокировать",
+    "confirmDeleteUser": "Удалить {{email}}?",
+    "confirmDeleteConversation": "Удалить диалог?",
+    "deleteConversation": "Удалить диалог"
   },
   "common": {
     "loading": "Загрузка…",
@@ -179,5 +192,34 @@
     "loadScenarios": "Не удалось загрузить каталог.",
     "loadChat": "Не удалось загрузить диалог.",
     "generic": "Произошла ошибка"
+  },
+  "profile": {
+    "title": "Профиль",
+    "subtitle": "Настройки аккаунта и внешнего вида",
+    "account": "Аккаунт",
+    "email": "Эл. почта",
+    "name": "Имя",
+    "namePlaceholder": "Ваше имя",
+    "language": "Язык",
+    "save": "Сохранить",
+    "saved": "Сохранено",
+    "appearance": "Внешний вид",
+    "reset": "Сбросить",
+    "theme": "Тема",
+    "theme_light": "Светлая",
+    "theme_dark": "Тёмная",
+    "theme_system": "Системная",
+    "accent": "Акцент",
+    "fontSize": "Размер шрифта",
+    "font_s": "Мелкий",
+    "font_m": "Средний",
+    "font_l": "Крупный",
+    "chatBg": "Фон чата",
+    "bg_plain": "Обычный",
+    "bg_tile": "Узор",
+    "bg_dots": "Точки",
+    "bg_warm": "Тёплый",
+    "bg_cool": "Холодный",
+    "appearanceHint": "Настройки сохраняются на этом устройстве."
   }
 }

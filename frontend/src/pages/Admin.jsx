@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
 import { adminApi } from "../api/endpoints";
+import { useAuth } from "../auth/AuthContext";
 import Spinner from "../components/Spinner";
 import Modal from "../components/Modal";
 import MessageBubble from "../components/MessageBubble";
@@ -198,11 +199,38 @@ function AnalyticsPanel({ onCreateScenario }) {
 /* ----------------------------- Users ----------------------------- */
 function UsersPanel() {
   const { t, i18n } = useTranslation();
+  const { user: me } = useAuth();
   const [users, setUsers] = useState(null);
+  const [busy, setBusy] = useState(null);
 
   useEffect(() => {
     adminApi.users().then(({ data }) => setUsers(data)).catch(() => setUsers([]));
   }, []);
+
+  const patchUser = async (id, patch) => {
+    setBusy(id);
+    try {
+      const { data } = await adminApi.updateUser(id, patch);
+      setUsers((prev) => prev.map((u) => (u.id === id ? data : u)));
+    } catch {
+      /* ignore — row stays as-is */
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const removeUser = async (u) => {
+    if (!window.confirm(t("admin.confirmDeleteUser", { email: u.email }))) return;
+    setBusy(u.id);
+    try {
+      await adminApi.deleteUser(u.id);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch {
+      /* ignore */
+    } finally {
+      setBusy(null);
+    }
+  };
 
   if (!users) return <Spinner />;
 
@@ -219,35 +247,70 @@ function UsersPanel() {
               <th>{t("admin.user")}</th>
               <th>{t("admin.email")}</th>
               <th>{t("admin.role")}</th>
+              <th>{t("admin.status")}</th>
               <th>{t("admin.lang")}</th>
               <th>{t("admin.conversations")}</th>
-              <th>{t("admin.joined")}</th>
+              <th>{t("admin.actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>
-                  <div className="cell-user">
-                    <span className="avatar avatar-fallback sm">
-                      {u.display_name?.[0]?.toUpperCase() || "U"}
+            {users.map((u) => {
+              const isSelf = me?.id === u.id;
+              return (
+                <tr key={u.id} className={u.is_active ? "" : "row-inactive"}>
+                  <td>
+                    <div className="cell-user">
+                      <span className="avatar avatar-fallback sm">
+                        {u.display_name?.[0]?.toUpperCase() || "U"}
+                      </span>
+                      {u.full_name || u.display_name}
+                    </div>
+                  </td>
+                  <td className="muted">{u.email}</td>
+                  <td>
+                    <span className={u.is_staff ? "pill pill-staff" : "pill"}>
+                      {u.is_staff ? t("admin.staff") : t("admin.member")}
                     </span>
-                    {u.full_name || u.display_name}
-                  </div>
-                </td>
-                <td className="muted">{u.email}</td>
-                <td>
-                  <span className={u.is_staff ? "pill pill-staff" : "pill"}>
-                    {u.is_staff ? t("admin.staff") : t("admin.member")}
-                  </span>
-                </td>
-                <td>{u.preferred_language?.toUpperCase()}</td>
-                <td>{u.conversation_count}</td>
-                <td className="muted">
-                  {new Date(u.created_at).toLocaleDateString(i18n.language)}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>
+                    <span className={u.is_active ? "pill pill-ok" : "pill pill-off"}>
+                      {u.is_active ? t("admin.active") : t("admin.blocked")}
+                    </span>
+                  </td>
+                  <td>{u.preferred_language?.toUpperCase()}</td>
+                  <td>{u.conversation_count}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        disabled={isSelf || busy === u.id}
+                        title={t("admin.toggleStaff")}
+                        onClick={() => patchUser(u.id, { is_staff: !u.is_staff })}
+                      >
+                        {u.is_staff ? t("admin.demote") : t("admin.promote")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        disabled={isSelf || busy === u.id}
+                        onClick={() => patchUser(u.id, { is_active: !u.is_active })}
+                      >
+                        {u.is_active ? t("admin.block") : t("admin.unblock")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger-ghost btn-sm"
+                        disabled={isSelf || busy === u.id}
+                        onClick={() => removeUser(u)}
+                      >
+                        {t("common.delete")}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -659,14 +722,28 @@ function ConversationsPanel() {
           </button>
         </div>
       )}
-      {openId != null && <ConversationModal id={openId} onClose={() => setOpenId(null)} />}
+      {openId != null && (
+        <ConversationModal
+          id={openId}
+          onClose={() => setOpenId(null)}
+          onDeleted={(id) => {
+            setData((prev) =>
+              prev
+                ? { ...prev, results: (prev.results || []).filter((c) => c.id !== id) }
+                : prev
+            );
+            setOpenId(null);
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function ConversationModal({ id, onClose }) {
+function ConversationModal({ id, onClose, onDeleted }) {
   const { t } = useTranslation();
   const [conv, setConv] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -679,8 +756,25 @@ function ConversationModal({ id, onClose }) {
     };
   }, [id]);
 
+  const remove = async () => {
+    if (!window.confirm(t("admin.confirmDeleteConversation"))) return;
+    setDeleting(true);
+    try {
+      await adminApi.deleteConversation(id);
+      onDeleted?.(id);
+    } catch {
+      setDeleting(false);
+    }
+  };
+
+  const footer = (
+    <button type="button" className="btn btn-danger-ghost" onClick={remove} disabled={deleting}>
+      {t("admin.deleteConversation")}
+    </button>
+  );
+
   return (
-    <Modal title={conv?.title || t("admin.conversation")} onClose={onClose} wide>
+    <Modal title={conv?.title || t("admin.conversation")} onClose={onClose} wide footer={footer}>
       {!conv ? (
         <Spinner />
       ) : (
