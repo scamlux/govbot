@@ -44,6 +44,15 @@ export default function Navbar() {
               {l.label}
             </NavLink>
           ))}
+          {/* Mobile-only drawer extras: language switch + logout (hidden ≥900px). */}
+          <div className="nav-drawer-extra">
+            <LanguageSwitcher />
+            {user && (
+              <button type="button" className="btn btn-outline btn-block" onClick={handleLogout}>
+                {t("nav.logout")}
+              </button>
+            )}
+          </div>
         </nav>
 
         <div className="nav-actions">
