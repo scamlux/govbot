@@ -195,7 +195,9 @@ select:focus-visible,
 .hero { position: relative; text-align: center; padding: 5.75rem 1rem 3.75rem; isolation: isolate; }
 /* Signature layer — the girih star-tile lattice, dissolving toward the edges like a glazed wall. */
 .hero::before {
-  content: ""; position: absolute; inset: -32% -20% auto -20%; height: 620px; z-index: -2;
+  /* Horizontal insets kept at 0 — a negative -20% bleed made this decorative
+     layer wider than the viewport and caused horizontal scroll on mobile. */
+  content: ""; position: absolute; inset: -32% 0 auto 0; height: 620px; z-index: -2;
   background-image: var(--tile); background-size: 64px 64px; opacity: 0.09;
   -webkit-mask-image: radial-gradient(58% 60% at 50% 34%, #000 0%, transparent 72%);
           mask-image: radial-gradient(58% 60% at 50% 34%, #000 0%, transparent 72%);
