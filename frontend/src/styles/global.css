@@ -736,7 +736,9 @@ html[data-font="l"] { font-size: 113%; }
 .avatar-link:hover { transform: scale(1.06); }
 
 /* ---- Admin CRUD row actions ---- */
-.row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.row-actions { display: flex; flex-direction: column; gap: 0.35rem; width: 150px; }
+.row-actions .btn { width: 100%; min-height: 34px; padding: 0.3rem 0.55rem; font-size: 0.82rem; }
+.data-table td:last-child, .data-table th:last-child { position: sticky; right: 0; background: var(--surface); }
 .row-inactive { opacity: 0.55; }
 .pill-ok { background: color-mix(in srgb, var(--success) 18%, var(--surface)); color: var(--success); }
 .pill-off { background: var(--danger-bg); color: var(--danger); }
