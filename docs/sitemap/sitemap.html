@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>GovBot — карта сайта</title>
+<style>
+  :root{
+    --bg:#eef3f4; --ink:#10252b; --muted:#4f6a72; --card:#ffffff; --line:#c5d6da;
+    --brand:#0f6b88; --brand-soft:#d8ebf1;
+    --pub:#1f7a4d; --pub-bg:#dcf1e5;
+    --auth:#9a6400; --auth-bg:#fdeccb;
+    --adm:#a3262a; --adm-bg:#fadcdc;
+    --api:#4b3f9e; --api-bg:#e5e1f8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue","Segoe UI",Arial,sans-serif;width:1800px;padding:44px 48px 40px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:26px}
+  h1{font-size:40px;letter-spacing:-.5px}
+  h1 small{display:block;font-size:16px;font-weight:400;color:var(--muted);margin-top:6px;letter-spacing:0}
+  .legend{display:flex;gap:10px;font-size:14px}
+  .tag{display:inline-block;border-radius:999px;padding:4px 12px;font-weight:600;font-size:13px}
+  .t-pub{background:var(--pub-bg);color:var(--pub)}
+  .t-auth{background:var(--auth-bg);color:var(--auth)}
+  .t-adm{background:var(--adm-bg);color:var(--adm)}
+  .t-api{background:var(--api-bg);color:var(--api)}
+
+  .bar{background:var(--brand);color:#fff;border-radius:14px;padding:14px 22px;display:flex;align-items:center;gap:22px;font-size:16px;margin-bottom:8px}
+  .bar b{font-size:20px;margin-right:6px}
+  .bar span.pill{background:rgba(255,255,255,.16);padding:5px 14px;border-radius:999px;font-size:14px}
+  .bar .sp{flex:1}
+  .note{font-size:13px;color:var(--muted);margin:0 0 22px 4px}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-items:start}
+  .col{display:flex;flex-direction:column;gap:20px}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card.pub{border-color:var(--pub)} .card.auth{border-color:var(--auth)} .card.adm{border-color:var(--adm)} .card.api{border-color:var(--api)}
+  .card h3{font-size:20px;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+  .route{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;color:var(--brand);margin-bottom:8px}
+  .card p{font-size:14px;color:var(--muted);line-height:1.45;margin-bottom:8px}
+  ul{list-style:none}
+  li{font-size:14px;line-height:1.45;padding:3px 0 3px 16px;position:relative}
+  li::before{content:"";position:absolute;left:2px;top:11px;width:6px;height:6px;border-radius:50%;background:var(--line)}
+  .card.pub li::before{background:var(--pub)} .card.auth li::before{background:var(--auth)} .card.adm li::before{background:var(--adm)} .card.api li::before{background:var(--api)}
+  li code, .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:#eef3f4;border-radius:5px;padding:1px 5px;color:#25434c}
+  .sub{margin-top:10px;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .tab{background:var(--adm-bg);color:var(--adm);border-radius:8px;padding:7px 10px;font-size:13.5px;font-weight:600}
+  .arrow{font-size:13px;color:var(--muted);text-align:center}
+  .wide{grid-column:span 2}
+  footer{margin-top:22px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>GovBot — карта сайта<small>Что реализовано сейчас: React 18 + Vite (фронт) · Django 5 + DRF (бэк) · языки UZ / RU / EN</small></h1>
+  <div class="legend">
+    <span class="tag t-pub">Публично</span>
+    <span class="tag t-auth">Нужен вход</span>
+    <span class="tag t-adm">Только staff</span>
+    <span class="tag t-api">API / бэкенд</span>
+  </div>
+</header>
+
+<div class="bar">
+  <b>GovBot</b>
+  <span class="pill">Bosh sahifa → /</span>
+  <span class="pill">Katalog → /scenarios</span>
+  <span class="pill">AI suhbat → /chat</span>
+  <span class="pill">Admin → /admin (только staff)</span>
+  <span class="sp"></span>
+  <span class="pill">UZ · RU · EN</span>
+  <span class="pill">Профиль · Выход / Kirish</span>
+</div>
+<p class="note">Общая навигационная панель на всех страницах. Баннер офлайн-режима и PWA (manifest + service worker) работают поверх всего приложения.</p>
+
+<div class="grid">
+
+  <!-- COLUMN 1: public -->
+  <div class="col">
+    <div class="card pub">
+      <h3>Лендинг <span class="tag t-pub">публично</span></h3>
+      <div class="route">/</div>
+      <ul>
+        <li><b>Hero</b>: слоган, кнопки «Спросить AI» и «Открыть каталог»</li>
+        <li><b>Features</b>: AI-чат · каталог сценариев · три языка</li>
+        <li><b>Превью категорий</b>: 7 карточек, ссылка <code>/scenarios?category=slug</code></li>
+      </ul>
+    </div>
+    <div class="card pub">
+      <h3>Вход <span class="tag t-pub">публично</span></h3>
+      <div class="route">/login</div>
+      <ul><li>email + пароль → JWT, редирект в <code>/chat</code></li><li>ссылка на регистрацию</li></ul>
+    </div>
+    <div class="card pub">
+      <h3>Регистрация <span class="tag t-pub">публично</span></h3>
+      <div class="route">/register</div>
+      <ul><li>имя, email, пароль → автоматический вход</li></ul>
+    </div>
+    <div class="card pub">
+      <h3>404 <span class="tag t-pub">публично</span></h3>
+      <div class="route">* (любой другой адрес)</div>
+      <ul><li>страница «не найдено»</li></ul>
+    </div>
+  </div>
+
+  <!-- COLUMN 2: catalog + chat -->
+  <div class="col">
+    <div class="card pub">
+      <h3>Каталог сценариев <span class="tag t-pub">публично</span></h3>
+      <div class="route">/scenarios</div>
+      <ul>
+        <li>сетка из 7 категорий, 35 сценариев в сидах</li>
+        <li>поиск и фильтр по категории (<code>?category=</code>)</li>
+        <li>контент на выбранном языке</li>
+      </ul>
+    </div>
+    <div class="arrow">▼ клик по карточке</div>
+    <div class="card pub">
+      <h3>Карточка сценария <span class="tag t-pub">публично</span></h3>
+      <div class="route">/scenarios/:slug</div>
+      <ul>
+        <li>markdown-текст инструкции</li>
+        <li>кнопка «Спросить AI об этом» → чат с готовым вопросом (гостя отправляет на вход)</li>
+        <li><b>Пробел:</b> <code>source_url</code> здесь не показывается, ссылка на ведомство видна только в чипах чата</li>
+      </ul>
+    </div>
+    <div class="card auth">
+      <h3>AI-чат <span class="tag t-auth">нужен вход</span></h3>
+      <div class="route">/chat</div>
+      <ul>
+        <li>сайдбар диалогов: создать, открыть, удалить</li>
+        <li>SSE-стриминг ответа, индикатор набора</li>
+        <li>RAG: ответы с чипами источников</li>
+        <li>👍 / 👎 с причиной</li>
+        <li>похожие вопросы, быстрые подсказки</li>
+        <li>голосовой ввод (Web Speech)</li>
+        <li>экспорт диалога в Markdown</li>
+        <li>демо-режим без ключа OpenAI</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- COLUMN 3: profile + admin -->
+  <div class="col">
+    <div class="card auth">
+      <h3>Профиль <span class="tag t-auth">нужен вход</span></h3>
+      <div class="route">/profile</div>
+      <ul>
+        <li>имя, email, язык по умолчанию</li>
+        <li><b>Внешний вид</b>: тема, акцентный цвет, размер шрифта, фон чата, сброс</li>
+      </ul>
+    </div>
+    <div class="card adm">
+      <h3>Админ-панель <span class="tag t-adm">staff</span></h3>
+      <div class="route">/admin</div>
+      <p>Семь вкладок:</p>
+      <div class="tabs">
+        <div class="tab">1 · Пользователи</div>
+        <div class="tab">2 · Диалоги</div>
+        <div class="tab">3 · Категории</div>
+        <div class="tab">4 · Сценарии</div>
+        <div class="tab">5 · Аналитика</div>
+        <div class="tab">6 · Статистика</div>
+        <div class="tab wide">7 · Система</div>
+      </div>
+      <div class="sub">Что внутри</div>
+      <ul>
+        <li><b>Пользователи</b>: роль, блокировка, выдача админки, удаление</li>
+        <li><b>Диалоги</b>: просмотр переписок</li>
+        <li><b>Категории и сценарии</b>: CRUD, поля на 3 языках, публикация</li>
+        <li><b>Аналитика</b>: топ вопросов, языки, пробелы каталога → «создать сценарий», 👎</li>
+        <li><b>Статистика</b>: использование</li>
+        <li><b>Система</b>: состояние сервиса</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- COLUMN 4: backend -->
+  <div class="col">
+    <div class="card api">
+      <h3>API <span class="tag t-api">/api/…</span></h3>
+      <div class="sub">Auth</div>
+      <ul><li><code>auth/register · login · refresh · me</code></li></ul>
+      <div class="sub">Чат (JWT)</div>
+      <ul>
+        <li><code>conversations/</code> (список, создать, удалить)</li>
+        <li><code>…/messages/</code> и <code>…/messages/stream/</code> (SSE)</li>
+        <li><code>messages/:id/feedback/</code></li>
+        <li><code>chat/related/</code></li>
+      </ul>
+      <div class="sub">Каталог (публично)</div>
+      <ul><li><code>scenarios/categories/</code> · <code>scenarios/</code> · <code>scenarios/:slug/</code></li></ul>
+      <div class="sub">Админ (staff)</div>
+      <ul>
+        <li><code>admin/users/</code>, <code>admin/conversations/</code></li>
+        <li><code>admin/categories/</code>, <code>admin/scenarios/</code></li>
+        <li><code>admin/feedback/</code>, <code>admin/analytics/…</code></li>
+        <li><code>admin/health/</code>, usage</li>
+      </ul>
+      <div class="sub">Служебное</div>
+      <ul><li><code>health/</code> · <code>internal/kb/tick/</code></li></ul>
+    </div>
+    <div class="card api">
+      <h3>AI-слой <span class="tag t-api">бэкенд</span></h3>
+      <ul>
+        <li>OpenAI-чат со стримом</li>
+        <li>RAG по каталогу: векторы или ключевые слова</li>
+        <li>База знаний: ссылки, файлы, текст → чанки + эмбеддинги (только Django-админка <code>/admin/</code>, во фронте нет)</li>
+        <li>Лимиты запросов, защита от перебора</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>Источник: frontend/src/App.jsx, pages/Admin.jsx, backend/*/urls.py · снято с кода репозитория scamlux/govbot</span>
+  <span>Дата: 2026-10-27</span>
+</footer>
+</body>
+</html>
