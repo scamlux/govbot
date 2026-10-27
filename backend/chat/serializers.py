@@ -72,6 +72,8 @@ class CreateMessageSerializer(serializers.Serializer):
     language = serializers.ChoiceField(
         choices=["uz", "ru", "en"], required=False, default="uz"
     )
+    # R5 — opt-in simple-language answers.
+    plain = serializers.BooleanField(required=False, default=False)
 
     def _error_lang(self):
         """Resolve the error language: request body -> user's preferred -> uz."""
@@ -91,3 +93,26 @@ class CreateMessageSerializer(serializers.Serializer):
         if len(value) > max_chars:
             raise serializers.ValidationError(TOO_LONG_MESSAGE[self._error_lang()])
         return value
+
+
+class GuestHistoryItemSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=["user", "assistant"])
+    content = serializers.CharField(allow_blank=True, trim_whitespace=False)
+
+
+class GuestMessageSerializer(CreateMessageSerializer):
+    """B1 — a stateless guest turn: the client sends its own short history.
+
+    Nothing is persisted; history is capped so a guest cannot ship an arbitrarily long
+    prompt (each item is also length-capped).
+    """
+
+    history = GuestHistoryItemSerializer(many=True, required=False, default=list)
+
+    def validate_history(self, value):
+        max_chars = getattr(settings, "CHAT_MAX_MESSAGE_CHARS", 4000)
+        trimmed = value[-10:]
+        return [
+            {"role": item["role"], "content": item["content"][:max_chars]}
+            for item in trimmed
+        ]

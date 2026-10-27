@@ -105,12 +105,19 @@ class AdminConversationSerializer(serializers.ModelSerializer):
 
 class AdminMessageSerializer(serializers.ModelSerializer):
     feedback = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
         fields = ["id", "role", "content", "tokens", "model", "sources",
                   "created_at", "feedback"]
         read_only_fields = fields
+
+    def get_content(self, obj):
+        # F4 — operators can be denied access to message bodies (metadata stays visible).
+        if not getattr(settings, "ADMIN_CAN_READ_CONVERSATIONS", True):
+            return "[redacted]"
+        return obj.content
 
     def get_feedback(self, obj):
         fb = getattr(obj, "feedback", None)

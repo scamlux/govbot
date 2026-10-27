@@ -116,9 +116,13 @@ def test_build_payload_injects_grounding(catalog):
 def test_build_payload_without_match_has_no_grounding(catalog):
     messages = [{"role": "user", "content": "zzzzz nonexistent topic"}]
     payload = services.build_payload(messages, "en")
-    assert len(payload) == 2  # base system prompt + user message only
+    # A6 — base system prompt + explicit "no verified material" instruction + user message.
+    assert len(payload) == 3
     assert payload[0]["role"] == "system"
-    assert payload[1]["role"] == "user"
+    assert payload[1]["role"] == "system"
+    assert "no verified material" in payload[1]["content"].lower()
+    assert "reference material" not in payload[1]["content"].lower()
+    assert payload[2]["role"] == "user"
 
 
 def test_generate_reply_still_mock_without_key(catalog):

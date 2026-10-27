@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # 3rd party
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",  # F2 — server-side logout
     "corsheaders",
     # local
     "accounts",
@@ -168,6 +169,11 @@ REST_FRAMEWORK = {
         "chat_sustained": env("CHAT_THROTTLE_SUSTAINED", default="500/day"),
         # Anti–brute-force on login/register (by IP). Env-tunable.
         "auth": env("AUTH_THROTTLE", default="10/min"),
+        # B1 — anonymous guest chat, keyed by client IP (only active when enabled).
+        "guest_burst": env("GUEST_THROTTLE_BURST", default="5/min"),
+        "guest_sustained": env("GUEST_THROTTLE_SUSTAINED", default="30/day"),
+        # D1 — Telegram bot, keyed by Telegram chat id.
+        "telegram": env("TELEGRAM_THROTTLE", default="20/hour"),
     },
 }
 
@@ -179,6 +185,10 @@ SIMPLE_JWT = {
         days=env.int("REFRESH_TOKEN_LIFETIME_DAYS", default=7)
     ),
     "ROTATE_REFRESH_TOKENS": True,
+    # F2 — a rotated refresh token is revoked, and /auth/logout/ revokes the current one.
+    # The SPA serialises refreshes through a single in-flight promise (api/client.js), so
+    # two tabs racing a refresh share one call instead of revoking each other.
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -249,6 +259,33 @@ CHAT_MAX_MESSAGE_CHARS = env.int("CHAT_MAX_MESSAGE_CHARS", default=4000)
 # which a scenario is treated as irrelevant.
 RETRIEVAL_TOP_K = env.int("RETRIEVAL_TOP_K", default=3)
 RETRIEVAL_MIN_SCORE = env.float("RETRIEVAL_MIN_SCORE", default=0.28)
+
+# ---------------------------------------------------------------------------
+# Chat behaviour flags (all safe-by-default: nothing new is exposed until enabled)
+# ---------------------------------------------------------------------------
+# E5 — kill-switch. "ai" (default) answers with the LLM; "catalog_only" never calls the
+# LLM and replies with links to matching catalog scenarios instead.
+CHAT_MODE = env("CHAT_MODE", default="ai")
+# B1 — anonymous guest chat (stateless, nothing stored). Off by default because every
+# guest message spends OpenAI budget; IP-throttled by GUEST_THROTTLE_* when on.
+GUEST_CHAT_ENABLED = env.bool("GUEST_CHAT_ENABLED", default=False)
+# A7 — answer in the language the question is written in when it is detected confidently.
+CHAT_AUTODETECT_LANGUAGE = env.bool("CHAT_AUTODETECT_LANGUAGE", default=True)
+# F4 — conversations untouched for this many days are deleted by `purge_conversations`
+# (0 = keep forever). Run the command from a cron/scheduled job.
+CONVERSATION_RETENTION_DAYS = env.int("CONVERSATION_RETENTION_DAYS", default=0)
+# F4 — whether staff may read message bodies in the admin conversation viewer. When off,
+# staff still see metadata (who/when/how many) but bodies are redacted.
+ADMIN_CAN_READ_CONVERSATIONS = env.bool("ADMIN_CAN_READ_CONVERSATIONS", default=True)
+# E4 — a scenario whose verification is older than this is flagged as stale in the admin.
+SCENARIO_STALE_DAYS = env.int("SCENARIO_STALE_DAYS", default=90)
+
+# ---------------------------------------------------------------------------
+# D1 — Telegram bot (off until TELEGRAM_BOT_TOKEN is set)
+# ---------------------------------------------------------------------------
+TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
+# Secret Telegram echoes in X-Telegram-Bot-Api-Secret-Token; requests without it are refused.
+TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET", default="")
 
 # ---------------------------------------------------------------------------
 # Knowledge Base ingestion (admin-managed RAG sources)

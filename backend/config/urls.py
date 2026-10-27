@@ -13,6 +13,7 @@ from chat.admin_views import (
     AdminQuestionAnalyticsView,
     AdminUsageAnalyticsView,
 )
+from knowledge.admin_api import AdminKnowledgeSourceViewSet
 from scenarios.views import AdminCategoryViewSet, AdminScenarioViewSet
 
 
@@ -24,6 +25,8 @@ def health(_request):
 admin_router = DefaultRouter()
 admin_router.register("categories", AdminCategoryViewSet, basename="admin-category")
 admin_router.register("scenarios", AdminScenarioViewSet, basename="admin-scenario")
+# E3 — knowledge base sources managed from the in-app admin.
+admin_router.register("kb/sources", AdminKnowledgeSourceViewSet, basename="admin-kb-source")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

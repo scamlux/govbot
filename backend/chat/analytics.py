@@ -128,21 +128,102 @@ def catalog_gaps(days: int = 30, limit: int = 20) -> dict:
     ).order_by("conversation_id", "created_at"):
         user_by_conv.setdefault(m.conversation_id, []).append(m)
 
-    clusters: Counter = Counter()
-    examples: dict = {}
+    questions: list[str] = []
     for assistant in ungrounded:
         question = _preceding_question(user_by_conv.get(assistant.conversation_id), assistant)
-        if not question:
-            continue
-        key = " ".join(question.lower().split())
-        clusters[key] += 1
-        examples.setdefault(key, question.strip())
+        if question and question.strip():
+            questions.append(question.strip())
 
+    groups = cluster_questions(questions)
     gaps = [
-        {"question": examples[key], "count": count}
-        for key, count in clusters.most_common(limit)
+        {"question": g["example"], "count": g["count"], "variants": g["variants"][:5]}
+        for g in groups[:limit]
     ]
     return {"days": days, "gaps": gaps}
+
+
+# ---------------------------------------------------------------------------
+# A8 — group paraphrases of the same missing topic
+# ---------------------------------------------------------------------------
+_CLUSTER_STOP = _STOPWORDS | {
+    "qanday", "nima", "uchun", "kerak", "qayerda", "qachon", "mumkin", "how", "do", "i",
+    "my", "a", "to", "is", "in", "of", "on", "я", "в", "на", "и", "с", "по", "у",
+}
+_JACCARD_THRESHOLD = 0.5
+_COSINE_THRESHOLD = 0.82
+
+
+def _terms(text: str) -> frozenset:
+    from .safety import normalize_apostrophes
+
+    words = _WORD_RE.findall(normalize_apostrophes(text).lower())
+    # Crude stemming: the first 5 letters merge "passport"/"passports"/"паспорта".
+    return frozenset(w[:5] for w in words if len(w) > 2 and w not in _CLUSTER_STOP)
+
+
+def _jaccard(a: frozenset, b: frozenset) -> float:
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def cluster_questions(questions: list[str]) -> list[dict]:
+    """Greedy single-pass clustering of near-duplicate questions.
+
+    Vector mode (OpenAI key set): cosine similarity of question embeddings — groups
+    paraphrases across wording and even language. Fallback: Jaccard overlap of stemmed
+    content terms — still merges "passport renewal" / "renew my passport". Returns groups
+    sorted by size: ``[{"example", "count", "variants"}]``.
+    """
+    from . import retrieval
+
+    if not questions:
+        return []
+
+    # Exact (normalised) duplicates first, so the expensive comparison runs on unique text.
+    exact: Counter = Counter()
+    example_of: dict[str, str] = {}
+    for q in questions:
+        key = " ".join(q.lower().split())
+        exact[key] += 1
+        example_of.setdefault(key, q)
+    keys = [k for k, _ in exact.most_common()]
+
+    vectors = retrieval.embed_texts(keys) if retrieval.embeddings_enabled() else None
+
+    groups: list[dict] = []
+    for idx, key in enumerate(keys):
+        terms = _terms(key)
+        vec = vectors[idx] if vectors else None
+        target = None
+        for group in groups:
+            if vec is not None and group["vec"] is not None:
+                if retrieval.cosine(vec, group["vec"]) >= _COSINE_THRESHOLD:
+                    target = group
+                    break
+            elif _jaccard(terms, group["terms"]) >= _JACCARD_THRESHOLD:
+                target = group
+                break
+        if target is None:
+            groups.append(
+                {
+                    "example": example_of[key],
+                    "count": exact[key],
+                    "variants": [example_of[key]],
+                    "terms": terms,
+                    "vec": vec,
+                }
+            )
+        else:
+            target["count"] += exact[key]
+            target["variants"].append(example_of[key])
+            target["terms"] = target["terms"] | terms
+
+    groups.sort(key=lambda g: g["count"], reverse=True)
+    return [
+        {"example": g["example"], "count": g["count"], "variants": g["variants"]}
+        for g in groups
+    ]
 
 
 def _preceding_question(conv_user_msgs, assistant) -> str:

@@ -1,24 +1,38 @@
 import json
 
+from django.conf import settings
 from django.db.models import Count
-from django.http import StreamingHttpResponse
+from django.http import Http404, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.exceptions import Throttled
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import retrieval, services
+from . import retrieval, safety, services
 from .models import Conversation, Message, MessageFeedback
 from .serializers import (
     ConversationDetailSerializer,
     ConversationListSerializer,
     CreateMessageSerializer,
+    GuestMessageSerializer,
     MessageFeedbackSerializer,
     MessageSerializer,
 )
-from .throttles import ChatBurstThrottle, ChatSustainedThrottle
+from .throttles import (
+    ChatBurstThrottle,
+    ChatSustainedThrottle,
+    GuestBurstThrottle,
+    GuestSustainedThrottle,
+)
+
+
+def reply_language(content: str, requested: str) -> str:
+    """A7 — answer in the question's language when detected confidently (if enabled)."""
+    if getattr(settings, "CHAT_AUTODETECT_LANGUAGE", True):
+        return safety.resolve_reply_language(content, requested)
+    return requested
 
 # A1 — localized text shown when a user hits the chat rate limit (429).
 THROTTLE_MESSAGE = {
@@ -99,7 +113,10 @@ class MessageCreateView(_ThrottledChatView):
         serializer = CreateMessageSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         content = serializer.validated_data["content"]
-        language = serializer.validated_data.get("language") or conversation.language
+        language = reply_language(
+            content, serializer.validated_data.get("language") or conversation.language
+        )
+        plain = serializer.validated_data.get("plain", False)
 
         user_msg = Message.objects.create(
             conversation=conversation, role=Message.USER, content=content
@@ -109,7 +126,7 @@ class MessageCreateView(_ThrottledChatView):
         history = _history_payload(conversation)
         # B1 — retrieve grounding once, reuse for the prompt and for the response sources.
         snippets = services.retrieve_snippets(history, language)
-        reply = services.generate_reply(history, language, snippets=snippets)
+        reply = services.generate_reply(history, language, snippets=snippets, plain=plain)
         sources = reply.get("sources") or []
         assistant_msg = Message.objects.create(
             conversation=conversation,
@@ -126,6 +143,7 @@ class MessageCreateView(_ThrottledChatView):
                 "user_message": MessageSerializer(user_msg).data,
                 "assistant_message": MessageSerializer(assistant_msg).data,
                 "sources": sources,
+                "language": language,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -146,7 +164,10 @@ class MessageStreamView(_ThrottledChatView):
         serializer = CreateMessageSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         content = serializer.validated_data["content"]
-        language = serializer.validated_data.get("language") or conversation.language
+        language = reply_language(
+            content, serializer.validated_data.get("language") or conversation.language
+        )
+        plain = serializer.validated_data.get("plain", False)
 
         user_msg = Message.objects.create(
             conversation=conversation, role=Message.USER, content=content
@@ -159,9 +180,11 @@ class MessageStreamView(_ThrottledChatView):
         sources = services.sources_from_snippets(snippets)
 
         def event_stream():
-            yield _sse("meta", {"user_message_id": user_msg.id})
+            yield _sse("meta", {"user_message_id": user_msg.id, "language": language})
             parts: list[str] = []
-            for chunk in services.stream_reply(history, language, snippets=snippets):
+            for chunk in services.stream_reply(
+                history, language, snippets=snippets, plain=plain
+            ):
                 parts.append(chunk)
                 yield _sse_data({"delta": chunk})
             full = "".join(parts)
@@ -169,7 +192,7 @@ class MessageStreamView(_ThrottledChatView):
                 conversation=conversation,
                 role=Message.ASSISTANT,
                 content=full,
-                model=services.settings.OPENAI_MODEL if not services.is_mock_mode() else "mock",
+                model=services.reply_model_label(),
                 sources=sources or None,  # B3
             )
             conversation.save(update_fields=["updated_at"])
@@ -236,6 +259,82 @@ class RelatedQuestionsView(APIView):
             message, language, exclude_slug=exclude_slug
         )
         return Response({"related_questions": questions})
+
+
+class GuestMessageStreamView(APIView):
+    """B1 — anonymous, stateless chat turn streamed via SSE (feature-flagged).
+
+    ``POST /api/chat/guest/stream/`` with ``{content, language, plain?, history: [...]}``.
+    Nothing is stored server-side: the client keeps the thread. Throttled per IP
+    (``GUEST_THROTTLE_*``) and refused with 404 unless ``GUEST_CHAT_ENABLED`` is on, so the
+    endpoint does not exist from the outside until an operator opts in.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [GuestBurstThrottle, GuestSustainedThrottle]
+
+    def initial(self, request, *args, **kwargs):
+        if not getattr(settings, "GUEST_CHAT_ENABLED", False):
+            raise Http404
+        super().initial(request, *args, **kwargs)
+
+    def throttled(self, request, wait):
+        language = request.data.get("language")
+        if language not in THROTTLE_MESSAGE:
+            language = "uz"
+        raise Throttled(wait=wait, detail=THROTTLE_MESSAGE[language])
+
+    def post(self, request):
+        serializer = GuestMessageSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        content = serializer.validated_data["content"]
+        language = reply_language(content, serializer.validated_data.get("language") or "uz")
+        plain = serializer.validated_data.get("plain", False)
+        history = list(serializer.validated_data.get("history") or [])
+        history.append({"role": "user", "content": content})
+
+        snippets = services.retrieve_snippets(history, language)
+        sources = services.sources_from_snippets(snippets)
+
+        def event_stream():
+            yield _sse("meta", {"guest": True, "language": language})
+            parts: list[str] = []
+            for chunk in services.stream_reply(
+                history, language, snippets=snippets, plain=plain
+            ):
+                parts.append(chunk)
+                yield _sse_data({"delta": chunk})
+            if sources:
+                yield _sse("sources", {"sources": sources})
+            yield _sse("done", {"assistant_message_id": None, "content": "".join(parts)})
+
+        response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
+
+
+class PublicConfigView(APIView):
+    """``GET /api/config/`` — feature flags the SPA needs before rendering.
+
+    Only booleans/labels that are safe to expose; never keys or limits.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response(
+            {
+                "guest_chat": bool(getattr(settings, "GUEST_CHAT_ENABLED", False)),
+                "chat_mode": getattr(settings, "CHAT_MODE", "ai"),
+                "ai_mode": "catalog_only"
+                if services.is_catalog_only()
+                else ("mock" if services.is_mock_mode() else "live"),
+                "telegram_bot": bool(getattr(settings, "TELEGRAM_BOT_TOKEN", "")),
+            }
+        )
 
 
 def _sse_data(payload: dict) -> str:

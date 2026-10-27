@@ -151,20 +151,41 @@ def _vector_retrieve(query_vec, language, k):
     return scored[:k]
 
 
-def _keyword_retrieve(query, language, k):
-    """Fallback: rank published scenarios by distinct query-term overlap in ``language``."""
-    from scenarios.models import Scenario
+_STEM_LEN = 5
+_APOSTROPHES = str.maketrans({"ʻ": "'", "ʼ": "'", "‘": "'", "’": "'", "`": "'"})
+# Title matches say far more about topic than a word buried in the body.
+_TITLE_WEIGHT = 2.0
 
-    q_tokens = _tokens(query)
-    if not q_tokens:
+
+def _stems(text: str) -> set[str]:
+    """Content-word stems (first 5 letters) — a crude, language-agnostic stemmer.
+
+    Merges inflections that exact-token overlap misses ("passport"/"passports",
+    "паспорт"/"паспорта", "pasport"/"pasportim") in all three catalog languages.
+    """
+    return {tok[:_STEM_LEN] for tok in _tokens((text or "").translate(_APOSTROPHES))}
+
+
+def _keyword_retrieve(query, language, k):
+    """Fallback: rank published scenarios by stemmed term overlap in ``language``.
+
+    Score = body/title stem overlap + an extra weight for stems found in the title.
+    Tuned against the golden set (``manage.py eval_retrieval``, A4).
+    """
+    from scenarios.models import Scenario, localize
+
+    q_stems = _stems(query)
+    if not q_stems:
         return []
 
     scored = []
     for scenario in Scenario.objects.filter(is_published=True):
-        text = scenario.embedding_source_text(language)
-        overlap = len(q_tokens & _tokens(text))
+        text_stems = _stems(scenario.embedding_source_text(language))
+        title_stems = _stems(localize(scenario.title, language))
+        overlap = len(q_stems & text_stems)
         if overlap:
-            scored.append((scenario, float(overlap)))
+            score = overlap + _TITLE_WEIGHT * len(q_stems & title_stems)
+            scored.append((scenario, float(score)))
     scored.sort(key=lambda pair: pair[1], reverse=True)
     return scored[:k]
 
