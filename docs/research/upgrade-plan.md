@@ -11,7 +11,9 @@
 - Перед пушем: backend pytest, `makemigrations --check`, frontend `npm test` и `npm run build`.
 
 **Проверка на 2026-10-28:** backend 235 тестов ✅ (было 157), frontend 35 тестов ✅ (было 18), `vite build` ✅, миграции не нужны ✅. Ручная проверка в браузере (Playwright, 1440px и 320px, uz): главная, роли, гостевой чат, онбординг, карточка сценария, админка. Скриншоты: `docs/screenshots/after/`.
-Коммиты: backend `dbdf8a1`, frontend + docs — следующий коммит в `main`.
+Коммиты в `main`: backend `dbdf8a1`, frontend + docs `3fb1964`.
+
+**Прод после пуша (2026-10-28):** Vercel обновился сразу (`/widget.js` 200; `/embed` отдаёт `frame-ancestors *`, остальные страницы `frame-ancestors 'self'` + `SAMEORIGIN`). Render обновился за 165 с: `/api/config/` → `{"guest_chat":false,"chat_mode":"ai","ai_mode":"live","telegram_bot":false}`; миграция `0004` применена (у сценариев есть `verified_at`, `checklist`, `audience`); `?audience=tourist` → 8 тем; гостевой стрим и Telegram webhook → 404 (флаги выключены); `auth/logout/` без токена → 400.
 
 ## Волна 1 — доверие и доступность
 
