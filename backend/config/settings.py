@@ -11,6 +11,7 @@ from pathlib import Path
 import sys
 
 import environ
+from corsheaders.defaults import default_headers as default_cors_headers
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -197,7 +198,7 @@ if NUM_PROXIES is not None:
 # The Django default (per-process LocMemCache) gave each of the 3 workers its own counters
 # (limits ~3x looser than configured) and reset them whenever Render's free tier slept —
 # which makes any daily cap meaningless. A small DB-backed cache fixes both; the table is
-# created by `manage.py createcache` in entrypoint.sh. Tests use the in-memory cache.
+# created by `manage.py createcachetable` in entrypoint.sh. Tests use the in-memory cache.
 # ---------------------------------------------------------------------------
 if "pytest" in sys.modules:
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
@@ -260,6 +261,9 @@ CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://[a-z0-9-]+\.vercel\.app$"]
 # cross-origin credentialed requests — so credentialed CORS is switched off. Otherwise any
 # *.vercel.app site allowed above could make credentialed calls to the API.
 CORS_ALLOW_CREDENTIALS = False
+# The SPA sends X-Auth-Cookie: 1 on every API call (F1 opt-in). A build that still points
+# at the API cross-origin must not fail its CORS preflight because of it.
+CORS_ALLOW_HEADERS = (*default_cors_headers, "x-auth-cookie")
 
 # Trusted origins for unsafe (POST) requests to Django admin behind a proxy. Django 5
 # accepts a wildcard subdomain here, so Vercel preview URLs are covered too.

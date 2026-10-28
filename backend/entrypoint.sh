@@ -16,7 +16,7 @@ python manage.py migrate --noinput
 
 # Shared throttle/cache table (idempotent: a no-op when it already exists).
 echo "Ensuring cache table…"
-python manage.py createcache || true
+python manage.py createcachetable
 
 echo "Seeding scenario catalog…"
 python manage.py seed_scenarios || true
