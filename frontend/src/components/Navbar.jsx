@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import LanguageSwitcher from "./LanguageSwitcher";
 
-export default function Navbar() {
+export default function Navbar({ onOpenSearch }) {
   const { t } = useTranslation();
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
@@ -56,6 +56,19 @@ export default function Navbar() {
         </nav>
 
         <div className="nav-actions">
+          {onOpenSearch && (
+            <button
+              type="button"
+              className="nav-search"
+              onClick={onOpenSearch}
+              aria-label={t("nav.searchHint")}
+              title={t("nav.searchHint")}
+            >
+              <span aria-hidden="true">🔍</span>
+              <span className="nav-search-label">{t("nav.search")}</span>
+              <kbd aria-hidden="true">Ctrl K</kbd>
+            </button>
+          )}
           <LanguageSwitcher />
           {user ? (
             <div className="user-chip">

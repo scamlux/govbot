@@ -1795,6 +1795,34 @@ SCENARIOS = [{'slug': 'passport-renewal',
 class Command(BaseCommand):
     help = "Seed the Scenario Catalog with trilingual sample data (idempotent)."
 
+    # B3 — who each topic is mainly for (drives the role filter on the landing page).
+    # This is a topical classification, not legal data; anything unlisted applies to
+    # everyone. Editors can refine it in the admin.
+    AUDIENCE = {
+        "citizen": [
+            "passport-renewal", "id-card-issuance", "lost-passport", "birth-certificate",
+            "marriage-registration", "register-llc", "sole-proprietor-registration",
+            "business-license", "close-company", "e-signature-business", "personal-tin",
+            "tax-declaration", "vat-registration", "itpark-tax-benefits", "pay-taxes-online",
+            "health-insurance", "newborn-health", "drivers-license", "vehicle-registration",
+            "number-plates", "permanent-residence-registration", "change-registered-address",
+            "newborn-registration", "deregistration",
+        ],
+        "resident": [
+            "work-permit", "residence-permit", "citizenship", "temporary-residence-registration",
+            "evisa-extension", "personal-tin", "health-insurance", "drivers-license",
+            "register-llc", "itpark-tax-benefits",
+        ],
+        "tourist": [
+            "tourist-visa", "evisa-extension", "temporary-residence-registration",
+            "emergency-medical", "pay-traffic-fines",
+        ],
+    }
+
+    @classmethod
+    def audience_for(cls, slug: str) -> list[str]:
+        return [role for role, slugs in cls.AUDIENCE.items() if slug in slugs]
+
     @transaction.atomic
     def handle(self, *args, **options):
         cat_by_slug = {}
@@ -1825,6 +1853,7 @@ class Command(BaseCommand):
                     "tags": data["tags"],
                     "order": data["order"],
                     "is_published": True,
+                    "audience": self.audience_for(data["slug"]),
                 },
             )
             self.stdout.write(("  + " if created else "  ~ ") + f"scenario {scenario.slug}")

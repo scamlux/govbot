@@ -10,7 +10,9 @@
     "logout": "Chiqish",
     "menu": "Menyu",
     "primary": "Asosiy navigatsiya",
-    "profile": "Profil"
+    "profile": "Profil",
+    "search": "Qidiruv",
+    "searchHint": "Mavzularni qidirish (Ctrl+K)"
   },
   "admin": {
     "title": "Administrator paneli",
@@ -96,7 +98,31 @@
     "unblock": "Blokdan chiqarish",
     "confirmDeleteUser": "{{email}} o'chirilsinmi?",
     "confirmDeleteConversation": "Suhbat o'chirilsinmi?",
-    "deleteConversation": "Suhbatni o'chirish"
+    "deleteConversation": "Suhbatni o'chirish",
+    "overview": "Umumiy ko'rinish",
+    "knowledge": "Bilimlar bazasi",
+    "status_draft": "Qoralama",
+    "status_review": "Tekshiruvda",
+    "status_published": "Nashr etilgan",
+    "verifiedAt": "Tekshirilgan sana",
+    "checklist": "Hujjatlar ro'yxati (har qatorda bittadan)",
+    "audience": "Auditoriya",
+    "history": "Tarix",
+    "restore": "Tiklash",
+    "noRevisions": "Oldingi versiyalar hali yo'q.",
+    "stale": "Qayta tekshirish kerak",
+    "staleHint": "Hech tekshirilmagan yoki {{days}} kundan oldin tekshirilgan nashr etilgan stsenariylar.",
+    "kbAdd": "Manba qo'shish",
+    "kbType": "Turi",
+    "kbUrl": "Havola",
+    "kbPaste": "Matn",
+    "kbFile": "Fayl",
+    "kbReindex": "Qayta indekslash",
+    "kbChunks": "Bo'laklar",
+    "kbEmpty": "Hali manbalar yo'q.",
+    "kbIndexHint": "Yangi manbalar navbatga qo'yiladi va fon vazifasi tomonidan indekslanadi.",
+    "confirmTitle": "Amalni tasdiqlang",
+    "variants": "Variantlar"
   },
   "common": {
     "loading": "Yuklanmoqda…",
@@ -110,7 +136,11 @@
     "delete": "O'chirish",
     "offline": "Siz oflaynsiz — saqlangan kontent ko'rsatilmoqda.",
     "close": "Yopish",
-    "next": "Keyingi"
+    "next": "Keyingi",
+    "skipToContent": "Asosiy mazmunga o'tish",
+    "confirm": "Tasdiqlash",
+    "stop": "To'xtatish",
+    "copy": "Nusxalash"
   },
   "landing": {
     "heroTitle": "Davlat xizmatlari haqidagi savollarga sodda javoblar",
@@ -124,7 +154,10 @@
     "feature3Title": "Uchta til",
     "feature3Body": "Butun xizmat o'zbek, rus va ingliz tillarida ishlaydi.",
     "categoriesTitle": "Ommabop mavzular",
-    "categoriesSubtitle": "Kategoriyalar bo'yicha tayyor javoblar"
+    "categoriesSubtitle": "Kategoriyalar bo'yicha tayyor javoblar",
+    "situationsTitle": "Ommabop holatlar",
+    "askGuest": "Ro'yxatdan o'tmasdan so'rash",
+    "searchPlaceholder": "Nima qilish kerak? Masalan, pasportni almashtirish"
   },
   "auth": {
     "loginTitle": "GovBot ga kirish",
@@ -170,7 +203,18 @@
     "export": "Suhbatni yuklab olish",
     "voiceInput": "Ovozli kiritish",
     "relatedTitle": "O'xshash savollar",
-    "officialSourceLabel": "{{title}} — rasmiy manba"
+    "officialSourceLabel": "{{title}} — rasmiy manba",
+    "guestTitle": "Mehmon rejimi",
+    "guestNote": "Siz mehmon sifatida suhbatlashyapsiz. Hech narsa saqlanmaydi — suhbatlarni saqlash uchun kiring.",
+    "guestSignIn": "Kirish va saqlash",
+    "stopAnswer": "Javobni to'xtatish",
+    "stopped": "Javob to'xtatildi.",
+    "plainLanguage": "Oddiy til",
+    "plainLanguageHint": "Qisqa gaplar va raqamlangan qadamlar",
+    "readAloud": "Ovoz chiqarib o'qish",
+    "stopReading": "O'qishni to'xtatish",
+    "rateLimited": "Qisqa vaqtda juda ko'p savol. Biroz kuting va qayta urinib ko'ring.",
+    "answeredIn": "Javob tili: {{lang}}"
   },
   "scenarios": {
     "title": "Stsenariylar katalogi",
@@ -183,7 +227,18 @@
     "updated": "Yangilangan",
     "backToCatalog": "Katalogga qaytish",
     "itemsCount_one": "{{count}} ta mavzu",
-    "itemsCount_other": "{{count}} ta mavzu"
+    "itemsCount_other": "{{count}} ta mavzu",
+    "documents": "Tayyorlanadigan hujjatlar",
+    "documentsEmpty": "Bu mavzu bo'yicha hujjatlar ro'yxati hali tuzilmagan — quyidagi yo'riqnoma va rasmiy manbani ko'ring.",
+    "progress": "{{total}} tadan {{done}} tasi tayyor",
+    "source": "Rasmiy manba",
+    "remind": "Kalendarga eslatma qo'shish",
+    "remindDate": "Eslatma sanasi",
+    "remindSave": ".ics yuklab olish",
+    "breadcrumbHome": "Bosh sahifa",
+    "audience": "Kim uchun",
+    "listen": "Tinglash",
+    "stopListening": "To'xtatish"
   },
   "errors": {
     "network": "Tarmoq xatosi — backend ishlayaptimi?",
@@ -218,6 +273,68 @@
     "bg_dots": "Nuqtalar",
     "bg_warm": "Iliq",
     "bg_cool": "Salqin",
-    "appearanceHint": "Sozlamalar shu qurilmada saqlanadi."
+    "appearanceHint": "Sozlamalar shu qurilmada saqlanadi.",
+    "font_xl": "Juda katta",
+    "privacy": "Maxfiylik va ma'lumotlar",
+    "privacyHint": "GovBot siz haqingizda saqlaydigan hamma narsani yuklab oling yoki hisobingizni barcha suhbatlar bilan o'chiring.",
+    "export": "Ma'lumotlarimni yuklab olish",
+    "deleteAccount": "Hisobni o'chirish",
+    "deleteConfirmTitle": "Hisob o'chirilsinmi?",
+    "deleteConfirmBody": "Hisob va barcha suhbatlar butunlay o'chiriladi. Tasdiqlash uchun parolni kiriting.",
+    "deleteFailed": "Hisobni o'chirib bo'lmadi. Parolni tekshiring.",
+    "plainDefault": "Sukut bo'yicha oddiy tilda javob berish"
+  },
+  "trust": {
+    "disclaimer": "GovBot — sun'iy intellekt yordamchisi, davlat organi emas. Javoblar noto'g'ri yoki eskirgan bo'lishi mumkin. Muhim tafsilotlarni mas'ul idorada tekshiring.",
+    "checkOfficial": "Rasmiy manbada tekshirish",
+    "onboardTitle": "Boshlashdan oldin",
+    "onboard1Title": "GovBot nima qiladi",
+    "onboard1Body": "O'zbekistondagi davlat xizmatlarini oddiy tilda tushuntiradi va rasmiy manbaga havola beradi.",
+    "onboard2Title": "Muhim narsani tekshiring",
+    "onboard2Body": "Sun'iy intellekt xato qilishi mumkin. To'lovlar, muddatlar va hujjatlar o'zgaradi — harakat qilishdan oldin idorada yoki my.gov.uz da aniqlang.",
+    "onboard3Title": "Ma'lumotlaringiz",
+    "onboard3Body": "Pasport, JShShIR, karta va telefon raqamlarini yozmang. GovBot ularni AI provayderiga yuborishdan oldin yashiradi, lekin ularni ko'rsatmaslik xavfsizroq.",
+    "onboardAccept": "Tushundim",
+    "onboardMore": "Batafsil",
+    "verified": "Tekshirilgan: {{date}}",
+    "notVerified": "Hali tekshirilmagan",
+    "originCatalog": "GovBot katalogi",
+    "originKb": "Bilimlar bazasi",
+    "originWeb": "Veb-qidiruv",
+    "ungrounded": "Bu savol bo'yicha katalogda tasdiqlangan material topilmadi. Javobni faqat umumiy yo'nalish deb qabul qiling."
+  },
+  "help": {
+    "title": "Yordam va rasmiy aloqa",
+    "notHelpful": "Yordam bermadimi? Rasmiy liniyaga murojaat qiling:",
+    "emergency": "Favqulodda yordam (SOS)",
+    "tourist": "Sayyohlar uchun liniya",
+    "portal": "my.gov.uz qo'llab-quvvatlash",
+    "portalLink": "my.gov.uz — rasmiy davlat xizmatlari portali",
+    "foreignersLink": "my.gov.uz chet elliklar uchun",
+    "source": "Raqamlar my.gov.uz/ru/for-foreigners sahifasidan"
+  },
+  "footer": {
+    "about": "GovBot O'zbekistondagi davlat xizmatlarini oddiy tilda tushuntiradi. Bu davlat xizmati emas.",
+    "privacy": "Maxfiylik",
+    "catalog": "Katalog",
+    "help": "Yordam"
+  },
+  "roles": {
+    "title": "Siz kimsiz?",
+    "subtitle": "Siz uchun eng muhim mavzularni ko'rsatamiz.",
+    "citizen": "O'zbekiston fuqarosi",
+    "resident": "Chet ellik rezident",
+    "tourist": "Sayyoh",
+    "all": "Hammasi",
+    "citizenHint": "Pasport, ID-karta, soliqlar, biznes",
+    "residentHint": "Yashash guvohnomasi, ish ruxsatnomasi, ro'yxatdan o'tish",
+    "touristHint": "Viza, vaqtincha ro'yxatga olish, favqulodda yordam"
+  },
+  "palette": {
+    "title": "Qidiruv",
+    "placeholder": "Mavzuni qidiring yoki AI dan so'rang…",
+    "ask": "AI dan so'rash: «{{q}}»",
+    "empty": "Mos mavzu topilmadi.",
+    "hint": "↑↓ — tanlash · Enter — ochish · Esc — yopish"
   }
 }

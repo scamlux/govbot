@@ -3,7 +3,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { scenariosApi } from "../api/endpoints";
-import Spinner from "../components/Spinner";
 import { stripMarkdown } from "../utils/stripMarkdown";
 
 export default function ScenarioCatalog() {
@@ -64,10 +63,11 @@ export default function ScenarioCatalog() {
         aria-label={t("common.search")}
       />
 
-      <div className="filter-row" role="tablist">
+      {/* R1 — a filter group, not tabs: there are no tab panels to point at. */}
+      <div className="filter-row" role="group" aria-label={t("common.search")}>
         <button
-          role="tab"
-          aria-selected={!activeCategory}
+          type="button"
+          aria-pressed={!activeCategory}
           className={!activeCategory ? "filter-pill active" : "filter-pill"}
           onClick={() => selectCategory("")}
         >
@@ -76,8 +76,8 @@ export default function ScenarioCatalog() {
         {categories.map((c) => (
           <button
             key={c.slug}
-            role="tab"
-            aria-selected={activeCategory === c.slug}
+            type="button"
+            aria-pressed={activeCategory === c.slug}
             className={activeCategory === c.slug ? "filter-pill active" : "filter-pill"}
             onClick={() => selectCategory(c.slug)}
           >
@@ -86,27 +86,51 @@ export default function ScenarioCatalog() {
         ))}
       </div>
 
-      {loading ? (
-        <Spinner />
-      ) : error ? (
-        <p className="form-error">{error}</p>
-      ) : scenarios.length === 0 ? (
-        <p className="muted">{t("scenarios.noResults")}</p>
-      ) : (
-        <div className="scenario-grid">
-          {scenarios.map((s) => (
-            <Link to={`/scenarios/${s.slug}`} className="scenario-card" key={s.slug}>
-              <h3>{s.title}</h3>
-              <p className="scenario-excerpt">{stripMarkdown(s.excerpt)}</p>
-              <div className="scenario-tags">
-                {s.tags?.slice(0, 3).map((tag) => (
-                  <span className="tag" key={tag}>#{tag}</span>
-                ))}
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      <div aria-live="polite" aria-busy={loading}>
+        {loading ? (
+          // R4 — skeletons keep the layout stable while the (possibly cold) API answers.
+          <div className="skeleton-grid" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="skeleton skeleton-card" />
+            ))}
+          </div>
+        ) : error ? (
+          <div>
+            <p className="form-error">{error}</p>
+            <button type="button" className="btn btn-outline" onClick={loadScenarios}>
+              {t("common.retry")}
+            </button>
+          </div>
+        ) : scenarios.length === 0 ? (
+          <div className="catalog-empty">
+            <p className="muted">{t("scenarios.noResults")}</p>
+            {search && (
+              <Link to="/chat" state={{ prefill: search }} className="btn btn-primary">
+                💬 {t("scenarios.askAI")}
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="scenario-grid">
+            {scenarios.map((s) => (
+              <Link to={`/scenarios/${s.slug}`} className="scenario-card" key={s.slug}>
+                <h3>{s.title}</h3>
+                <p className="scenario-excerpt">{stripMarkdown(s.excerpt)}</p>
+                <div className="scenario-tags">
+                  {s.verified_at && (
+                    <span className="verified-badge">
+                      ✓ {t("trust.verified", { date: new Date(s.verified_at).toLocaleDateString(i18n.language) })}
+                    </span>
+                  )}
+                  {s.tags?.slice(0, 3).map((tag) => (
+                    <span className="tag" key={tag}>#{tag}</span>
+                  ))}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -14,14 +14,24 @@ export function AuthProvider({ children }) {
   const applyUser = useCallback(
     (nextUser) => {
       setUser(nextUser);
-      if (nextUser?.preferred_language && nextUser.preferred_language !== i18n.language) {
+      // D2 — inside the widget iframe the host page's ?lang= wins over the profile.
+      const embedded = window.location.pathname.startsWith("/embed");
+      if (
+        !embedded &&
+        nextUser?.preferred_language &&
+        nextUser.preferred_language !== i18n.language
+      ) {
         i18n.changeLanguage(nextUser.preferred_language);
       }
     },
     [i18n]
   );
 
-  const logout = useCallback(() => {
+  // F2 — revoke the refresh token server-side, then clear local state. The revoke is
+  // fire-and-forget: logging out must work offline or when the API is down.
+  const logout = useCallback(({ revoke = true } = {}) => {
+    const refresh = tokenStore.getRefresh();
+    if (revoke && refresh) authApi.logout(refresh).catch(() => {});
     tokenStore.clear();
     setUser(null);
   }, []);
@@ -51,7 +61,8 @@ export function AuthProvider({ children }) {
 
   // React to forced logout from the axios interceptor (refresh failure).
   useEffect(() => {
-    const handler = () => logout();
+    // The token is already invalid here, so don't try to revoke it again.
+    const handler = () => logout({ revoke: false });
     window.addEventListener("govbot:logout", handler);
     return () => window.removeEventListener("govbot:logout", handler);
   }, [logout]);

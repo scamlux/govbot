@@ -132,6 +132,14 @@ umar/                              # repo root (the GovBot project)
   `body` (JSON: `{uz,ru,en}`, markdown-capable), `source_url` (URL, optional — official
   agency link surfaced when the AI cites this scenario), `tags` (JSON list), `order` (int),
   `is_published` (bool, default True), `updated_at`.
+  2026-10 additions (migration `0004`, additive): `status` (`draft`/`review`/`published`,
+  kept in sync with `is_published` — `set_status()` drives visibility), `verified_at`
+  (date, nullable — A3), `checklist` (JSON `{uz,ru,en: [str]}` — C1, editor-filled only),
+  `audience` (JSON list of `citizen`/`resident`/`tourist`; empty = everyone — B3).
+
+**`scenarios.ScenarioRevision`** (E2): `scenario` (FK), `data` (JSON snapshot of the
+editable fields), `author_email`, `note`, `created_at`. One row is written before every
+admin update and before a restore, so restores are undoable.
 
 **`scenarios.ScenarioEmbedding`** (RAG grounding store):
 - `scenario` (FK), `language` (`uz`/`ru`/`en`), `vector` (JSON list of floats), `model`,
@@ -184,7 +192,29 @@ umar/                              # repo root (the GovBot project)
 - `GET /api/admin/analytics/questions/?days=30` — top question terms, message/conversation
   counts, and a per-language split over the window (C1).
 - `GET /api/admin/analytics/gaps/?days=30` — frequent questions whose reply retrieved no
-  grounding, clustered and ranked by frequency = missing scenarios (C2).
+  grounding, clustered and ranked by frequency = missing scenarios (C2). Paraphrases are
+  merged (A8): embedding cosine in vector mode, stemmed-term Jaccard otherwise; each gap
+  carries `variants`.
+
+**Upgrades 2026-10** (full checklist: `docs/research/upgrade-plan.md`)
+- `POST /api/auth/logout/` `{refresh}` — revokes the refresh token (F2; SimpleJWT
+  `token_blacklist`, `BLACKLIST_AFTER_ROTATION=True`). Always 205.
+- `POST /api/auth/me/delete/` `{password}` — self-delete account + conversations (F3);
+  the last active staff account cannot delete itself.
+- `GET /api/auth/me/export/` — JSON download of profile, conversations, messages, feedback (F3).
+- `GET /api/config/` — public, non-secret flags: `guest_chat`, `chat_mode`, `ai_mode`
+  (`live`/`mock`/`catalog_only`), `telegram_bot`.
+- `POST /api/chat/guest/stream/` `{content, language, plain?, history[]}` — stateless guest
+  SSE turn (B1). 404 unless `GUEST_CHAT_ENABLED`; IP-throttled (`GUEST_THROTTLE_*`); nothing
+  persisted. `/api/chat/related/` is also open to guests only while guest chat is enabled.
+- `POST /api/telegram/webhook/` — Telegram bot (D1). 404 unless `TELEGRAM_BOT_TOKEN`; 403
+  without the `X-Telegram-Bot-Api-Secret-Token`; stateless; throttled per chat id.
+- Message endpoints accept `plain: true` (R5 simple language) and return/emit the reply
+  `language` (A7 — detected from the question when confident).
+- `GET /api/scenarios/?audience=citizen|resident|tourist` — role filter (B3); search folds
+  Uzbek apostrophes ʻ ʼ ‘ ’ to `'` (R4).
+- Admin: `/api/admin/scenarios/?status=`, `…/{id}/revisions/`, `…/{id}/revisions/{rid}/restore/`
+  (E2), `/api/admin/scenarios/stale/` (E4), `/api/admin/kb/sources/` CRUD + `…/{id}/reindex/` (E3).
 
 ### 4.3 OpenAI service (`chat/services.py`)
 - `generate_reply(messages, language)` builds the request and calls the OpenAI Chat
@@ -213,6 +243,22 @@ umar/                              # repo root (the GovBot project)
 - Handles API errors gracefully → friendly localized error message.
 - **Mockable:** if `OPENAI_API_KEY` is unset, returns a clear localized canned reply so the
   app runs in development without a key.
+- **Trust & safety (2026-10):**
+  - A6 — when retrieval finds nothing, an explicit "no verified material" system message
+    tells the model to say so and avoid specific fees/deadlines/articles.
+  - A5 — the system prompt asks one clarifying question when the answer depends on the
+    user's status (citizen / resident / tourist).
+  - F5 — `chat/safety.mask_pii` masks passport, PINFL, phone, card and email in the query
+    (before embedding) and in the history sent to OpenAI. Stored messages are unchanged.
+  - F6 — retrieved catalog/KB/web text is sanitised (`sanitize_reference`) and wrapped in
+    one `<reference>` block with a "data, not instructions" guard; red-team cases live in
+    `tests/test_safety.py`.
+  - E5 — `CHAT_MODE=catalog_only` never calls the LLM; replies list matching scenarios.
+- **Retrieval quality (A4):** keyword mode matches 5-letter stems with extra weight for
+  title hits. `python manage.py eval_retrieval [--sweep] [--show-misses]` measures
+  recall@k on the golden set in `chat/eval_golden.py` (keyword mode: 55% → 86% on 29 cases).
+- **Ops commands:** `purge_conversations` (F4, uses `CONVERSATION_RETENTION_DAYS`),
+  `check_scenario_links` (E4, exits non-zero on broken source links).
 
 ### 4.4 Settings
 - CORS for `http://localhost:5173` (Vite) and `FRONTEND_ORIGIN` env var (production).
@@ -273,6 +319,33 @@ umar/                              # repo root (the GovBot project)
 - **Voice input (D2):** Web Speech API mic button in the chat box; hidden when unsupported.
 - **Export (D3):** download the active conversation as Markdown (incl. sources), client-side.
 
+### 5.5 Upgrades 2026-10 (see `docs/research/upgrade-plan.md`)
+- **Trust layer:** disclaimer under the chat input + one-time 3-step onboarding
+  (`components/AiNotice.jsx`); source chips show their origin (catalog / knowledge base /
+  web); an "ungrounded" note on unsupported answers; official hotlines 112 / 1173 / 1242
+  (verified on my.gov.uz/ru/for-foreigners) in the footer and after a 👎.
+- **Scenario detail:** breadcrumbs, official source link, "verified on" badge
+  (`verified_at`), documents checklist with local progress (C1/C2), `.ics` reminder on a
+  user-chosen date (C4), sticky "Ask the AI".
+- **Landing:** search box, role picker (citizen / resident / tourist) driving "popular
+  situations" via `?audience=`; guest CTA when guest chat is on.
+- **Chat:** guest mode (`<Chat guest />`, nothing stored), stop button (AbortController),
+  "simple language" toggle, read-aloud (Web Speech TTS, only when a voice exists for the
+  language), "answered in …" note when the reply language differs from the UI.
+- **Embeddable widget (D2):** `<script src="https://<site>/widget.js" data-lang="ru" async>`
+  adds a floating button that opens `/embed` (guest chat, no site chrome) in an iframe.
+  Always guest, even for signed-in visitors. Only `/embed` may be framed by other sites
+  (`frame-ancestors *`); every other route sends `frame-ancestors 'self'` / `SAMEORIGIN`.
+- **Global:** Ctrl/⌘+K search palette (`CommandPalette.jsx`), footer, skip link,
+  `/privacy` (draft pending legal review), `ConfirmDialog` replacing `window.confirm`,
+  accessible `Modal` (portal, focus trap, focus return), XL font size, Save-Data lite mode.
+- **Admin:** side navigation + Overview (KPIs, stale scenarios, top gaps), scenario status
+  workflow, revision history/restore, verified date, audience, checklist editor, Knowledge
+  base tab.
+- **Accessibility tokens** live in `styles/upgrades.css` (imported after `global.css`):
+  every text/control token passes WCAG AA (contrast verified by formula). Uzbek okina ʻ
+  falls back to a 2-glyph Noto Sans subset because Golos Text / Manrope lack U+02BB.
+
 ---
 
 ## 6. Environment variables
@@ -285,7 +358,10 @@ umar/                              # repo root (the GovBot project)
 `CHAT_MAX_MESSAGE_CHARS`, `RETRIEVAL_TOP_K`, `RETRIEVAL_MIN_SCORE`,
 `KB_CHUNK_TOKENS`, `KB_CHUNK_OVERLAP`, `KB_EMBED_BATCH`, `KB_TICK_BATCH`, `KB_TICK_SECRET`,
 `KB_FETCH_TIMEOUT`, `KB_FETCH_MAX_BYTES`, `KB_MAX_FILE_MB`, `KB_SEARCH_PROVIDER`,
-`TAVILY_API_KEY`, `KB_SEARCH_DOMAINS`, `KB_SEARCH_MAX_RESULTS`.
+`TAVILY_API_KEY`, `KB_SEARCH_DOMAINS`, `KB_SEARCH_MAX_RESULTS`, `CHAT_MODE`,
+`GUEST_CHAT_ENABLED`, `GUEST_THROTTLE_BURST`, `GUEST_THROTTLE_SUSTAINED`,
+`CHAT_AUTODETECT_LANGUAGE`, `CONVERSATION_RETENTION_DAYS`, `ADMIN_CAN_READ_CONVERSATIONS`,
+`SCENARIO_STALE_DAYS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_THROTTLE`.
 
 **Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL`.
 

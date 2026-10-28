@@ -48,6 +48,13 @@ export async function refreshAccessToken() {
     return data.access;
   } catch (refreshError) {
     refreshing = null;
+    // F2 — refresh tokens are blacklisted after rotation. If another tab rotated the
+    // token while this request was in flight, localStorage already holds the new pair:
+    // adopt it instead of logging the user out.
+    const current = tokenStore.getRefresh();
+    if (current && current !== refresh && tokenStore.getAccess()) {
+      return tokenStore.getAccess();
+    }
     tokenStore.clear();
     // Surface a recognizable event so the auth context can log out.
     window.dispatchEvent(new CustomEvent("govbot:logout"));

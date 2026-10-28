@@ -249,6 +249,18 @@ class RelatedQuestionsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        # B1 — guests get related questions too, but only while guest chat is enabled.
+        if getattr(settings, "GUEST_CHAT_ENABLED", False):
+            return [AllowAny()]
+        return super().get_permissions()
+
+    def get_throttles(self):
+        # Anonymous callers share the guest IP budget; signed-in users are unthrottled here.
+        if not self.request.user or not self.request.user.is_authenticated:
+            return [GuestBurstThrottle()]
+        return []
+
     def get(self, request):
         message = request.query_params.get("message", "")
         language = request.query_params.get("lang", "")

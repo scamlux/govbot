@@ -9,7 +9,10 @@
  *    /api/auth, /api/admin (incl. /api/admin/scenarios) — are never cached, so no user ever
  *    sees another user's or a stale admin response.
  */
-const VERSION = "govbot-v1";
+// v2 (B2): the catalog API lives on a different origin in production (Render, while the
+// SPA is on Vercel). Bumping the version makes old clients install this worker and drop
+// v1 caches.
+const VERSION = "govbot-v2";
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const API_CACHE = `${VERSION}-api`;
@@ -67,8 +70,12 @@ self.addEventListener("fetch", (event) => {
   // API requests: cache ONLY the public Scenario Catalog; never authenticated endpoints
   // (chat, /api/auth, /api/admin/* including /api/admin/scenarios) — those are keyed by
   // URL only and would leak across users or serve stale admin data.
-  if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) {
-    if (url.pathname.startsWith("/api/scenarios")) {
+  // B2 — match by path on ANY origin: in production the API is cross-origin (Render), so a
+  // same-origin-only check silently disabled offline reading. Catalog GETs are public and
+  // sent without credentials, so caching them is safe; the CORS response is a normal
+  // (non-opaque) response because the API returns Access-Control-Allow-Origin.
+  if (url.pathname.startsWith("/api/")) {
+    if (url.pathname.startsWith("/api/scenarios") && !request.headers.has("Authorization")) {
       event.respondWith(staleWhileRevalidate(request, API_CACHE));
     }
     return; // all other /api/* → straight to network

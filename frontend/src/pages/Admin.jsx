@@ -5,14 +5,29 @@ import { adminApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import Spinner from "../components/Spinner";
 import Modal from "../components/Modal";
+import { useConfirm } from "../components/ConfirmDialog";
 import MessageBubble from "../components/MessageBubble";
 import MultiLangField from "../components/admin/MultiLangField";
 
 const EMPTY_TR = { uz: "", ru: "", en: "" };
+const LANGS = ["uz", "ru", "en"];
+const STATUSES = ["draft", "review", "published"];
+const AUDIENCES = ["citizen", "resident", "tourist"];
+const SECTIONS = [
+  "overview",
+  "users",
+  "conversations",
+  "categories",
+  "scenarios",
+  "knowledge",
+  "analytics",
+  "usage",
+  "system",
+];
 
 export default function Admin() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState("users");
+  const [tab, setTab] = useState("overview");
   // C2 — jumping from a catalog gap to a prefilled "create scenario" form.
   const [scenarioPrefill, setScenarioPrefill] = useState(null);
 
@@ -28,33 +43,316 @@ export default function Admin() {
         <p className="muted">{t("admin.subtitle")}</p>
       </div>
 
-      <div className="admin-tabs" role="tablist">
-        {["users", "conversations", "categories", "scenarios", "analytics", "usage", "system"].map((key) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={tab === key}
-            className={tab === key ? "admin-tab active" : "admin-tab"}
-            onClick={() => setTab(key)}
-          >
-            {t(`admin.${key}`)}
-          </button>
+      {/* R6 — side navigation (plain buttons + aria-current; no fake tab semantics). */}
+      <div className="admin-layout">
+        <nav className="admin-nav" aria-label={t("admin.title")}>
+          {SECTIONS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              aria-current={tab === key ? "page" : undefined}
+              onClick={() => setTab(key)}
+            >
+              {t(`admin.${key}`)}
+            </button>
+          ))}
+        </nav>
+
+        <div className="admin-panels">
+          {tab === "overview" && <OverviewPanel onGo={setTab} onCreateScenario={createScenarioFrom} />}
+          {tab === "users" && <UsersPanel />}
+          {tab === "conversations" && <ConversationsPanel />}
+          {tab === "categories" && <CategoriesPanel />}
+          {tab === "scenarios" && (
+            <ScenariosPanel
+              prefill={scenarioPrefill}
+              onPrefillConsumed={() => setScenarioPrefill(null)}
+            />
+          )}
+          {tab === "knowledge" && <KnowledgePanel />}
+          {tab === "analytics" && <AnalyticsPanel onCreateScenario={createScenarioFrom} />}
+          {tab === "usage" && <UsagePanel />}
+          {tab === "system" && <SystemPanel />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------- R6 Overview --------------------------- */
+function OverviewPanel({ onGo, onCreateScenario }) {
+  const { t, i18n } = useTranslation();
+  const [usage, setUsage] = useState(null);
+  const [stale, setStale] = useState(null);
+  const [gaps, setGaps] = useState(null);
+  const [health, setHealth] = useState(null);
+
+  useEffect(() => {
+    adminApi.analyticsUsage(30).then(({ data }) => setUsage(data)).catch(() => setUsage({}));
+    adminApi.staleScenarios().then(({ data }) => setStale(data)).catch(() => setStale({ count: 0, scenarios: [] }));
+    adminApi.analyticsGaps(30).then(({ data }) => setGaps(data.gaps || [])).catch(() => setGaps([]));
+    adminApi.health().then(({ data }) => setHealth(data)).catch(() => setHealth(null));
+  }, []);
+
+  const totals = usage?.totals || {};
+  const tiles = [
+    { label: t("admin.totalMessages"), value: totals.messages ?? "—" },
+    { label: t("admin.totalConversations"), value: totals.conversations ?? "—" },
+    { label: t("admin.activeUsers"), value: totals.active_users ?? "—" },
+    { label: t("admin.stale"), value: stale?.count ?? "—" },
+  ];
+
+  return (
+    <div className="admin-card">
+      <div className="admin-card-head">
+        <h2>{t("admin.overview")}</h2>
+        {health?.status && <span className="pill pill-staff">{health.status}</span>}
+      </div>
+      <div className="overview-grid">
+        {tiles.map((tile) => (
+          <div className="stat-tile" key={tile.label}>
+            <div className="stat-value">{tile.value}</div>
+            <div className="stat-label">{tile.label}</div>
+          </div>
         ))}
       </div>
 
-      {tab === "users" && <UsersPanel />}
-      {tab === "conversations" && <ConversationsPanel />}
-      {tab === "categories" && <CategoriesPanel />}
-      {tab === "scenarios" && (
-        <ScenariosPanel
-          prefill={scenarioPrefill}
-          onPrefillConsumed={() => setScenarioPrefill(null)}
+      <section className="analytics-block">
+        <h3>{t("admin.stale")}</h3>
+        <p className="muted analytics-hint">{t("admin.staleHint", { days: stale?.stale_days ?? 90 })}</p>
+        <ul className="gaps-list">
+          {(stale?.scenarios || []).slice(0, 8).map((s) => (
+            <li key={s.id}>
+              <button type="button" className="gap-q" onClick={() => onGo("scenarios")}>
+                {s.title?.[i18n.language] || s.title?.en || s.slug}
+              </button>
+              <span className="gap-count">{s.verified_at || "—"}</span>
+            </li>
+          ))}
+          {stale && stale.count === 0 && <li className="muted">—</li>}
+        </ul>
+      </section>
+
+      <section className="analytics-block">
+        <h3>{t("admin.catalogGaps")}</h3>
+        <ul className="gaps-list">
+          {(gaps || []).slice(0, 5).map((g) => (
+            <li key={g.question}>
+              <button type="button" className="gap-q gap-create" onClick={() => onCreateScenario(g.question)}>
+                {g.question}
+              </button>
+              <span className="gap-count">{g.count}</span>
+            </li>
+          ))}
+          {gaps && gaps.length === 0 && <li className="muted">—</li>}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+/* ---------------------------- E3 Knowledge base --------------------------- */
+function KnowledgePanel() {
+  const { t } = useTranslation();
+  const confirm = useConfirm();
+  const [items, setItems] = useState(null);
+  const [adding, setAdding] = useState(false);
+
+  const load = useCallback(() => {
+    adminApi
+      .kbSources()
+      .then(({ data }) => setItems(Array.isArray(data) ? data : data.results || []))
+      .catch(() => setItems([]));
+  }, []);
+  useEffect(load, [load]);
+
+  const remove = async (s) => {
+    if (!(await confirm({ message: `${t("admin.delete")}: ${s.title || s.url || s.id}?`, danger: true }))) return;
+    await adminApi.deleteKbSource(s.id).catch(() => {});
+    load();
+  };
+  const reindex = async (s) => {
+    await adminApi.reindexKbSource(s.id).catch(() => {});
+    load();
+  };
+
+  if (!items) return <Spinner />;
+
+  return (
+    <div className="admin-card">
+      <div className="admin-card-head">
+        <h2>{t("admin.knowledge")}</h2>
+        <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
+          + {t("admin.kbAdd")}
+        </button>
+      </div>
+      <p className="muted">{t("admin.kbIndexHint")}</p>
+      <div className="table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{t("admin.name")}</th>
+              <th>{t("admin.kbType")}</th>
+              <th>{t("admin.status")}</th>
+              <th>{t("admin.kbChunks")}</th>
+              <th>{t("admin.actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((s) => (
+              <tr key={s.id}>
+                <td>
+                  <strong>{s.title || s.original_filename || s.url || `#${s.id}`}</strong>
+                  {s.url && (
+                    <div>
+                      <a href={s.url} target="_blank" rel="noopener noreferrer">{s.url}</a>
+                    </div>
+                  )}
+                  {s.error && <div className="form-error">{s.error}</div>}
+                </td>
+                <td>{s.source_type}</td>
+                <td><span className={s.status === "failed" ? "pill pill-draft" : "pill"}>{s.status}</span></td>
+                <td>{s.chunk_count}</td>
+                <td className="row-actions">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => reindex(s)}>
+                    {t("admin.kbReindex")}
+                  </button>
+                  <button type="button" className="btn btn-danger-ghost btn-sm" onClick={() => remove(s)}>
+                    {t("admin.delete")}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {items.length === 0 && <p className="muted">{t("admin.kbEmpty")}</p>}
+      {adding && (
+        <KnowledgeForm
+          onClose={() => setAdding(false)}
+          onSaved={() => {
+            setAdding(false);
+            load();
+          }}
         />
       )}
-      {tab === "analytics" && <AnalyticsPanel onCreateScenario={createScenarioFrom} />}
-      {tab === "usage" && <UsagePanel />}
-      {tab === "system" && <SystemPanel />}
     </div>
+  );
+}
+
+function KnowledgeForm({ onClose, onSaved }) {
+  const { t } = useTranslation();
+  const [kind, setKind] = useState("url");
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [language, setLanguage] = useState("auto");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fileType = (name) => {
+    const ext = (name || "").toLowerCase().split(".").pop();
+    return ["pdf", "docx", "md"].includes(ext) ? ext : "txt";
+  };
+
+  const submit = async (e) => {
+    e?.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      if (kind === "file") {
+        const form = new FormData();
+        form.append("source_type", fileType(file?.name));
+        form.append("title", title);
+        form.append("language", language);
+        if (file) form.append("upload", file);
+        await adminApi.uploadKbFile(form);
+      } else {
+        await adminApi.createKbSource({
+          source_type: kind === "url" ? "url" : "paste",
+          title,
+          url: kind === "url" ? url : "",
+          raw_text: kind === "paste" ? text : "",
+          language,
+        });
+      }
+      onSaved();
+    } catch (err) {
+      const data = err?.response?.data || {};
+      setError(data.url?.[0] || data.raw_text?.[0] || data.upload?.[0] || data.detail || t("admin.saveError"));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={t("admin.kbAdd")}
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{t("admin.cancel")}</button>
+          <button type="button" className="btn btn-primary" onClick={submit} disabled={busy}>
+            {busy ? "…" : t("admin.save")}
+          </button>
+        </>
+      }
+    >
+      <form className="admin-form" onSubmit={submit}>
+        <fieldset className="field">
+          <legend>{t("admin.kbType")}</legend>
+          <div className="seg">
+            {[
+              ["url", t("admin.kbUrl")],
+              ["paste", t("admin.kbPaste")],
+              ["file", t("admin.kbFile")],
+            ].map(([value, label]) => (
+              <label key={value} className="toggle">
+                <input type="radio" name="kb-kind" value={value} checked={kind === value} onChange={() => setKind(value)} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label className="field">
+          <span>{t("admin.name")}</span>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        {kind === "url" && (
+          <label className="field">
+            <span>URL</span>
+            <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} required placeholder="https://" />
+          </label>
+        )}
+        {kind === "paste" && (
+          <label className="field">
+            <span>{t("admin.kbPaste")}</span>
+            <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} required />
+          </label>
+        )}
+        {kind === "file" && (
+          <label className="field">
+            <span>{t("admin.kbFile")} (PDF, DOCX, TXT, MD)</span>
+            <input
+              type="file"
+              accept=".pdf,.docx,.txt,.md"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              required
+            />
+          </label>
+        )}
+        <label className="field">
+          <span>{t("admin.language")}</span>
+          <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+            <option value="auto">auto</option>
+            {LANGS.map((l) => (
+              <option key={l} value={l}>{l.toUpperCase()}</option>
+            ))}
+          </select>
+        </label>
+        {error && <p className="form-error" role="alert">{error}</p>}
+      </form>
+    </Modal>
   );
 }
 
@@ -156,14 +454,22 @@ function AnalyticsPanel({ onCreateScenario }) {
                 ) : (
                   gaps.map((g) => (
                     <li key={g.question}>
-                      <button
-                        type="button"
-                        className="gap-q gap-create"
-                        title={t("admin.createScenario")}
-                        onClick={() => onCreateScenario?.(g.question)}
-                      >
-                        {g.question}
-                      </button>
+                      <div>
+                        <button
+                          type="button"
+                          className="gap-q gap-create"
+                          title={t("admin.createScenario")}
+                          onClick={() => onCreateScenario?.(g.question)}
+                        >
+                          {g.question}
+                        </button>
+                        {/* A8 — paraphrases merged into this gap */}
+                        {g.variants?.length > 1 && (
+                          <div className="gap-variants">
+                            {t("admin.variants")}: {g.variants.slice(1).join(" · ")}
+                          </div>
+                        )}
+                      </div>
                       <span className="gap-count">{g.count}</span>
                     </li>
                   ))
@@ -199,6 +505,7 @@ function AnalyticsPanel({ onCreateScenario }) {
 /* ----------------------------- Users ----------------------------- */
 function UsersPanel() {
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const { user: me } = useAuth();
   const [users, setUsers] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -220,7 +527,7 @@ function UsersPanel() {
   };
 
   const removeUser = async (u) => {
-    if (!window.confirm(t("admin.confirmDeleteUser", { email: u.email }))) return;
+    if (!(await confirm({ message: t("admin.confirmDeleteUser", { email: u.email }), danger: true }))) return;
     setBusy(u.id);
     try {
       await adminApi.deleteUser(u.id);
@@ -321,6 +628,7 @@ function UsersPanel() {
 /* --------------------------- Categories --------------------------- */
 function CategoriesPanel() {
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const [items, setItems] = useState(null);
   const [editing, setEditing] = useState(null); // object or "new" or null
 
@@ -330,7 +638,7 @@ function CategoriesPanel() {
   useEffect(load, [load]);
 
   const remove = async (cat) => {
-    if (!window.confirm(t("admin.confirmDeleteCategory"))) return;
+    if (!(await confirm({ message: t("admin.confirmDeleteCategory"), danger: true }))) return;
     await adminApi.deleteCategory(cat.id).catch(() => {});
     load();
   };
@@ -450,9 +758,11 @@ function CategoryForm({ initial, onClose, onSaved }) {
 /* --------------------------- Scenarios --------------------------- */
 function ScenariosPanel({ prefill, onPrefillConsumed }) {
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const [items, setItems] = useState(null);
   const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [history, setHistory] = useState(null);
 
   const load = useCallback(() => {
     adminApi.scenarios().then(({ data }) => setItems(data)).catch(() => setItems([]));
@@ -466,8 +776,14 @@ function ScenariosPanel({ prefill, onPrefillConsumed }) {
   }, [prefill]);
 
   const remove = async (s) => {
-    if (!window.confirm(t("admin.confirmDeleteScenario"))) return;
+    if (!(await confirm({ message: t("admin.confirmDeleteScenario"), danger: true }))) return;
     await adminApi.deleteScenario(s.id).catch(() => {});
+    load();
+  };
+
+  // E1 — move a scenario through draft → review → published.
+  const changeStatus = async (s, status) => {
+    await adminApi.updateScenario(s.id, { status }).catch(() => {});
     load();
   };
 
@@ -496,12 +812,26 @@ function ScenariosPanel({ prefill, onPrefillConsumed }) {
                 <div className="admin-item-title">{s.title?.[i18n.language] || s.title?.en || s.slug}</div>
                 <div className="admin-item-sub">
                   <span className="admin-item-meta">{s.category_slug} · {s.slug}</span>
-                  {!s.is_published && <span className="pill pill-draft">{t("admin.draft")}</span>}
+                  {s.is_stale && s.is_published && <span className="pill pill-draft">{t("admin.stale")}</span>}
                 </div>
               </div>
             </div>
             <div className="admin-item-actions">
+              <label className="visually-hidden" htmlFor={`status-${s.id}`}>{t("admin.status")}</label>
+              <select
+                id={`status-${s.id}`}
+                className="status-select"
+                value={s.status || (s.is_published ? "published" : "draft")}
+                onChange={(e) => changeStatus(s, e.target.value)}
+              >
+                {STATUSES.map((st) => (
+                  <option key={st} value={st}>{t(`admin.status_${st}`)}</option>
+                ))}
+              </select>
               <button className="btn btn-ghost btn-sm" onClick={() => setEditing(s)}>{t("admin.edit")}</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setHistory(s)}>
+                {t("admin.history")}{s.revision_count ? ` (${s.revision_count})` : ""}
+              </button>
               <button className="btn btn-danger-ghost btn-sm" onClick={() => remove(s)}>{t("admin.delete")}</button>
             </div>
           </div>
@@ -525,7 +855,67 @@ function ScenariosPanel({ prefill, onPrefillConsumed }) {
           }}
         />
       )}
+      {history && (
+        <RevisionsModal
+          scenario={history}
+          onClose={() => setHistory(null)}
+          onRestored={() => {
+            setHistory(null);
+            load();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/* ---- E2 — revision history + restore ---- */
+function RevisionsModal({ scenario, onClose, onRestored }) {
+  const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
+  const [revisions, setRevisions] = useState(null);
+
+  useEffect(() => {
+    adminApi
+      .scenarioRevisions(scenario.id)
+      .then(({ data }) => setRevisions(data))
+      .catch(() => setRevisions([]));
+  }, [scenario.id]);
+
+  const restore = async (rev) => {
+    if (!(await confirm({ message: `${t("admin.restore")}: ${new Date(rev.created_at).toLocaleString(i18n.language)}?` }))) return;
+    await adminApi.restoreScenarioRevision(scenario.id, rev.id).catch(() => {});
+    onRestored();
+  };
+
+  return (
+    <Modal title={`${t("admin.history")}: ${scenario.slug}`} onClose={onClose}>
+      {revisions === null ? (
+        <Spinner />
+      ) : revisions.length === 0 ? (
+        <p className="muted">{t("admin.noRevisions")}</p>
+      ) : (
+        <ul className="revision-list">
+          {revisions.map((rev) => (
+            <li key={rev.id}>
+              <span>
+                <strong>{new Date(rev.created_at).toLocaleString(i18n.language)}</strong>
+                {rev.author_email && <> · {rev.author_email}</>}
+                {rev.note && <> · <em>{rev.note}</em></>}
+                <br />
+                <small className="muted">
+                  {t(`admin.status_${rev.data?.status || "published"}`)}
+                  {rev.data?.source_url && ` · ${rev.data.source_url}`}
+                </small>
+              </span>
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => restore(rev)}>
+                {t("admin.restore")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Modal>
   );
 }
 
@@ -534,7 +924,18 @@ function ScenarioForm({ initial, categories, onClose, onSaved, prefillTitle }) {
   const [category, setCategory] = useState(initial?.category || categories[0]?.id || "");
   const [slug, setSlug] = useState(initial?.slug || "");
   const [order, setOrder] = useState(initial?.order ?? 0);
-  const [isPublished, setIsPublished] = useState(initial?.is_published ?? true);
+  // E1 — workflow status (published ⇔ visible); new scenarios start as drafts.
+  const [status, setStatus] = useState(
+    initial?.status || (initial ? (initial.is_published ? "published" : "draft") : "draft")
+  );
+  const [sourceUrl, setSourceUrl] = useState(initial?.source_url || "");
+  const [verifiedAt, setVerifiedAt] = useState(initial?.verified_at || "");
+  const [audience, setAudience] = useState(initial?.audience || []);
+  // C1 — one checklist item per line, per language.
+  const [checklist, setChecklist] = useState(() => {
+    const src = initial?.checklist || {};
+    return Object.fromEntries(LANGS.map((l) => [l, (src[l] || []).join("\n")]));
+  });
   const [tags, setTags] = useState((initial?.tags || []).join(", "));
   const [title, setTitle] = useState(
     // C2 — when opened from a catalog gap, seed every language with the question text.
@@ -555,7 +956,13 @@ function ScenarioForm({ initial, categories, onClose, onSaved, prefillTitle }) {
     const payload = {
       category: Number(category),
       slug,
-      is_published: isPublished,
+      status,
+      source_url: sourceUrl,
+      verified_at: verifiedAt || null,
+      audience,
+      checklist: Object.fromEntries(
+        LANGS.map((l) => [l, checklist[l].split("\n").map((x) => x.trim()).filter(Boolean)])
+      ),
       tags: tags.split(",").map((x) => x.trim()).filter(Boolean),
       title,
       body,
@@ -568,7 +975,14 @@ function ScenarioForm({ initial, categories, onClose, onSaved, prefillTitle }) {
       onSaved();
     } catch (err) {
       const data = err?.response?.data;
-      setError(data?.slug?.[0] || data?.category?.[0] || data?.detail || t("admin.saveError"));
+      setError(
+        data?.slug?.[0] ||
+          data?.category?.[0] ||
+          data?.source_url?.[0] ||
+          (typeof data?.checklist === "object" ? JSON.stringify(data.checklist) : null) ||
+          data?.detail ||
+          t("admin.saveError")
+      );
       setBusy(false);
     }
   };
@@ -616,14 +1030,61 @@ function ScenarioForm({ initial, categories, onClose, onSaved, prefillTitle }) {
             <span>{t("admin.tags")}</span>
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="passport, biometric" />
           </label>
-          <label className="field checkbox-field">
-            <input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} />
-            <span>{t("admin.published")}</span>
+          <label className="field">
+            <span>{t("admin.status")}</span>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              {STATUSES.map((st) => (
+                <option key={st} value={st}>{t(`admin.status_${st}`)}</option>
+              ))}
+            </select>
           </label>
         </div>
 
+        {/* A3 — official source + when an editor last checked the content against it */}
+        <div className="form-row">
+          <label className="field">
+            <span>{t("scenarios.source")} (URL)</span>
+            <input
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="https://my.gov.uz/…"
+            />
+          </label>
+          <label className="field field-sm">
+            <span>{t("admin.verifiedAt")}</span>
+            <input type="date" value={verifiedAt || ""} onChange={(e) => setVerifiedAt(e.target.value)} />
+          </label>
+        </div>
+
+        {/* B3 — audience */}
+        <fieldset className="field">
+          <legend>{t("admin.audience")}</legend>
+          <div className="seg">
+            {AUDIENCES.map((a) => (
+              <label key={a} className="toggle">
+                <input
+                  type="checkbox"
+                  checked={audience.includes(a)}
+                  onChange={(e) =>
+                    setAudience((prev) => (e.target.checked ? [...prev, a] : prev.filter((x) => x !== a)))
+                  }
+                />
+                <span>{t(`roles.${a}`)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
         <MultiLangField label={t("admin.scenarioTitle")} value={title} onChange={setTitle} />
         <MultiLangField label={t("admin.body")} value={body} onChange={setBody} textarea rows={10} />
+        <MultiLangField
+          label={t("admin.checklist")}
+          value={checklist}
+          onChange={setChecklist}
+          textarea
+          rows={5}
+        />
         {error && <p className="form-error">{error}</p>}
       </form>
     </Modal>
@@ -742,6 +1203,7 @@ function ConversationsPanel() {
 
 function ConversationModal({ id, onClose, onDeleted }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [conv, setConv] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -757,7 +1219,7 @@ function ConversationModal({ id, onClose, onDeleted }) {
   }, [id]);
 
   const remove = async () => {
-    if (!window.confirm(t("admin.confirmDeleteConversation"))) return;
+    if (!(await confirm({ message: t("admin.confirmDeleteConversation"), danger: true }))) return;
     setDeleting(true);
     try {
       await adminApi.deleteConversation(id);

@@ -3,9 +3,31 @@
  * Uses `currentColor` so the color follows CSS (brand teal by default); size is
  * driven by the `size` prop. Decorative: mark the surrounding status region.
  */
+import { useEffect, useRef } from "react";
+
+/** R1 — SMIL animation ignores CSS reduced-motion rules, so pause it from JS. */
+function useReducedMotionPause(ref) {
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return undefined;
+    const apply = () => {
+      const svg = ref.current;
+      if (!svg?.pauseAnimations) return;
+      if (mq.matches) svg.pauseAnimations();
+      else svg.unpauseAnimations();
+    };
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, [ref]);
+}
+
 export default function GridSpinner({ size = 40, className }) {
+  const ref = useRef(null);
+  useReducedMotionPause(ref);
   return (
     <svg
+      ref={ref}
       className={className ? `grid-spinner ${className}` : "grid-spinner"}
       width={size}
       height={size}

@@ -7,13 +7,23 @@ export const authApi = {
   login: ({ email, password }) => api.post("/auth/login/", { email, password }),
   me: () => api.get("/auth/me/"),
   updateMe: (patch) => api.patch("/auth/me/", patch),
+  // F2 — revoke the refresh token server-side.
+  logout: (refresh) => api.post("/auth/logout/", { refresh }),
+  // F3 — self-service privacy.
+  deleteAccount: (password) => api.post("/auth/me/delete/", { password }),
+  exportData: () => api.get("/auth/me/export/"),
+};
+
+// ---- Public feature flags ----
+export const configApi = {
+  get: () => api.get("/config/"),
 };
 
 // ---- Scenarios (public) ----
 export const scenariosApi = {
   categories: (lang) => api.get("/scenarios/categories/", { params: { lang } }),
-  list: (lang, { category, search } = {}) =>
-    api.get("/scenarios/", { params: { lang, category, search } }),
+  list: (lang, { category, search, audience } = {}) =>
+    api.get("/scenarios/", { params: { lang, category, search, audience } }),
   detail: (slug, lang) => api.get(`/scenarios/${slug}/`, { params: { lang } }),
 };
 
@@ -30,6 +40,12 @@ export const adminApi = {
   createScenario: (payload) => api.post("/admin/scenarios/", payload),
   updateScenario: (id, payload) => api.patch(`/admin/scenarios/${id}/`, payload),
   deleteScenario: (id) => api.delete(`/admin/scenarios/${id}/`),
+  // E2 — revision history + rollback
+  scenarioRevisions: (id) => api.get(`/admin/scenarios/${id}/revisions/`),
+  restoreScenarioRevision: (id, revisionId) =>
+    api.post(`/admin/scenarios/${id}/revisions/${revisionId}/restore/`),
+  // E4 — stale scenarios
+  staleScenarios: () => api.get("/admin/scenarios/stale/"),
   // Analytics + feedback (A3 / C1 / C2)
   feedback: (rating) => api.get("/admin/feedback/", { params: { rating } }),
   analyticsQuestions: (days) =>
@@ -43,6 +59,15 @@ export const adminApi = {
   deleteConversation: (id) => api.delete(`/admin/conversations/${id}/`),
   analyticsUsage: (days) => api.get("/admin/analytics/usage/", { params: { days } }),
   health: () => api.get("/admin/health/"),
+  // E3 — knowledge base sources
+  kbSources: () => api.get("/admin/kb/sources/"),
+  createKbSource: (payload) => api.post("/admin/kb/sources/", payload),
+  uploadKbFile: (formData) =>
+    api.post("/admin/kb/sources/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  reindexKbSource: (id) => api.post(`/admin/kb/sources/${id}/reindex/`),
+  deleteKbSource: (id) => api.delete(`/admin/kb/sources/${id}/`),
 };
 
 // ---- Chat ----
@@ -72,48 +97,14 @@ export async function fetchRelated(message, lang) {
 }
 
 /**
- * Stream an assistant reply via Server-Sent Events using fetch (axios can't stream
- * bodies in the browser). Calls callbacks as events arrive.
- *
- * @returns {Promise<{assistantMessageId:number, content:string}>}
+ * Parse a Server-Sent Events body produced by the chat stream endpoints, invoking
+ * callbacks as frames arrive. Shared by the signed-in and guest streams.
  */
-export async function streamMessage(
-  conversationId,
-  content,
-  language,
-  { onDelta, onMeta, onSources } = {}
-) {
-  const doFetch = (token) =>
-    fetch(
-      `${API_BASE_URL}/conversations/${conversationId}/messages/stream/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content, language }),
-      }
-    );
-
-  let resp = await doFetch(tokenStore.getAccess());
-
-  // The stream bypasses the axios interceptor, so handle an expired access token
-  // here: refresh once and retry (mirrors client.js). A failed refresh throws and
-  // dispatches `govbot:logout`, forcing re-login instead of a silent dead chat.
-  if (resp.status === 401 && tokenStore.getRefresh()) {
-    const access = await refreshAccessToken();
-    resp = await doFetch(access);
-  }
-
-  if (!resp.ok || !resp.body) {
-    throw new Error(`Stream failed with status ${resp.status}`);
-  }
-
+async function readSseStream(resp, { onDelta, onMeta, onSources }) {
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let result = { assistantMessageId: null, content: "", sources: [] };
+  let result = { assistantMessageId: null, content: "", sources: [], language: null };
 
   // Parse the SSE stream frame by frame (frames separated by a blank line).
   for (;;) {
@@ -136,6 +127,7 @@ export async function streamMessage(
 
       const payload = JSON.parse(dataLine);
       if (event === "meta") {
+        if (payload.language) result.language = payload.language;
         onMeta?.(payload);
       } else if (event === "sources") {
         // B1 — grounding citations arrive just before `done`.
@@ -143,9 +135,9 @@ export async function streamMessage(
         onSources?.(result.sources);
       } else if (event === "done") {
         result = {
+          ...result,
           assistantMessageId: payload.assistant_message_id,
           content: payload.content,
-          sources: result.sources,
         };
       } else if (payload.delta !== undefined) {
         result.content += payload.delta;
@@ -154,4 +146,74 @@ export async function streamMessage(
     }
   }
   return result;
+}
+
+/**
+ * Stream an assistant reply via Server-Sent Events using fetch (axios can't stream
+ * bodies in the browser). Calls callbacks as events arrive.
+ *
+ * `signal` (AbortSignal) lets the UI stop a reply mid-stream (R5); `plain` asks for
+ * the simple-language style.
+ *
+ * @returns {Promise<{assistantMessageId:number, content:string, sources:Array, language:string}>}
+ */
+export async function streamMessage(
+  conversationId,
+  content,
+  language,
+  { onDelta, onMeta, onSources, signal, plain = false } = {}
+) {
+  const doFetch = (token) =>
+    fetch(
+      `${API_BASE_URL}/conversations/${conversationId}/messages/stream/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content, language, plain }),
+        signal,
+      }
+    );
+
+  let resp = await doFetch(tokenStore.getAccess());
+
+  // The stream bypasses the axios interceptor, so handle an expired access token
+  // here: refresh once and retry (mirrors client.js). A failed refresh throws and
+  // dispatches `govbot:logout`, forcing re-login instead of a silent dead chat.
+  if (resp.status === 401 && tokenStore.getRefresh()) {
+    const access = await refreshAccessToken();
+    resp = await doFetch(access);
+  }
+
+  if (!resp.ok || !resp.body) {
+    const error = new Error(`Stream failed with status ${resp.status}`);
+    error.status = resp.status;
+    throw error;
+  }
+  return readSseStream(resp, { onDelta, onMeta, onSources });
+}
+
+/**
+ * B1 — stateless guest turn. The caller keeps the thread and sends the recent
+ * history with each question; nothing is stored server-side.
+ */
+export async function streamGuestMessage(
+  content,
+  language,
+  { history = [], onDelta, onMeta, onSources, signal, plain = false } = {}
+) {
+  const resp = await fetch(`${API_BASE_URL}/chat/guest/stream/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content, language, plain, history }),
+    signal,
+  });
+  if (!resp.ok || !resp.body) {
+    const error = new Error(`Guest stream failed with status ${resp.status}`);
+    error.status = resp.status;
+    throw error;
+  }
+  return readSseStream(resp, { onDelta, onMeta, onSources });
 }

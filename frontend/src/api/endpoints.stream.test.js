@@ -12,7 +12,7 @@ vi.mock("./client", () => ({
   refreshAccessToken,
 }));
 
-import { streamMessage } from "./endpoints";
+import { streamGuestMessage, streamMessage } from "./endpoints";
 
 /** Build a Response-like object whose body streams the given strings as separate reads. */
 function sseResponse(chunks) {
@@ -65,7 +65,34 @@ describe("streamMessage", () => {
       assistantMessageId: 42,
       content: "Hello, world",
       sources: [{ type: "kb", title: "Doc" }],
+      language: null, // meta frame here carries no language
     });
+  });
+
+  it("reports the reply language from the meta frame (A7)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        sseResponse([
+          'event: meta\ndata: {"user_message_id": 1, "language": "en"}\n\n',
+          'event: done\ndata: {"assistant_message_id": 2, "content": "ok"}\n\n',
+        ])
+      )
+    );
+    const result = await streamMessage(3, "How do I get a visa?", "uz", { plain: true });
+    expect(result.language).toBe("en");
+    const body = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(body).toEqual({ content: "How do I get a visa?", language: "uz", plain: true });
+  });
+
+  it("passes an AbortSignal through so the UI can stop a reply (R5)", async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn().mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(streamMessage(3, "hi", "en", { signal: controller.signal })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    expect(fetchMock.mock.calls[0][1].signal).toBe(controller.signal);
   });
 
   it("refreshes the access token on 401 and retries once", async () => {
@@ -84,6 +111,32 @@ describe("streamMessage", () => {
     expect(refreshAccessToken).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe("Bearer fresh");
-    expect(result).toEqual({ assistantMessageId: 1, content: "ok", sources: [] });
+    expect(result).toEqual({ assistantMessageId: 1, content: "ok", sources: [], language: null });
+  });
+});
+
+describe("streamGuestMessage (B1)", () => {
+  it("posts content + history without an Authorization header", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      sseResponse([
+        'event: meta\ndata: {"guest": true, "language": "ru"}\n\n',
+        'data: {"delta": "Привет"}\n\n',
+        'event: done\ndata: {"assistant_message_id": null, "content": "Привет"}\n\n',
+      ])
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const history = [{ role: "user", content: "a" }, { role: "assistant", content: "b" }];
+    const result = await streamGuestMessage("Как получить визу?", "ru", { history });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toMatch(/\/chat\/guest\/stream\/$/);
+    expect(init.headers.Authorization).toBeUndefined();
+    expect(JSON.parse(init.body).history).toEqual(history);
+    expect(result).toMatchObject({ content: "Привет", language: "ru", assistantMessageId: null });
+  });
+
+  it("surfaces the HTTP status (e.g. 429 rate limit) on failure", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 429, body: null }));
+    await expect(streamGuestMessage("hi", "en")).rejects.toMatchObject({ status: 429 });
   });
 });

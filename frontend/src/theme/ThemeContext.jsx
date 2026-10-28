@@ -7,7 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
  */
 
 export const ACCENTS = ["teal", "blue", "violet", "green", "rose", "amber"];
-export const FONT_SCALES = ["s", "m", "l"];
+export const FONT_SCALES = ["s", "m", "l", "xl"];
 export const CHAT_BACKGROUNDS = ["plain", "tile", "dots", "warm", "cool"];
 const MODES = ["light", "dark", "system"];
 

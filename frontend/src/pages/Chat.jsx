@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { chatApi, streamMessage, fetchRelated } from "../api/endpoints";
+import { chatApi, streamMessage, streamGuestMessage, fetchRelated } from "../api/endpoints";
+import { useAuth } from "../auth/AuthContext";
+import { useConfig } from "../config/ConfigContext";
+import { AiDisclaimer, AiOnboarding } from "../components/AiNotice";
+import { useConfirm } from "../components/ConfirmDialog";
 import MessageBubble from "../components/MessageBubble";
 import RelatedQuestions from "../components/RelatedQuestions";
 import Spinner from "../components/Spinner";
@@ -11,10 +15,36 @@ import { exportConversationMarkdown } from "../utils/exportConversation";
 
 // S3 — mirror the server-side cap (CHAT_MAX_MESSAGE_CHARS) as a client hint.
 const MAX_CHARS = 4000;
+// B1 — how many prior turns a guest sends with each question (server caps at 10 too).
+const GUEST_HISTORY = 10;
+const PLAIN_KEY = "govbot.plainLanguage";
 
-export default function Chat() {
+const LANG_NAMES = { uz: "O'zbekcha", ru: "Русский", en: "English" };
+
+function readPlain() {
+  try {
+    return localStorage.getItem(PLAIN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The chat page. Two modes share one UI:
+ *  - signed in: conversations are persisted and listed in the sidebar;
+ *  - guest (B1, only when the backend enables it): a single local thread, nothing stored.
+ */
+export default function Chat({ guest = false, embedded = false }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const confirm = useConfirm();
+  const { user } = useAuth();
+  const { ai_mode: aiMode } = useConfig();
+  // Label for freshly streamed replies (persisted ones carry `model` from the API).
+  const liveModel = aiMode === "mock" ? "mock" : aiMode === "catalog_only" ? "catalog" : undefined;
+  // The embedded widget (D2) is always a guest: a third-party page must never drive a
+  // signed-in session, even if the visitor is logged in on the GovBot site.
+  const isGuest = guest && (embedded || !user);
 
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -27,10 +57,14 @@ export default function Chat() {
   // R5 — related-question chips shown under the last assistant reply.
   const [relatedQuestions, setRelatedQuestions] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // R5 — simple-language answers, remembered per browser.
+  const [plain, setPlain] = useState(readPlain);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const prefillConsumed = useRef(false);
+  // R5 — lets the user stop a reply mid-stream.
+  const abortRef = useRef(null);
   // Mirrors activeId so an in-flight stream can tell if the user switched away.
   const activeIdRef = useRef(null);
   useEffect(() => {
@@ -38,11 +72,16 @@ export default function Chat() {
   }, [activeId]);
   // Id of a conversation we just created locally (first message of a new chat).
   // The load effect must NOT refetch it — the server row is still empty at that
-  // moment, so fetching would overwrite the optimistic user message with [] and
-  // the user's own question would vanish from the thread (only the streamed
-  // assistant reply would remain). Cleared after being honoured once so a later
-  // reopen of the same conversation still loads its persisted messages.
+  // moment, so fetching would overwrite the optimistic user message with [].
   const justCreatedRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PLAIN_KEY, plain ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [plain]);
 
   const autoGrowInput = useCallback(() => {
     const el = inputRef.current;
@@ -62,23 +101,22 @@ export default function Chat() {
     });
   }, []);
 
-  // Load conversation list on mount.
+  // Load conversation list on mount (signed-in only).
   useEffect(() => {
+    if (isGuest) return;
     chatApi
       .conversations()
       .then(({ data }) => setConversations(data))
       .catch(() => setConversations([]));
-  }, []);
+  }, [isGuest]);
 
   // Load messages when the active conversation changes.
   useEffect(() => {
+    if (isGuest) return;
     if (!activeId) {
       setMessages([]);
       return;
     }
-    // Skip the fetch for a conversation we just created for this send — its
-    // server row has no messages yet and the optimistic state is already on
-    // screen. Honour the skip once, then clear so a later reopen refetches.
     if (justCreatedRef.current === activeId) {
       justCreatedRef.current = null;
       return;
@@ -97,13 +135,18 @@ export default function Chat() {
     return () => {
       active = false;
     };
-  }, [activeId, scrollToBottom]);
+  }, [activeId, scrollToBottom, isGuest]);
+
+  // Abort any in-flight stream when leaving the page.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const refreshConversations = useCallback(() => {
+    if (isGuest) return;
     chatApi.conversations().then(({ data }) => setConversations(data)).catch(() => {});
-  }, []);
+  }, [isGuest]);
 
   const startNewChat = useCallback(() => {
+    abortRef.current?.abort();
     setActiveId(null);
     setMessages([]);
     setInput("");
@@ -121,14 +164,15 @@ export default function Chat() {
   const ensureConversation = useCallback(async () => {
     if (activeId) return activeId;
     const { data } = await chatApi.createConversation(i18n.language);
-    // Mark before setActiveId so the load effect (which fires on the id change)
-    // skips refetching this still-empty conversation and preserves the
-    // optimistic user message. See justCreatedRef.
     justCreatedRef.current = data.id;
     setActiveId(data.id);
     setConversations((prev) => [data, ...prev]);
     return data.id;
   }, [activeId, i18n.language]);
+
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
 
   const send = useCallback(
     async (text) => {
@@ -137,96 +181,117 @@ export default function Chat() {
       setSending(true);
       setInput("");
       resetInputHeight();
-      // Keep the caret in the input so the user can keep typing after sending
-      // — including when send was triggered from a suggestion/related chip,
-      // which would otherwise leave focus on the clicked button.
       inputRef.current?.focus();
 
-      // Optimistically show the user's message.
       const optimistic = {
         id: `tmp-${Date.now()}`,
         role: "user",
         content,
         created_at: new Date().toISOString(),
       };
+      const priorMessages = messages;
       setMessages((prev) => [...prev, optimistic]);
       setStreamingText("");
       setStreamingSources([]);
       setRelatedQuestions([]);
       scrollToBottom();
 
-      // Declared before the try so the catch/finally blocks below can reference
-      // it (a `const` inside try is not in scope there — referencing it would
-      // throw a ReferenceError and swallow the real error / focus restore).
-      let convId;
+      const controller = new AbortController();
+      abortRef.current = controller;
+      let convId = isGuest ? "guest" : undefined;
+      let partial = "";
+      const callbacks = {
+        signal: controller.signal,
+        plain,
+        onDelta: (delta) => {
+          if (activeIdRef.current !== convId && !isGuest) return;
+          partial += delta;
+          setStreamingText((prev) => (prev ?? "") + delta);
+          scrollToBottom();
+        },
+        onSources: (srcs) => {
+          if (activeIdRef.current !== convId && !isGuest) return;
+          setStreamingSources(srcs); // B2
+        },
+      };
+
+      const commitAssistant = (msg) =>
+        setMessages((prev) => [
+          ...prev,
+          { created_at: new Date().toISOString(), role: "assistant", ...msg },
+        ]);
+
       try {
-        convId = await ensureConversation();
-        const result = await streamMessage(convId, content, i18n.language, {
-          onDelta: (delta) => {
-            // Ignore chunks if the user switched conversations mid-stream.
-            if (activeIdRef.current !== convId) return;
-            setStreamingText((prev) => (prev ?? "") + delta);
-            scrollToBottom();
-          },
-          onSources: (srcs) => {
-            if (activeIdRef.current !== convId) return;
-            setStreamingSources(srcs); // B2
-          },
-        });
-        // Commit the final assistant message only if this conversation is still
-        // on screen; otherwise it is already persisted and reloads on return.
-        if (activeIdRef.current === convId) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: result.assistantMessageId ?? `a-${Date.now()}`,
-              role: "assistant",
-              content: result.content,
-              sources: result.sources || [],
-              created_at: new Date().toISOString(),
-            },
-          ]);
+        let result;
+        if (isGuest) {
+          const history = priorMessages
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .slice(-GUEST_HISTORY)
+            .map((m) => ({ role: m.role, content: m.content }));
+          result = await streamGuestMessage(content, i18n.language, { ...callbacks, history });
+        } else {
+          convId = await ensureConversation();
+          result = await streamMessage(convId, content, i18n.language, callbacks);
+        }
+        if (isGuest || activeIdRef.current === convId) {
+          commitAssistant({
+            id: result.assistantMessageId ?? `a-${Date.now()}`,
+            content: result.content,
+            sources: result.sources || [],
+            language: result.language,
+            model: liveModel,
+          });
           setStreamingText(null);
           setStreamingSources([]);
-          // R5 — fetch related catalog questions for the just-asked message.
-          // Same activeId guard as the commit above: a mid-flight conversation
-          // switch must not attach stale chips to the wrong chat. Degrade
-          // silently to no chips on any error.
-          fetchRelated(content, i18n.language)
+          fetchRelated(content, result.language || i18n.language)
             .then((qs) => {
-              if (activeIdRef.current === convId) setRelatedQuestions(qs);
+              if (isGuest || activeIdRef.current === convId) setRelatedQuestions(qs);
             })
-            .catch(() => {
-              if (activeIdRef.current === convId) setRelatedQuestions([]);
-            });
+            .catch(() => setRelatedQuestions([]));
         }
         refreshConversations();
-      } catch {
-        if (activeIdRef.current === convId) {
-          setMessages((prev) => [
-            ...prev,
-            {
+      } catch (err) {
+        if (isGuest || activeIdRef.current === convId) {
+          if (err?.name === "AbortError") {
+            // Keep what was streamed so far, clearly marked as stopped.
+            commitAssistant({
+              id: `stopped-${Date.now()}`,
+              content: partial ? `${partial}\n\n_${t("chat.stopped")}_` : `_${t("chat.stopped")}_`,
+            });
+          } else {
+            commitAssistant({
               id: `err-${Date.now()}`,
-              role: "assistant",
-              content: t("errors.loadChat"),
-              created_at: new Date().toISOString(),
-            },
-          ]);
+              content: err?.status === 429 ? t("chat.rateLimited") : t("errors.loadChat"),
+            });
+          }
           setStreamingText(null);
+          setStreamingSources([]);
         }
+        // A persisted conversation may have stored the partial reply; refresh the list.
+        refreshConversations();
       } finally {
+        abortRef.current = null;
         setSending(false);
         scrollToBottom();
-        // Return the caret to the input once the reply is done so a follow-up
-        // can be typed straight away — unless the user has moved to another
-        // conversation in the meantime.
-        if (activeIdRef.current === convId) inputRef.current?.focus();
+        if (isGuest || activeIdRef.current === convId) inputRef.current?.focus();
       }
     },
-    [sending, ensureConversation, i18n.language, refreshConversations, scrollToBottom, resetInputHeight, t]
+    [
+      sending,
+      messages,
+      isGuest,
+      plain,
+      ensureConversation,
+      i18n.language,
+      refreshConversations,
+      scrollToBottom,
+      resetInputHeight,
+      t,
+      liveModel,
+    ]
   );
 
-  // Pre-fill from "Ask the AI about this" (scenario detail) — runs once.
+  // Pre-fill from "Ask the AI about this" (scenario detail / search palette) — runs once.
   useEffect(() => {
     if (prefillConsumed.current) return;
     const prefill = location.state?.prefill;
@@ -241,12 +306,12 @@ export default function Chat() {
   const deleteConversation = useCallback(
     async (id, e) => {
       e.stopPropagation();
-      if (!window.confirm(t("chat.deleteConfirm"))) return;
+      if (!(await confirm({ message: t("chat.deleteConfirm"), danger: true }))) return;
       await chatApi.deleteConversation(id).catch(() => {});
       setConversations((prev) => prev.filter((c) => c.id !== id));
       if (id === activeId) startNewChat();
     },
-    [activeId, startNewChat, t]
+    [activeId, startNewChat, t, confirm]
   );
 
   // A2 — rate an assistant reply; optimistically reflect it in local message state.
@@ -297,63 +362,78 @@ export default function Chat() {
   const showEmpty = messages.length === 0 && streamingText === null;
   const canExport = messages.length > 0 && !sending;
   const nearLimit = input.length > MAX_CHARS * 0.8;
-  const activeTitle = conversations.find((c) => c.id === activeId)?.title || t("chat.newChat");
+  const activeTitle = isGuest
+    ? t("chat.guestTitle")
+    : conversations.find((c) => c.id === activeId)?.title || t("chat.newChat");
 
   return (
-    <div className="chat-layout">
-      {sidebarOpen && (
+    <div
+      className={[
+        "chat-layout",
+        isGuest && "chat-layout-guest",
+        embedded && "chat-layout-embedded",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <AiOnboarding />
+      {!isGuest && sidebarOpen && (
         <div className="chat-sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
       )}
-      <aside className={sidebarOpen ? "chat-sidebar open" : "chat-sidebar"}>
-        <button type="button" className="btn btn-primary btn-block" onClick={startNewChat}>
-          + {t("chat.newChat")}
-        </button>
-        <h2 className="sidebar-title">{t("chat.conversations")}</h2>
-        <ul className="conv-list">
-          {conversations.length === 0 && (
-            <li className="conv-empty">{t("chat.noConversations")}</li>
-          )}
-          {conversations.map((c) => (
-            <li
-              key={c.id}
-              className={c.id === activeId ? "conv-item active" : "conv-item"}
-              role="button"
-              tabIndex={0}
-              aria-current={c.id === activeId}
-              onClick={() => openConversation(c.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  openConversation(c.id);
-                }
-              }}
-            >
-              <span className="conv-title">{c.title || t("chat.newChat")}</span>
-              <button
-                type="button"
-                className="conv-del"
-                aria-label={t("common.delete")}
-                onClick={(e) => deleteConversation(c.id, e)}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
-
-      <section className="chat-main">
-        <div className="chat-mobilebar">
-          <button
-            type="button"
-            className="chat-sidebar-toggle"
-            aria-label={t("chat.conversations")}
-            onClick={() => setSidebarOpen(true)}
-          >
-            ☰
+      {!isGuest && (
+        <aside
+          className={sidebarOpen ? "chat-sidebar open" : "chat-sidebar"}
+          aria-label={t("chat.conversations")}
+        >
+          <button type="button" className="btn btn-primary btn-block" onClick={startNewChat}>
+            + {t("chat.newChat")}
           </button>
+          <h2 className="sidebar-title">{t("chat.conversations")}</h2>
+          <ul className="conv-list">
+            {conversations.length === 0 && (
+              <li className="conv-empty">{t("chat.noConversations")}</li>
+            )}
+            {conversations.map((c) => (
+              <li key={c.id} className={c.id === activeId ? "conv-item active" : "conv-item"}>
+                <button
+                  type="button"
+                  className="conv-open"
+                  aria-current={c.id === activeId ? "true" : undefined}
+                  onClick={() => openConversation(c.id)}
+                >
+                  <span className="conv-title">{c.title || t("chat.newChat")}</span>
+                </button>
+                <button
+                  type="button"
+                  className="conv-del"
+                  aria-label={`${t("common.delete")}: ${c.title || t("chat.newChat")}`}
+                  onClick={(e) => deleteConversation(c.id, e)}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
+
+      <section className="chat-main" aria-labelledby="chat-heading">
+        <h1 id="chat-heading" className="visually-hidden">
+          {activeTitle}
+        </h1>
+        <div className="chat-mobilebar">
+          {!isGuest && (
+            <button
+              type="button"
+              className="chat-sidebar-toggle"
+              aria-label={t("chat.conversations")}
+              onClick={() => setSidebarOpen(true)}
+            >
+              ☰
+            </button>
+          )}
           <span className="chat-mobilebar-title">{activeTitle}</span>
-          {activeId && (
+          {!isGuest && activeId && (
             <button
               type="button"
               className="chat-mobilebar-action"
@@ -376,7 +456,25 @@ export default function Chat() {
             </button>
           )}
         </div>
-        <div className="chat-messages" ref={scrollRef}>
+
+        {isGuest && !embedded && (
+          <div className="guest-banner" role="note">
+            <span>{t("chat.guestNote")}</span>
+            <Link to="/login" state={{ from: { pathname: "/chat" } }} className="btn btn-outline btn-sm">
+              {t("chat.guestSignIn")}
+            </Link>
+          </div>
+        )}
+
+        <div
+          className="chat-messages"
+          ref={scrollRef}
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions"
+          aria-busy={sending}
+          tabIndex={0}
+        >
           {loadingConv ? (
             <Spinner />
           ) : showEmpty ? (
@@ -405,9 +503,13 @@ export default function Chat() {
                   role={m.role}
                   content={m.content}
                   sources={m.sources}
+                  language={m.language}
+                  uiLanguage={i18n.language}
+                  langNames={LANG_NAMES}
                   messageId={typeof m.id === "number" ? m.id : undefined}
                   feedback={m.feedback}
                   onFeedback={submitFeedback}
+                  model={m.model}
                 />
               ))}
               {streamingText !== null && (
@@ -425,50 +527,75 @@ export default function Chat() {
           )}
         </div>
 
-        <form className="chat-input-bar" onSubmit={onSubmit}>
-          <span className="lang-indicator" title={t("common.language")}>
-            {i18n.language.toUpperCase()}
-          </span>
-          <textarea
-            ref={inputRef}
-            className="chat-input"
-            rows={1}
-            maxLength={MAX_CHARS}
-            placeholder={t("chat.placeholder")}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              autoGrowInput();
-            }}
-            onKeyDown={onKeyDown}
-            aria-label={t("chat.placeholder")}
-          />
-          {nearLimit && (
-            <span className="char-counter" aria-live="polite">
-              {input.length}/{MAX_CHARS}
+        <div className="chat-composer">
+          <div className="chat-options">
+            <label className="toggle" title={t("chat.plainLanguageHint")}>
+              <input
+                type="checkbox"
+                checked={plain}
+                onChange={(e) => setPlain(e.target.checked)}
+              />
+              <span>{t("chat.plainLanguage")}</span>
+            </label>
+          </div>
+          <form className="chat-input-bar" onSubmit={onSubmit}>
+            <span className="lang-indicator" title={t("common.language")}>
+              {i18n.language.toUpperCase()}
             </span>
-          )}
-          {voiceSupported && (
-            <button
-              type="button"
-              className={listening ? "chat-mic listening" : "chat-mic"}
-              onClick={toggleVoice}
-              aria-label={t("chat.voiceInput")}
-              aria-pressed={listening}
-              title={t("chat.voiceInput")}
-            >
-              🎤
-            </button>
-          )}
-          <button
-            type="submit"
-            className="chat-send"
-            disabled={sending || !input.trim()}
-            aria-label={t("common.send")}
-          >
-            {sending ? "…" : "↑"}
-          </button>
-        </form>
+            <textarea
+              ref={inputRef}
+              className="chat-input"
+              rows={1}
+              maxLength={MAX_CHARS}
+              placeholder={t("chat.placeholder")}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                autoGrowInput();
+              }}
+              onKeyDown={onKeyDown}
+              aria-label={t("chat.placeholder")}
+            />
+            {nearLimit && (
+              <span className="char-counter" aria-live="polite">
+                {input.length}/{MAX_CHARS}
+              </span>
+            )}
+            {voiceSupported && (
+              <button
+                type="button"
+                className={listening ? "chat-mic listening" : "chat-mic"}
+                onClick={toggleVoice}
+                aria-label={t("chat.voiceInput")}
+                aria-pressed={listening}
+                title={t("chat.voiceInput")}
+              >
+                🎤
+              </button>
+            )}
+            {sending ? (
+              <button
+                type="button"
+                className="chat-send chat-stop"
+                onClick={stop}
+                aria-label={t("chat.stopAnswer")}
+                title={t("chat.stopAnswer")}
+              >
+                ■
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="chat-send"
+                disabled={!input.trim()}
+                aria-label={t("common.send")}
+              >
+                ↑
+              </button>
+            )}
+          </form>
+          <AiDisclaimer />
+        </div>
       </section>
     </div>
   );

@@ -10,7 +10,9 @@
     "logout": "Sign out",
     "menu": "Menu",
     "primary": "Primary",
-    "profile": "Profile"
+    "profile": "Profile",
+    "search": "Search",
+    "searchHint": "Search topics (Ctrl+K)"
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -96,7 +98,31 @@
     "unblock": "Unblock",
     "confirmDeleteUser": "Delete {{email}}?",
     "confirmDeleteConversation": "Delete this conversation?",
-    "deleteConversation": "Delete conversation"
+    "deleteConversation": "Delete conversation",
+    "overview": "Overview",
+    "knowledge": "Knowledge base",
+    "status_draft": "Draft",
+    "status_review": "In review",
+    "status_published": "Published",
+    "verifiedAt": "Verified on",
+    "checklist": "Documents checklist (one per line)",
+    "audience": "Audience",
+    "history": "History",
+    "restore": "Restore",
+    "noRevisions": "No earlier versions yet.",
+    "stale": "Needs re-verification",
+    "staleHint": "Published scenarios never verified or verified more than {{days}} days ago.",
+    "kbAdd": "Add source",
+    "kbType": "Type",
+    "kbUrl": "Web link",
+    "kbPaste": "Pasted text",
+    "kbFile": "Upload file",
+    "kbReindex": "Reindex",
+    "kbChunks": "Chunks",
+    "kbEmpty": "No knowledge sources yet.",
+    "kbIndexHint": "New sources are queued and indexed by the background tick.",
+    "confirmTitle": "Please confirm",
+    "variants": "Variants"
   },
   "common": {
     "loading": "Loading…",
@@ -110,7 +136,11 @@
     "delete": "Delete",
     "offline": "You are offline — showing saved content.",
     "close": "Close",
-    "next": "Next"
+    "next": "Next",
+    "skipToContent": "Skip to main content",
+    "confirm": "Confirm",
+    "stop": "Stop",
+    "copy": "Copy"
   },
   "landing": {
     "heroTitle": "Plain-language answers to your government questions",
@@ -124,7 +154,10 @@
     "feature3Title": "Three languages",
     "feature3Body": "The whole experience works in Uzbek, Russian and English.",
     "categoriesTitle": "Popular topics",
-    "categoriesSubtitle": "Browse ready-made answers by category"
+    "categoriesSubtitle": "Browse ready-made answers by category",
+    "situationsTitle": "Popular situations",
+    "askGuest": "Ask without signing up",
+    "searchPlaceholder": "What do you need to do? e.g. renew passport"
   },
   "auth": {
     "loginTitle": "Sign in to GovBot",
@@ -170,7 +203,18 @@
     "export": "Export chat",
     "voiceInput": "Voice input",
     "relatedTitle": "Related questions",
-    "officialSourceLabel": "{{title}} — official source"
+    "officialSourceLabel": "{{title}} — official source",
+    "guestTitle": "Guest mode",
+    "guestNote": "You're chatting as a guest. Nothing is saved — sign in to keep your conversations.",
+    "guestSignIn": "Sign in to save",
+    "stopAnswer": "Stop answering",
+    "stopped": "Answer stopped.",
+    "plainLanguage": "Simple language",
+    "plainLanguageHint": "Shorter sentences and numbered steps",
+    "readAloud": "Read aloud",
+    "stopReading": "Stop reading",
+    "rateLimited": "Too many questions in a short time. Please wait a little and try again.",
+    "answeredIn": "Answered in {{lang}}"
   },
   "scenarios": {
     "title": "Scenario Catalog",
@@ -183,7 +227,18 @@
     "updated": "Updated",
     "backToCatalog": "Back to catalog",
     "itemsCount_one": "{{count}} topic",
-    "itemsCount_other": "{{count}} topics"
+    "itemsCount_other": "{{count}} topics",
+    "documents": "Documents to prepare",
+    "documentsEmpty": "The document list for this topic hasn't been structured yet — see the guide below and the official source.",
+    "progress": "{{done}} of {{total}} ready",
+    "source": "Official source",
+    "remind": "Add a reminder to my calendar",
+    "remindDate": "Reminder date",
+    "remindSave": "Download .ics",
+    "breadcrumbHome": "Home",
+    "audience": "For",
+    "listen": "Listen",
+    "stopListening": "Stop"
   },
   "errors": {
     "network": "Network error — is the backend running?",
@@ -218,6 +273,68 @@
     "bg_dots": "Dots",
     "bg_warm": "Warm",
     "bg_cool": "Cool",
-    "appearanceHint": "Settings are saved on this device."
+    "appearanceHint": "Settings are saved on this device.",
+    "font_xl": "Extra large",
+    "privacy": "Privacy and data",
+    "privacyHint": "Download everything GovBot stores about you, or delete your account and all conversations.",
+    "export": "Download my data",
+    "deleteAccount": "Delete account",
+    "deleteConfirmTitle": "Delete your account?",
+    "deleteConfirmBody": "This permanently deletes your account and all conversations. Enter your password to confirm.",
+    "deleteFailed": "Could not delete the account. Check your password.",
+    "plainDefault": "Answer in simple language by default"
+  },
+  "trust": {
+    "disclaimer": "GovBot is an AI assistant, not an official body. Answers can be wrong or outdated. Check important details with the responsible agency.",
+    "checkOfficial": "Check the official source",
+    "onboardTitle": "Before you start",
+    "onboard1Title": "What GovBot does",
+    "onboard1Body": "It explains public services in Uzbekistan in plain language and points you to the official source.",
+    "onboard2Title": "Double-check what matters",
+    "onboard2Body": "AI can make mistakes. Fees, deadlines and documents can change — confirm them with the agency or on my.gov.uz before acting.",
+    "onboard3Title": "Your data",
+    "onboard3Body": "Do not type passport numbers, PINFL, card numbers or phone numbers. GovBot masks them before sending a question to the AI provider, but it is safer not to share them.",
+    "onboardAccept": "I understand",
+    "onboardMore": "Read more",
+    "verified": "Verified {{date}}",
+    "notVerified": "Not yet verified",
+    "originCatalog": "GovBot catalog",
+    "originKb": "Knowledge base",
+    "originWeb": "Web search",
+    "ungrounded": "No verified catalog material matched this question. Treat this answer as general orientation only."
+  },
+  "help": {
+    "title": "Help and official contacts",
+    "notHelpful": "Didn't help? Contact an official line:",
+    "emergency": "Emergency (SOS)",
+    "tourist": "Tourist helpline",
+    "portal": "my.gov.uz support",
+    "portalLink": "my.gov.uz — official e-government portal",
+    "foreignersLink": "my.gov.uz for foreigners",
+    "source": "Numbers from my.gov.uz/ru/for-foreigners"
+  },
+  "footer": {
+    "about": "GovBot gives plain-language guidance on public services in Uzbekistan. It is not a government service.",
+    "privacy": "Privacy",
+    "catalog": "Catalog",
+    "help": "Help"
+  },
+  "roles": {
+    "title": "Who are you?",
+    "subtitle": "We'll show the topics that matter most to you.",
+    "citizen": "Citizen of Uzbekistan",
+    "resident": "Foreign resident",
+    "tourist": "Tourist",
+    "all": "Everyone",
+    "citizenHint": "Passport, ID card, taxes, business",
+    "residentHint": "Residence permit, work permit, registration",
+    "touristHint": "Visa, temporary registration, emergency help"
+  },
+  "palette": {
+    "title": "Search",
+    "placeholder": "Search topics or ask the AI…",
+    "ask": "Ask the AI: “{{q}}”",
+    "empty": "No matching topics.",
+    "hint": "↑↓ to move · Enter to open · Esc to close"
   }
 }

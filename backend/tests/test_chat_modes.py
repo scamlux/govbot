@@ -173,6 +173,18 @@ def test_guest_chat_is_ip_throttled(monkeypatch):
     assert codes[2] == 429
 
 
+def test_related_questions_require_auth_when_guest_mode_off(passport):
+    resp = APIClient().get(reverse("chat-related"), {"message": "passport", "lang": "en"})
+    assert resp.status_code == 401
+
+
+@override_settings(GUEST_CHAT_ENABLED=True)
+def test_related_questions_open_to_guests_when_enabled(passport):
+    resp = APIClient().get(reverse("chat-related"), {"message": "renew passport", "lang": "en"})
+    assert resp.status_code == 200
+    assert "related_questions" in resp.json()
+
+
 @override_settings(GUEST_CHAT_ENABLED=True)
 def test_guest_chat_rejects_overlong_message():
     resp = APIClient().post(

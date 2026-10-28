@@ -75,6 +75,13 @@
       href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
+    <!-- R7 — Golos Text and Manrope have no glyph for the Uzbek okina (U+02BB) or
+         modifier apostrophe (U+02BC). This tiny Noto Sans subset (only those two
+         characters) is the per-glyph fallback, so oʻ/gʻ render instead of tofu. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&text=%CA%BB%CA%BC%E2%80%98%E2%80%99&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="root"></div>
