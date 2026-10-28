@@ -24,6 +24,8 @@ from .throttles import (
     ChatBurstThrottle,
     ChatSustainedThrottle,
     GuestBurstThrottle,
+    GuestGlobalThrottle,
+    GuestRelatedThrottle,
     GuestSustainedThrottle,
 )
 
@@ -256,9 +258,10 @@ class RelatedQuestionsView(APIView):
         return super().get_permissions()
 
     def get_throttles(self):
-        # Anonymous callers share the guest IP budget; signed-in users are unthrottled here.
+        # Anonymous callers get their own (looser) per-IP bucket so related chips never eat
+        # the chat allowance; signed-in users are unthrottled here.
         if not self.request.user or not self.request.user.is_authenticated:
-            return [GuestBurstThrottle()]
+            return [GuestRelatedThrottle()]
         return []
 
     def get(self, request):
@@ -284,7 +287,15 @@ class GuestMessageStreamView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [GuestBurstThrottle, GuestSustainedThrottle]
+    # Order matters: the shared global counter is checked LAST and only charged when the
+    # per-IP limits passed (see check_throttles), so one abusive IP cannot burn the whole
+    # guests' daily budget with requests that were already refused.
+    throttle_classes = [GuestBurstThrottle, GuestSustainedThrottle, GuestGlobalThrottle]
+
+    def check_throttles(self, request):
+        for throttle in self.get_throttles():
+            if not throttle.allow_request(request, self):
+                self.throttled(request, throttle.wait())
 
     def initial(self, request, *args, **kwargs):
         if not getattr(settings, "GUEST_CHAT_ENABLED", False):

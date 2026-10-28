@@ -38,6 +38,28 @@ class GuestSustainedThrottle(GuestBurstThrottle):
     scope = "guest_sustained"
 
 
+class GuestGlobalThrottle(SimpleRateThrottle):
+    """B1 — one shared counter for ALL guests (``GUEST_THROTTLE_GLOBAL``).
+
+    This is the actual spending ceiling: per-IP limits can be bypassed by spoofing
+    ``X-Forwarded-For`` on direct requests, a single shared key cannot.
+    """
+
+    scope = "guest_global"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": "all-guests"}
+
+
+class GuestRelatedThrottle(AnonRateThrottle):
+    """B1 — related-question chips for guests, per IP, in their own bucket."""
+
+    scope = "guest_related"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+
+
 class TelegramChatThrottle(SimpleRateThrottle):
     """D1 — per Telegram chat id, so one chat cannot drain the budget."""
 

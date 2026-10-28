@@ -173,6 +173,52 @@ def test_guest_chat_is_ip_throttled(monkeypatch):
     assert codes[2] == 429
 
 
+def _guest_post(client, **extra):
+    return client.post(
+        reverse("guest-stream"), {"content": "hi", "language": "en"}, format="json", **extra
+    ).status_code
+
+
+def _rates(monkeypatch, burst="100/min", sustained="100/day", global_="100/day"):
+    from chat.throttles import GuestBurstThrottle, GuestGlobalThrottle, GuestSustainedThrottle
+
+    monkeypatch.setattr(GuestBurstThrottle, "get_rate", lambda self: burst)
+    monkeypatch.setattr(GuestSustainedThrottle, "get_rate", lambda self: sustained)
+    monkeypatch.setattr(GuestGlobalThrottle, "get_rate", lambda self: global_)
+
+
+@override_settings(GUEST_CHAT_ENABLED=True)
+def test_global_guest_cap_holds_across_different_ips(monkeypatch):
+    """The real cost ceiling: a spoofed/rotating X-Forwarded-For cannot dodge it."""
+    _rates(monkeypatch, global_="3/day")
+    client = APIClient()
+    codes = [_guest_post(client, HTTP_X_FORWARDED_FOR=f"203.0.113.{i}") for i in range(1, 6)]
+    assert codes == [200, 200, 200, 429, 429]
+
+
+@override_settings(GUEST_CHAT_ENABLED=True)
+def test_a_refused_ip_does_not_burn_the_global_budget(monkeypatch):
+    """Per-IP refusals must not be charged to the shared counter."""
+    _rates(monkeypatch, burst="1/min", global_="3/day")
+    client = APIClient()
+    spammer = {"HTTP_X_FORWARDED_FOR": "198.51.100.9"}
+    assert _guest_post(client, **spammer) == 200
+    assert [_guest_post(client, **spammer) for _ in range(10)] == [429] * 10
+    # Only one request was actually served, so two distinct visitors still fit.
+    assert _guest_post(client, HTTP_X_FORWARDED_FOR="203.0.113.1") == 200
+    assert _guest_post(client, HTTP_X_FORWARDED_FOR="203.0.113.2") == 200
+    assert _guest_post(client, HTTP_X_FORWARDED_FOR="203.0.113.3") == 429
+
+
+def test_guest_throttle_defaults_are_tight_and_global_cap_exists():
+    from django.conf import settings
+
+    rates = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
+    assert rates["guest_burst"] == "3/min"
+    assert rates["guest_sustained"] == "10/day"
+    assert rates["guest_global"] == "300/day"
+
+
 def test_related_questions_require_auth_when_guest_mode_off(passport):
     resp = APIClient().get(reverse("chat-related"), {"message": "passport", "lang": "en"})
     assert resp.status_code == 401

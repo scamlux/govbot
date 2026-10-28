@@ -6,14 +6,15 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from . import cookies
 from .models import User
 from .serializers import (
     AdminUserSerializer,
@@ -40,19 +41,71 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response(
-            {**tokens_for_user(user), "user": UserSerializer(user).data},
-            status=status.HTTP_201_CREATED,
-        )
+        data = {**tokens_for_user(user), "user": UserSerializer(user).data}
+        refresh = data.pop("refresh") if cookies.wants_cookie(request) else None
+        response = Response(data, status=status.HTTP_201_CREATED)
+        if refresh:
+            cookies.set_refresh_cookie(response, refresh)  # F1 — never in the body
+        return response
 
 
 class LoginView(TokenObtainPairView):
-    """Email + password -> { access, refresh, user }."""
+    """Email + password -> { access, refresh, user }.
+
+    With ``X-Auth-Cookie: 1`` the refresh token is delivered as an httpOnly cookie instead
+    of in the body (F1); other clients are unchanged.
+    """
 
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth"
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200 and cookies.wants_cookie(request):
+            refresh = response.data.pop("refresh", None)
+            if refresh:
+                cookies.set_refresh_cookie(response, refresh)
+        return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """``POST /api/auth/refresh/`` — rotate the refresh token, return a new access token.
+
+    The refresh token comes from the JSON body (legacy clients, and the one-time migration of
+    a token that used to live in localStorage) or, for opted-in clients, from the httpOnly
+    cookie. A cookie-sourced token is only honoured when ``X-Auth-Cookie: 1`` is present
+    (CSRF defence in depth on top of SameSite=Lax). Opted-in clients get the rotated token
+    back as a cookie and never see it in the body. A refresh token that is invalid, expired
+    or already rotated answers 401 and clears the cookie so the browser stops sending it.
+    """
+
+    def post(self, request, *args, **kwargs):
+        opted_in = cookies.wants_cookie(request)
+        token = request.data.get("refresh")
+        from_cookie = False
+        if not token and opted_in:
+            token = cookies.refresh_from_cookie(request)
+            from_cookie = bool(token)
+
+        serializer = self.get_serializer(data={"refresh": token} if token else {})
+        try:
+            serializer.is_valid(raise_exception=True)  # missing token -> 400, as before
+        except TokenError as exc:
+            response = Response(
+                InvalidToken(exc.args[0]).detail, status=status.HTTP_401_UNAUTHORIZED
+            )
+            if from_cookie:
+                cookies.clear_refresh_cookie(response)  # stop the browser re-sending it
+            return response
+
+        data = dict(serializer.validated_data)
+        refresh = data.pop("refresh", None) if opted_in else None
+        response = Response(data, status=status.HTTP_200_OK)
+        if refresh:
+            cookies.set_refresh_cookie(response, refresh)
+        return response
 
 
 class AdminUserListView(generics.ListAPIView):
@@ -117,14 +170,17 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        token = request.data.get("refresh")
-        if not token:
+        token = request.data.get("refresh") or cookies.refresh_from_cookie(request)
+        if not token and not cookies.wants_cookie(request):
             raise ValidationError({"refresh": "This field is required."})
-        try:
-            RefreshToken(token).blacklist()
-        except TokenError:
-            pass  # expired / already blacklisted — logging out is still a success
-        return Response(status=status.HTTP_205_RESET_CONTENT)
+        if token:
+            try:
+                RefreshToken(token).blacklist()
+            except TokenError:
+                pass  # expired / already blacklisted — logging out is still a success
+        response = Response(status=status.HTTP_205_RESET_CONTENT)
+        cookies.clear_refresh_cookie(response)
+        return response
 
 
 class DeleteAccountView(APIView):
@@ -152,7 +208,9 @@ class DeleteAccountView(APIView):
         for outstanding in OutstandingToken.objects.filter(user=user):
             BlacklistedToken.objects.get_or_create(token=outstanding)
         user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        cookies.clear_refresh_cookie(response)
+        return response
 
 
 class ExportDataView(APIView):

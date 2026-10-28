@@ -169,13 +169,53 @@ REST_FRAMEWORK = {
         "chat_sustained": env("CHAT_THROTTLE_SUSTAINED", default="500/day"),
         # Anti–brute-force on login/register (by IP). Env-tunable.
         "auth": env("AUTH_THROTTLE", default="10/min"),
-        # B1 — anonymous guest chat, keyed by client IP (only active when enabled).
-        "guest_burst": env("GUEST_THROTTLE_BURST", default="5/min"),
-        "guest_sustained": env("GUEST_THROTTLE_SUSTAINED", default="30/day"),
+        # B1 — anonymous guest chat (only active when GUEST_CHAT_ENABLED). Per client IP:
+        # a burst and a daily window. Defaults are deliberately tight.
+        "guest_burst": env("GUEST_THROTTLE_BURST", default="3/min"),
+        "guest_sustained": env("GUEST_THROTTLE_SUSTAINED", default="10/day"),
+        # B1 — the real cost ceiling: ONE shared counter for all guests combined. Per-IP
+        # limits can be dodged by spoofing X-Forwarded-For on direct requests to the API;
+        # this cannot. At ~$0.0005 per gpt-4o-mini answer, 300/day is roughly $0.15/day.
+        "guest_global": env("GUEST_THROTTLE_GLOBAL", default="300/day"),
+        # Related-question chips for guests (cheap, keyword/embedding only) — own bucket so
+        # it does not eat the chat allowance.
+        "guest_related": env("GUEST_THROTTLE_RELATED", default="10/min"),
         # D1 — Telegram bot, keyed by Telegram chat id.
         "telegram": env("TELEGRAM_THROTTLE", default="20/hour"),
     },
 }
+
+# Number of trusted reverse proxies in front of Django, used by DRF to pick the client IP out
+# of X-Forwarded-For for throttling. Unset (default) keeps DRF's historical behaviour. Set it
+# only after measuring the real hop count behind Vercel + Render (see docs/research).
+NUM_PROXIES = env.int("NUM_PROXIES", default=None)
+if NUM_PROXIES is not None:
+    REST_FRAMEWORK["NUM_PROXIES"] = NUM_PROXIES
+
+# ---------------------------------------------------------------------------
+# Throttle counters need a cache SHARED by all gunicorn workers and surviving restarts.
+# The Django default (per-process LocMemCache) gave each of the 3 workers its own counters
+# (limits ~3x looser than configured) and reset them whenever Render's free tier slept —
+# which makes any daily cap meaningless. A small DB-backed cache fixes both; the table is
+# created by `manage.py createcache` in entrypoint.sh. Tests use the in-memory cache.
+# ---------------------------------------------------------------------------
+if "pytest" in sys.modules:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "django_cache",
+            # Large on purpose: culling deletes entries by key order and could otherwise
+            # remove the global guest counter.
+            "OPTIONS": {"MAX_ENTRIES": 100_000, "CULL_FREQUENCY": 3},
+        }
+    }
+
+# F1 — refresh-token cookie (see accounts/cookies.py). Secure is explicit, not inferred.
+AUTH_REFRESH_COOKIE_NAME = "govbot_refresh"
+AUTH_REFRESH_COOKIE_PATH = "/api/auth/"
+AUTH_REFRESH_COOKIE_SECURE = not DEBUG
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
@@ -216,7 +256,10 @@ CORS_ALLOWED_ORIGINS = list(
 # this doesn't open a credentialed-cookie surface. To lock it to one origin, set
 # FRONTEND_ORIGIN to the exact URL and remove this regex.
 CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://[a-z0-9-]+\.vercel\.app$"]
-CORS_ALLOW_CREDENTIALS = True
+# The SPA authenticates with a Bearer header and (F1) a same-origin cookie — never with
+# cross-origin credentialed requests — so credentialed CORS is switched off. Otherwise any
+# *.vercel.app site allowed above could make credentialed calls to the API.
+CORS_ALLOW_CREDENTIALS = False
 
 # Trusted origins for unsafe (POST) requests to Django admin behind a proxy. Django 5
 # accepts a wildcard subdomain here, so Vercel preview URLs are covered too.
