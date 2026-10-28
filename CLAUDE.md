@@ -199,6 +199,18 @@ admin update and before a restore, so restores are undoable.
 **Upgrades 2026-10** (full checklist: `docs/research/upgrade-plan.md`)
 - `POST /api/auth/logout/` `{refresh}` — revokes the refresh token (F2; SimpleJWT
   `token_blacklist`, `BLACKLIST_AFTER_ROTATION=True`). Always 205.
+- **Cookie auth (F1):** with the opt-in request header `X-Auth-Cookie: 1`, login/register/
+  refresh/logout keep the refresh token in the httpOnly cookie `govbot_refresh` (HttpOnly,
+  `Secure` unless `DEBUG`, `SameSite=Lax`, `Path=/api/auth/`) instead of the JSON body;
+  refresh/logout read it from the cookie. The frontend keeps the access token in memory
+  only, migrates a legacy localStorage token once, and uses Web Locks to serialise refresh
+  across tabs. CORS credentials are disabled (same-origin); `x-auth-cookie` is an allowed
+  header.
+- **Same-origin API:** the frontend always calls `/api` (`VITE_API_BASE_URL=/api`, set in
+  Vercel Production). Vercel rewrites `/api/(.*)` → `https://govbot-backend-3utu.onrender.com/api/$1`
+  (regex, so trailing-slash URLs match) with rewrite caching OFF
+  (`x-vercel-enable-rewrite-caching: 0`, `Cache-Control: no-store`); locally the Vite dev
+  proxy does it, in compose nginx does. SSE streams incrementally through the proxy.
 - `POST /api/auth/me/delete/` `{password}` — self-delete account + conversations (F3);
   the last active staff account cannot delete itself.
 - `GET /api/auth/me/export/` — JSON download of profile, conversations, messages, feedback (F3).
@@ -258,7 +270,11 @@ admin update and before a restore, so restores are undoable.
   title hits. `python manage.py eval_retrieval [--sweep] [--show-misses]` measures
   recall@k on the golden set in `chat/eval_golden.py` (keyword mode: 55% → 86% on 29 cases).
 - **Ops commands:** `purge_conversations` (F4, uses `CONVERSATION_RETENTION_DAYS`),
-  `check_scenario_links` (E4, exits non-zero on broken source links).
+  `check_scenario_links` (E4, exits non-zero on broken source links),
+  `apply_content_updates` (runs every deploy; idempotent; writes a `ScenarioRevision` first
+  and never overwrites editor changes — sets official `source_url`s and document checklists;
+  `verified_at` stays empty until the owner checks), `createcachetable` (entrypoint; backs
+  the shared `DatabaseCache` so throttles hold across gunicorn workers and restarts).
 
 ### 4.4 Settings
 - CORS for `http://localhost:5173` (Vite) and `FRONTEND_ORIGIN` env var (production).
@@ -269,7 +285,9 @@ admin update and before a restore, so restores are undoable.
   instantly in development. Tests force this SQLite fallback via `conftest.py`.
 - All models registered in Django admin (incl. read-only `MessageFeedback`).
 - Seed command `python manage.py seed_scenarios` populates the catalog with realistic,
-  clearly-marked sample entries in all three languages.
+  clearly-marked sample entries in all three languages. It runs on every deploy, so it only
+  creates missing scenarios and fills empty fields — it never overwrites existing ones
+  (status, editor edits). `--reset` overwrites them (local dev only).
 - **SECRET_KEY guard (S1):** with `DEBUG=False` the app refuses to start on the insecure
   default key (`config.settings.require_secure_secret_key`, skipped only under pytest).
 - **Chat throttles (A1):** `DEFAULT_THROTTLE_RATES` scopes `chat_burst` / `chat_sustained`,
@@ -359,11 +377,13 @@ admin update and before a restore, so restores are undoable.
 `KB_CHUNK_TOKENS`, `KB_CHUNK_OVERLAP`, `KB_EMBED_BATCH`, `KB_TICK_BATCH`, `KB_TICK_SECRET`,
 `KB_FETCH_TIMEOUT`, `KB_FETCH_MAX_BYTES`, `KB_MAX_FILE_MB`, `KB_SEARCH_PROVIDER`,
 `TAVILY_API_KEY`, `KB_SEARCH_DOMAINS`, `KB_SEARCH_MAX_RESULTS`, `CHAT_MODE`,
-`GUEST_CHAT_ENABLED`, `GUEST_THROTTLE_BURST`, `GUEST_THROTTLE_SUSTAINED`,
+`GUEST_CHAT_ENABLED`, `GUEST_THROTTLE_BURST` (3/min), `GUEST_THROTTLE_SUSTAINED` (10/day),
+`GUEST_THROTTLE_GLOBAL` (300/day, one cap for all guests), `GUEST_THROTTLE_RELATED`
+(10/min), `NUM_PROXIES` (optional, unset),
 `CHAT_AUTODETECT_LANGUAGE`, `CONVERSATION_RETENTION_DAYS`, `ADMIN_CAN_READ_CONVERSATIONS`,
 `SCENARIO_STALE_DAYS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_THROTTLE`.
 
-**Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL`.
+**Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL` (`/api` in production — same-origin).
 
 Root `.env.example` aggregates the values docker-compose needs. Nothing sensitive is ever
 hardcoded or committed — only `.env.example` templates are committed; real `.env` is
