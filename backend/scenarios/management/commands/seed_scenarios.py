@@ -1,8 +1,17 @@
 """Seed the Scenario Catalog with realistic, clearly-marked trilingual sample content.
 
-Idempotent: run repeatedly; existing rows are updated in place by slug.
+Idempotent and NON-DESTRUCTIVE (runs on every deploy via entrypoint.sh):
 
-    python manage.py seed_scenarios
+* missing categories / scenarios are created from the data below;
+* existing rows are never overwritten — only fields that are still empty get filled
+  (e.g. ``audience`` on rows created before it existed). Admin edits, workflow status
+  (draft / review) and revisions therefore survive every deploy.
+
+Consequence: changing seed text in code no longer updates rows that already exist in
+production — edit them in the admin instead. ``--reset`` restores the seed text for every
+row (destructive; for local development only).
+
+    python manage.py seed_scenarios [--reset]
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -1823,40 +1832,84 @@ class Command(BaseCommand):
     def audience_for(cls, slug: str) -> list[str]:
         return [role for role, slugs in cls.AUDIENCE.items() if slug in slugs]
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--reset",
+            action="store_true",
+            help="Overwrite existing rows with the seed text (destructive; local dev only).",
+        )
+
+    @staticmethod
+    def _fill_empty(obj, values: dict) -> list[str]:
+        """Set only the fields that are currently empty; return the names changed."""
+        changed = []
+        for field, value in values.items():
+            if not getattr(obj, field) and value:
+                setattr(obj, field, value)
+                changed.append(field)
+        return changed
+
     @transaction.atomic
     def handle(self, *args, **options):
+        reset = options.get("reset", False)
         cat_by_slug = {}
         for data in CATEGORIES:
-            cat, created = Category.objects.update_or_create(
-                slug=data["slug"],
-                defaults={
-                    "icon": data["icon"],
-                    "name": data["name"],
-                    "description": data["description"],
-                    "order": data["order"],
-                },
-            )
+            values = {
+                "icon": data["icon"],
+                "name": data["name"],
+                "description": data["description"],
+                "order": data["order"],
+            }
+            cat = Category.objects.filter(slug=data["slug"]).first()
+            if cat is None:
+                cat = Category.objects.create(slug=data["slug"], **values)
+                mark = "  + "
+            elif reset:
+                for field, value in values.items():
+                    setattr(cat, field, value)
+                cat.save()
+                mark = "  ! "
+            else:
+                changed = self._fill_empty(cat, values)
+                if changed:
+                    cat.save(update_fields=changed)
+                mark = "  ~ " if changed else "  = "
             cat_by_slug[data["slug"]] = cat
-            self.stdout.write(("  + " if created else "  ~ ") + f"category {cat.slug}")
+            self.stdout.write(mark + f"category {cat.slug}")
 
         for data in SCENARIOS:
             body = {
                 lang: text + DISCLAIMER[lang] for lang, text in data["body"].items()
             }
-            scenario, created = Scenario.objects.update_or_create(
-                slug=data["slug"],
-                defaults={
-                    "category": cat_by_slug[data["category"]],
-                    "title": data["title"],
-                    "body": body,
-                    "source_url": data.get("source_url", ""),
-                    "tags": data["tags"],
-                    "order": data["order"],
-                    "is_published": True,
-                    "audience": self.audience_for(data["slug"]),
-                },
-            )
-            self.stdout.write(("  + " if created else "  ~ ") + f"scenario {scenario.slug}")
+            values = {
+                "category": cat_by_slug[data["category"]],
+                "title": data["title"],
+                "body": body,
+                "source_url": data.get("source_url", ""),
+                "tags": data["tags"],
+                "order": data["order"],
+                "audience": self.audience_for(data["slug"]),
+            }
+            scenario = Scenario.objects.filter(slug=data["slug"]).first()
+            if scenario is None:
+                scenario = Scenario.objects.create(slug=data["slug"], is_published=True, **values)
+                mark = "  + "
+            elif reset:
+                for field, value in values.items():
+                    setattr(scenario, field, value)
+                scenario.save()
+                mark = "  ! "
+            else:
+                # Never touch status/is_published, title or body of an existing row: those
+                # belong to the editors now. Only backfill fields that are still empty.
+                changed = self._fill_empty(
+                    scenario,
+                    {k: values[k] for k in ("source_url", "tags", "audience")},
+                )
+                if changed:
+                    scenario.save(update_fields=changed + ["updated_at"])
+                mark = "  ~ " if changed else "  = "
+            self.stdout.write(mark + f"scenario {scenario.slug}")
 
         self.stdout.write(
             self.style.SUCCESS(
