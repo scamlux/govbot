@@ -1,0 +1,532 @@
+[
+ {
+  "slug": "passport-renewal",
+  "source_url": "https://my.gov.uz/ru/service/418",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Service 418 'Подача заявления на оформление загранпаспорта'. Its document section lists ALTERNATIVE identity documents (any one of passport / ID card / residence permit), not a checklist — so no checklist. Verify title."
+ },
+ {
+  "slug": "id-card-issuance",
+  "source_url": "https://my.gov.uz/ru/service/378",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Service 378 'Подача заявления на получение или замену ID-карты'. Document section lists alternative identity documents — no checklist. Verify title."
+ },
+ {
+  "slug": "birth-certificate",
+  "source_url": "https://my.gov.uz/ru/service/913",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "'Получение свидетельства о рождении'; documents 'Не требуются'. Verify title."
+ },
+ {
+  "slug": "marriage-registration",
+  "source_url": "https://my.gov.uz/ru/service/133",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "'Подача заявления в ЗАГС на регистрацию брака'; documents 'Не требуются'. Verify title."
+ },
+ {
+  "slug": "temporary-residence-registration",
+  "source_url": "https://my.gov.uz/ru/service/187",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "'Регистрация по месту пребывания (временная)'. Verify title."
+ },
+ {
+  "slug": "permanent-residence-registration",
+  "source_url": "https://my.gov.uz/ru/service/363",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "'Регистрация по месту жительства (постоянная)'. Verify title."
+ },
+ {
+  "slug": "change-registered-address",
+  "source_url": "https://my.gov.uz/ru/service/363",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Address change goes through permanent registration (363)."
+ },
+ {
+  "slug": "register-llc",
+  "source_url": "https://my.gov.uz/ru/service/57",
+  "checklist": {
+   "uz": [
+    "Arizachining shaxsini tasdiqlovchi hujjat",
+    "Ta'sis hujjatlar (ustav va ta'sis shartnomasi), davlat tilida"
+   ],
+   "ru": [
+    "Документ, удостоверяющий личность заявителя",
+    "Учредительные документы (устав и учредительный договор) на государственном языке"
+   ],
+   "en": [
+    "ID document of the applicant",
+    "Constituent documents (charter and memorandum of association) in the state language"
+   ]
+  },
+  "evidence": [
+   {
+    "item_index": 0,
+    "source": "https://my.gov.uz/ru/faq/5e07def6-850b-491a-9f9b-4f8eb12bfbe7",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": false
+    }
+   },
+   {
+    "item_index": 1,
+    "source": "https://my.gov.uz/ru/service/57",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": false
+    }
+   }
+  ],
+  "notes": "Merged FAQ item 2 with service-57 'in the state language' item. Reorganisation-only items (merger/division/antimonopoly) dropped as not applicable to a new LLC. Uz spelling of item 1 corrected from official typo."
+ },
+ {
+  "slug": "sole-proprietor-registration",
+  "source_url": "https://my.gov.uz/ru/service/1493",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Documents: 'Не требуется'. Online via new.birdarcha.uz needs an EDS."
+ },
+ {
+  "slug": "close-company",
+  "source_url": "https://my.gov.uz/ru/service/724",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Voluntary liquidation; page lists no documents."
+ },
+ {
+  "slug": "e-signature-business",
+  "source_url": "https://my.gov.uz/ru/service/1091",
+  "checklist": {
+   "uz": [
+    "Pasport (Davlat xizmatlari markazida olishda)",
+    "USB-tashuvchi (Davlat xizmatlari markazida olishda)"
+   ],
+   "ru": [
+    "Паспорт (при получении в Центре госуслуг)",
+    "USB-носитель (при получении в Центре госуслуг)"
+   ],
+   "en": [
+    "Passport (when obtained at a Public Services Centre)",
+    "USB storage device (when obtained at a Public Services Centre)"
+   ]
+  },
+  "evidence": [
+   {
+    "item_index": 0,
+    "source": "https://my.gov.uz/ru/life-situations/9c03ead1-b474-4e69-8e94-1261d3d7524a",
+    "translated": {
+     "uz": true,
+     "ru": true,
+     "en": true
+    }
+   },
+   {
+    "item_index": 1,
+    "source": "https://my.gov.uz/ru/life-situations/9c03ead1-b474-4e69-8e94-1261d3d7524a",
+    "translated": {
+     "uz": true,
+     "ru": true,
+     "en": true
+    }
+   }
+  ],
+  "notes": "Online (service 1091) needs no documents, only MyID. Items apply to in-person issuance only; the parenthetical qualifier was added by us."
+ },
+ {
+  "slug": "personal-tin",
+  "source_url": "https://my.gov.uz/ru/service/67",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "'Не требуется'; enter passport data online."
+ },
+ {
+  "slug": "tax-declaration",
+  "source_url": "https://my.gov.uz/ru/service/951",
+  "checklist": {
+   "uz": [
+    "Shartnoma va to'lovlar nusxasi",
+    "Oylik ish haqi ma'lumotnomasi"
+   ],
+   "ru": [
+    "Копия договора и платежей",
+    "Справка о ежемесячной заработной плате"
+   ],
+   "en": [
+    "Copy of the contract and payments",
+    "Certificate of monthly salary"
+   ]
+  },
+  "evidence": [
+   {
+    "item_index": 0,
+    "source": "https://my.gov.uz/ru/service/951",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   },
+   {
+    "item_index": 1,
+    "source": "https://my.gov.uz/ru/service/951",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   }
+  ],
+  "notes": "These look tied to refund declarations (e.g. tuition); editor to confirm they apply to every annual declaration."
+ },
+ {
+  "slug": "itpark-tax-benefits",
+  "source_url": "https://www.it-park.uz/ru/itpark/residents",
+  "checklist": {
+   "uz": [
+    "Faoliyat turi bo'yicha iqtisodiy asoslangan biznes-reja"
+   ],
+   "ru": [
+    "Экономически обоснованный бизнес-план по осуществляемому виду деятельности"
+   ],
+   "en": [
+    "Economically justified business plan for the activity"
+   ]
+  },
+  "evidence": [
+   {
+    "item_index": 0,
+    "source": "https://www.it-park.uz/ru/itpark/residents/requirements",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   }
+  ],
+  "notes": "Requirements page lists eligibility, not an upload checklist. Tax rates not included."
+ },
+ {
+  "slug": "pay-taxes-online",
+  "source_url": "https://gov.uz/ru/soliq/pages/soliqlarni-elektron-to-lash",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Tax Committee page, updated 2026-10-02; channels Soliq app, Click, Payme, Upay."
+ },
+ {
+  "slug": "health-insurance",
+  "source_url": "https://dtsj.uz/faq/",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "State Health Insurance Fund FAQ. Coverage via family-polyclinic attachment; my.gov.uz/ru/service/1205 is an alternative."
+ },
+ {
+  "slug": "vaccination-certificate",
+  "source_url": "https://my.gov.uz/ru/service/1001",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Checks vaccination status; no separate certificate service found. COVID: service 403."
+ },
+ {
+  "slug": "medical-certificate-driving",
+  "source_url": "https://my.gov.uz/ru/service/1002",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Form 083/u medical certificate; exam in person at a medical facility first."
+ },
+ {
+  "slug": "drivers-license",
+  "source_url": "https://my.gov.uz/ru/service/255",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Issue/renew/restore; passing theory+practical exams is a prerequisite."
+ },
+ {
+  "slug": "vehicle-registration",
+  "source_url": "https://my.gov.uz/ru/service/985",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Registration of a new vehicle; fees conflict between service page and FAQ — not published."
+ },
+ {
+  "slug": "number-plates",
+  "source_url": "https://my.gov.uz/ru/service/1390",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Restoring damaged plates only; new plates come with registration (985)."
+ },
+ {
+  "slug": "driving-medical-check",
+  "source_url": "https://my.gov.uz/ru/service/1002",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Same as medical-certificate-driving; exam rules in my.gov.uz transport FAQ."
+ },
+ {
+  "slug": "tourist-visa",
+  "source_url": "https://e-visa.gov.uz/what-you-need-to-know",
+  "checklist": {
+   "uz": [
+    "Shaxsning fotosurati",
+    "Sayohat hujjatining asosiy sahifasi nusxasi",
+    "Haqiqiy sayohat hujjati (pasport) va elektron viza (chegarada va mamlakatda bo'lganda ko'rsatiladi)"
+   ],
+   "ru": [
+    "Фотоизображение лица",
+    "Копия страницы данных проездного документа",
+    "Действительный проездной документ (паспорт) и электронная виза (предъявляются на границе и во время пребывания)"
+   ],
+   "en": [
+    "Facial photo",
+    "Copy of the travel document's main data page",
+    "Valid travel document (passport) and the e-visa (shown at the border and during the stay)"
+   ]
+  },
+  "evidence": [
+   {
+    "item_index": 0,
+    "source": "https://e-visa.gov.uz/what-you-need-to-know",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": false
+    }
+   },
+   {
+    "item_index": 1,
+    "source": "https://e-visa.gov.uz/what-you-need-to-know",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": false
+    }
+   },
+   {
+    "item_index": 2,
+    "source": "https://e-visa.gov.uz/what-you-need-to-know",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": false
+    }
+   }
+  ],
+  "notes": "Uz transliterated from the portal's official Uzbek Cyrillic. Fees conflict on the portal ($20 vs 20/35/50) — not published."
+ },
+ {
+  "slug": "evisa-extension",
+  "source_url": "https://my.gov.uz/ru/service/1268",
+  "checklist": {
+   "uz": [
+    "Chet el fuqarosi yoki fuqaroligi bo'lmagan shaxsning milliy pasporti (harakatlanish hujjati) nusxasi",
+    "Viza muddatini uzaytirish uchun asos hujjat",
+    "Ishonchnoma (ishonchli shaxs murojaat qilganda)"
+   ],
+   "ru": [
+    "Копия национального паспорта (проездного документа) иностранного гражданина или лица без гражданства",
+    "Основание для продления срока визы",
+    "Копия доверенности (для доверенного лица)"
+   ],
+   "en": [
+    "Copy of the national passport (travel document)",
+    "Document giving the grounds for extending the visa",
+    "Power of attorney (when an authorised representative applies)"
+   ]
+  },
+  "evidence": [
+   {
+    "item_index": 0,
+    "source": "https://my.gov.uz/ru/service/1268",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   },
+   {
+    "item_index": 1,
+    "source": "https://my.gov.uz/ru/service/1268",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   },
+   {
+    "item_index": 2,
+    "source": "https://my.gov.uz/ru/service/1268",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   }
+  ],
+  "notes": "MVD visa extension; unclear whether it covers e-visa holders — editor to confirm."
+ },
+ {
+  "slug": "work-permit",
+  "source_url": "https://my.gov.uz/ru/service/270",
+  "checklist": {
+   "uz": [
+    "Chet el fuqarosi pasportining elektron nusxasi",
+    "Ish haqi ko'rsatilgan mehnat shartnomasi loyihasi",
+    "Chet el fuqarosining 3x4 sm elektron fotosurati",
+    "Chet el fuqarosining malakasini tasdiqlovchi hujjatlar",
+    "Kirish vizasining nusxasi (viza rejimi bo'lgan davlatlar fuqarolari uchun)"
+   ],
+   "ru": [
+    "Электронная копия паспорта иностранного гражданина",
+    "Проект трудового договора с указанием размера заработной платы",
+    "Электронная фотография иностранного гражданина размером 3х4 см",
+    "Документы, подтверждающие квалификацию иностранного гражданина",
+    "Копия въездной визы (для граждан государств с визовым режимом)"
+   ],
+   "en": [
+    "Electronic copy of the foreign citizen's passport",
+    "Draft employment contract stating the salary",
+    "Electronic photo of the foreign citizen, 3x4 cm",
+    "Documents confirming the foreign citizen's qualifications",
+    "Copy of the entry visa (for citizens of visa-regime countries)"
+   ]
+  },
+  "evidence": [
+   {
+    "item_index": 0,
+    "source": "https://my.gov.uz/ru/service/270",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   },
+   {
+    "item_index": 1,
+    "source": "https://my.gov.uz/ru/service/270",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   },
+   {
+    "item_index": 2,
+    "source": "https://my.gov.uz/ru/service/270",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   },
+   {
+    "item_index": 3,
+    "source": "https://my.gov.uz/ru/service/270",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   },
+   {
+    "item_index": 4,
+    "source": "https://my.gov.uz/ru/service/270",
+    "translated": {
+     "uz": false,
+     "ru": false,
+     "en": true
+    }
+   }
+  ],
+  "notes": "Migration Agency; employer usually applies. Items shortened from the official wording — editor to compare."
+ },
+ {
+  "slug": "citizenship",
+  "source_url": "https://my.gov.uz/ru/service/377",
+  "checklist": {
+   "uz": [],
+   "ru": [],
+   "en": []
+  },
+  "evidence": [],
+  "notes": "Service 377 says documents 'Не требуются' (online form). The longer list exists only on gov.uz advice (mirrors a non-governmental site) — not used."
+ }
+]

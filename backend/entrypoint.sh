@@ -20,6 +20,7 @@ python manage.py createcachetable
 
 echo "Seeding scenario catalog…"
 python manage.py seed_scenarios || true
+python manage.py apply_content_updates || true
 
 echo "Ensuring admin account…"
 python manage.py ensure_admin || true
