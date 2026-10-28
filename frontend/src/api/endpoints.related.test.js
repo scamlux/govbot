@@ -7,7 +7,7 @@ const { get } = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock("./client", () => ({
   default: { get },
   API_BASE_URL: "http://t/api",
-  tokenStore: { getAccess: () => "tok", getRefresh: () => null },
+  tokenStore: { getAccess: () => "tok" },
   refreshAccessToken: vi.fn(),
 }));
 

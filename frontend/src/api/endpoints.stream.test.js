@@ -1,14 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { getRefresh, refreshAccessToken } = vi.hoisted(() => ({
-  getRefresh: vi.fn(),
+const { refreshAccessToken } = vi.hoisted(() => ({
   refreshAccessToken: vi.fn(),
 }));
 
 vi.mock("./client", () => ({
   default: {},
   API_BASE_URL: "http://t/api",
-  tokenStore: { getAccess: () => "tok", getRefresh },
+  tokenStore: { getAccess: () => "tok" },
   refreshAccessToken,
 }));
 
@@ -96,7 +95,6 @@ describe("streamMessage", () => {
   });
 
   it("refreshes the access token on 401 and retries once", async () => {
-    getRefresh.mockReturnValue("r");
     refreshAccessToken.mockResolvedValue("fresh");
     const fetchMock = vi
       .fn()
