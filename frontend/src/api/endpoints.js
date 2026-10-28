@@ -8,7 +8,8 @@ export const authApi = {
   me: () => api.get("/auth/me/"),
   updateMe: (patch) => api.patch("/auth/me/", patch),
   // F2 — revoke the refresh token server-side.
-  logout: (refresh) => api.post("/auth/logout/", { refresh }),
+  // The refresh token rides in the httpOnly cookie; `refresh` is only for a legacy token.
+  logout: (refresh) => api.post("/auth/logout/", refresh ? { refresh } : {}),
   // F3 — self-service privacy.
   deleteAccount: (password) => api.post("/auth/me/delete/", { password }),
   exportData: () => api.get("/auth/me/export/"),
@@ -170,6 +171,7 @@ export async function streamMessage(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-Auth-Cookie": "1",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content, language, plain }),
@@ -182,7 +184,7 @@ export async function streamMessage(
   // The stream bypasses the axios interceptor, so handle an expired access token
   // here: refresh once and retry (mirrors client.js). A failed refresh throws and
   // dispatches `govbot:logout`, forcing re-login instead of a silent dead chat.
-  if (resp.status === 401 && tokenStore.getRefresh()) {
+  if (resp.status === 401) {
     const access = await refreshAccessToken();
     resp = await doFetch(access);
   }
@@ -206,7 +208,7 @@ export async function streamGuestMessage(
 ) {
   const resp = await fetch(`${API_BASE_URL}/chat/guest/stream/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Auth-Cookie": "1" },
     body: JSON.stringify({ content, language, plain, history }),
     signal,
   });

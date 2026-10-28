@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { useTranslation } from "react-i18next";
 
 import { authApi } from "../api/endpoints";
-import { tokenStore } from "../api/client";
+import { tokenStore, refreshAccessToken } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -30,21 +30,24 @@ export function AuthProvider({ children }) {
   // F2 — revoke the refresh token server-side, then clear local state. The revoke is
   // fire-and-forget: logging out must work offline or when the API is down.
   const logout = useCallback(({ revoke = true } = {}) => {
-    const refresh = tokenStore.getRefresh();
-    if (revoke && refresh) authApi.logout(refresh).catch(() => {});
+    // The refresh cookie travels with the request; there is no token for JS to send.
+    if (revoke) authApi.logout().catch(() => {});
     tokenStore.clear();
     setUser(null);
   }, []);
 
-  // Bootstrap: if we have a token, fetch the profile.
+  // Bootstrap: the access token is memory-only, so after a reload try ONE silent
+  // refresh (httpOnly cookie) before deciding whether the user is signed in. The
+  // embeddable widget is always a guest and skips this entirely.
   useEffect(() => {
     let active = true;
     async function bootstrap() {
-      if (!tokenStore.getAccess()) {
+      if (window.location.pathname.startsWith("/embed")) {
         setLoading(false);
         return;
       }
       try {
+        if (!tokenStore.getAccess()) await refreshAccessToken({ silent: true });
         const { data } = await authApi.me();
         if (active) applyUser(data);
       } catch {
@@ -70,7 +73,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(
     async (email, password) => {
       const { data } = await authApi.login({ email, password });
-      tokenStore.set({ access: data.access, refresh: data.refresh });
+      tokenStore.set({ access: data.access });
       applyUser(data.user);
       return data.user;
     },
@@ -85,7 +88,7 @@ export function AuthProvider({ children }) {
         full_name: fullName,
         preferred_language: language,
       });
-      tokenStore.set({ access: data.access, refresh: data.refresh });
+      tokenStore.set({ access: data.access });
       applyUser(data.user);
       return data.user;
     },

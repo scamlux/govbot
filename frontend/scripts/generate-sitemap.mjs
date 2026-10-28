@@ -4,8 +4,12 @@
 import { writeFileSync } from "node:fs";
 
 const SITE = "https://govbot-web.vercel.app";
+// Build-time Node fetch needs an absolute URL; VITE_API_BASE_URL is now often relative (/api).
+const viteBase = process.env.VITE_API_BASE_URL;
 const API_BASE =
-  process.env.VITE_API_BASE_URL || "https://govbot-backend-3utu.onrender.com/api";
+  process.env.SITEMAP_API_BASE_URL ||
+  (viteBase && viteBase.startsWith("http") ? viteBase : null) ||
+  "https://govbot-backend-3utu.onrender.com/api";
 
 const staticUrls = [
   { loc: "/", changefreq: "weekly", priority: "1.0" },
