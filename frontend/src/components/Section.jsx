@@ -1,34 +1,36 @@
 import { useId } from "react";
 
+const TONES = { day: "paper", night: "dark" };
+
 /**
- * "Civic Studio" section: a full-width 1px rule with a centred mono eyebrow sitting on
- * it, then a centred H2 + subtitle and the content. `tone` switches day / night.
+ * Skyline-style "sheet": a full-width block whose top corners are rounded (36px) and which
+ * overlaps the previous block. `tone` = paper | paper2 | dark | night. The header is
+ * centred: eyebrow (short line + label), H2, subtitle.
  */
 export default function Section({
   eyebrow,
   title,
   subtitle,
-  tone = "day",
+  tone = "paper",
   id,
   className = "",
   children,
 }) {
   const uid = useId();
   const titleId = title ? `${uid}-title` : undefined;
+  const t = TONES[tone] || tone;
   return (
     <section
       id={id}
-      className={`st-section st-${tone} ${className}`.trim()}
+      className={`st-section st-tone-${t} ${className}`.trim()}
       aria-labelledby={titleId}
     >
-      <div className="st-rule">
-        {eyebrow && <span className="st-eyebrow">{eyebrow}</span>}
-      </div>
       <div className="st-container st-section-body">
-        {(title || subtitle) && (
+        {(eyebrow || title || subtitle) && (
           <header className="st-section-head">
+            {eyebrow && <p className="st-eyebrow">{eyebrow}</p>}
             {title && <h2 id={titleId}>{title}</h2>}
-            {subtitle && <p>{subtitle}</p>}
+            {subtitle && <p className="st-section-sub">{subtitle}</p>}
           </header>
         )}
         {children}

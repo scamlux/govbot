@@ -144,6 +144,9 @@
   },
   "landing": {
     "heroTitle": "Plain-language answers to your government questions",
+    "heroBefore": "Plain-language answers to your",
+    "heroHighlight": "government",
+    "heroAfter": "questions",
     "heroSubtitle": "Public services, documents, taxes, visas — just ask in your language.",
     "ctaChat": "Ask the AI",
     "ctaScenarios": "Browse the catalog",

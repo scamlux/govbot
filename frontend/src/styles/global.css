@@ -54,11 +54,11 @@
   --nav-h: 64px;
 
   /* Golos Text — a neutral screen sans designed for government / public-service
-     sites with first-class Cyrillic — carries the UI & body (uz/ru/en). Manrope,
+     sites with first-class Cyrillic — carries the UI & body (uz/ru/en). Onest,
      a confident geometric with Cyrillic, gives headlines character. Both OFL. */
   /* "Noto Sans" is a two-glyph subset (ʻ ʼ) loaded in index.html — R7 okina fallback. */
   --font-sans: "Golos Text", "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Manrope", "Golos Text", "Noto Sans", system-ui, sans-serif;
+  --font-display: "Onest", "Golos Text", "Noto Sans", system-ui, sans-serif;
   font-family: var(--font-sans);
 }
 

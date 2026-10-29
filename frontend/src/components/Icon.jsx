@@ -84,6 +84,7 @@ const PATHS = {
       <circle cx="12" cy="10" r="2.3" />
     </>
   ),
+  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   search: (
     <>
       <circle cx="11" cy="11" r="6.5" />

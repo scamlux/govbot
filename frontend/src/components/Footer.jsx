@@ -9,7 +9,7 @@ export default function Footer() {
   const { t } = useTranslation();
   return (
     <footer className="site-footer st-footer" id="help">
-      <Section tone="night" eyebrow={t("studio.eyebrowHelp")} title={t("help.title")}>
+      <Section tone="dark" eyebrow={t("studio.eyebrowHelp")} title={t("help.title")}>
         <HelpContacts compact />
 
         <div className="st-footer-cols">

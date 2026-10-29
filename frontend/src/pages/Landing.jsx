@@ -17,6 +17,29 @@ const STEPS = [
   { icon: "globe", n: "03", key: "feature3" },
 ];
 
+/** Faint city silhouette behind the hero (decorative, ~5% opacity). [x, height, width] */
+const BUILDINGS = [
+  [0, 90, 70], [70, 140, 50], [120, 60, 80], [200, 170, 60], [260, 110, 90], [350, 200, 56],
+  [406, 80, 74], [480, 150, 64], [544, 120, 96], [640, 220, 52], [692, 100, 80], [772, 160, 70],
+  [842, 70, 84], [926, 190, 58], [984, 130, 92], [1076, 100, 66], [1142, 180, 60], [1202, 90, 88],
+  [1290, 150, 70], [1360, 110, 80],
+];
+function Skyline() {
+  return (
+    <svg
+      className="st-skyline"
+      viewBox="0 0 1440 240"
+      preserveAspectRatio="xMidYMax slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {BUILDINGS.map(([x, h, w]) => (
+        <rect key={x} x={x} y={240 - h} width={w} height={h} fill="currentColor" />
+      ))}
+    </svg>
+  );
+}
+
 function readRole() {
   try {
     const saved = localStorage.getItem(ROLE_KEY);
@@ -93,10 +116,15 @@ export default function Landing() {
 
   return (
     <div className="st-landing">
-      <section className="st-hero st-night" aria-labelledby="hero-title">
+      <section className="st-hero st-tone-night" aria-labelledby="hero-title">
+        <Skyline />
         <div className="st-container st-hero-inner">
-          <p className="st-mono-label">{t("tagline")}</p>
-          <h1 id="hero-title" className="st-hero-title">{t("landing.heroTitle")}</h1>
+          <p className="st-eyebrow">{t("tagline")}</p>
+          <h1 id="hero-title" className="st-hero-title">
+            {t("landing.heroBefore")}{" "}
+            <span className="st-hl">{t("landing.heroHighlight")}</span>
+            {t("landing.heroAfter") ? ` ${t("landing.heroAfter")}` : ""}
+          </h1>
           <p className="st-hero-sub">{t("landing.heroSubtitle")}</p>
           <form className="st-search" role="search" onSubmit={onSearch}>
             <label htmlFor="hero-search-input" className="visually-hidden">
@@ -115,10 +143,10 @@ export default function Landing() {
             </button>
           </form>
           <div className="st-hero-cta">
-            <Link to="/chat" className="btn btn-cta btn-lg">
-              {chatLabel}
+            <Link to="/chat" className="btn btn-primary btn-lg">
+              {chatLabel} <Icon name="arrow" size={20} className="btn-arrow" />
             </Link>
-            <Link to="/scenarios" className="btn btn-ghost-night btn-lg">
+            <Link to="/scenarios" className="btn btn-outline btn-lg">
               {t("landing.ctaScenarios")}
             </Link>
           </div>
@@ -126,6 +154,7 @@ export default function Landing() {
       </section>
 
       <Section
+        tone="paper"
         eyebrow={t("studio.eyebrowRoles")}
         title={t("roles.title")}
         subtitle={t("roles.subtitle")}
@@ -149,9 +178,9 @@ export default function Landing() {
 
       {(situations === null || situations.length > 0) && (
         <Section
+          tone="dark"
           eyebrow={t("studio.eyebrowSituations")}
           title={t("landing.situationsTitle")}
-         
         >
           <ul className="st-grid st-grid-3 st-situations" aria-busy={situations === null}>
             {situations === null
@@ -171,6 +200,7 @@ export default function Landing() {
       )}
 
       <Section
+        tone="paper2"
         eyebrow={t("studio.eyebrowTopics")}
         title={t("landing.categoriesTitle")}
         subtitle={t("landing.categoriesSubtitle")}
@@ -191,9 +221,9 @@ export default function Landing() {
       </Section>
 
       <Section
+        tone="paper"
         eyebrow={t("studio.eyebrowHow")}
         title={t("studio.howTitle")}
-       
       >
         <ol className="st-grid st-grid-3 st-steps">
           {STEPS.map((s) => (

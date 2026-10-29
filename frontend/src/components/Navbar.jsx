@@ -3,6 +3,7 @@ import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../auth/AuthContext";
+import Icon from "./Icon";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Navbar({ onOpenSearch }) {
@@ -64,7 +65,7 @@ export default function Navbar({ onOpenSearch }) {
               aria-label={t("nav.searchHint")}
               title={t("nav.searchHint")}
             >
-              <span aria-hidden="true">🔍</span>
+              <Icon name="search" size={18} />
               <span className="nav-search-label">{t("nav.search")}</span>
               <kbd aria-hidden="true">Ctrl K</kbd>
             </button>
@@ -86,7 +87,7 @@ export default function Navbar({ onOpenSearch }) {
               </button>
             </div>
           ) : (
-            <Link to="/login" className="btn btn-primary btn-sm">
+            <Link to="/login" className="btn btn-primary btn-sm nav-cta">
               {t("nav.login")}
             </Link>
           )}

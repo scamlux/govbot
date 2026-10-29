@@ -209,7 +209,7 @@ export default function ScenarioDetail() {
       <Reminder scenario={scenario} />
 
       <div className="sticky-ask">
-        <button type="button" className="btn btn-cta btn-lg" onClick={askAI}>
+        <button type="button" className="btn btn-primary btn-lg" onClick={askAI}>
           <Icon name="chat" size={20} /> {t("scenarios.askAI")}
         </button>
       </div>

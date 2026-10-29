@@ -144,6 +144,9 @@
   },
   "landing": {
     "heroTitle": "Davlat xizmatlari haqidagi savollarga sodda javoblar",
+    "heroBefore": "Davlat xizmatlari haqidagi savollarga",
+    "heroHighlight": "sodda",
+    "heroAfter": "javoblar",
     "heroSubtitle": "Davlat xizmatlari, hujjatlar, soliqlar, vizalar — o'z tilingizda so'rang.",
     "ctaChat": "AI dan so'rash",
     "ctaScenarios": "Katalogni ochish",
