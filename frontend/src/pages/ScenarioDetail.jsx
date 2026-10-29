@@ -7,6 +7,7 @@ import { scenariosApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import { useConfig } from "../config/ConfigContext";
 import Spinner from "../components/Spinner";
+import Icon, { CategoryIcon } from "../components/Icon";
 import { buildIcs, downloadIcs } from "../utils/ics";
 
 const PROGRESS_KEY = (slug) => `govbot.checklist.${slug}`;
@@ -166,7 +167,7 @@ export default function ScenarioDetail() {
 
       <header className="detail-head">
         <span className="detail-cat">
-          {scenario.category?.icon} {scenario.category?.name}
+          <CategoryIcon slug={scenario.category?.slug} fallback={scenario.category?.icon} size={18} /> {scenario.category?.name}
         </span>
         <h1>{scenario.title}</h1>
         {/* A2 / A3 — official source + verification status, right under the title */}
@@ -183,7 +184,7 @@ export default function ScenarioDetail() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t("scenarios.source")}: {new URL(scenario.source_url).hostname} ↗
+              {t("scenarios.source")}: {new URL(scenario.source_url).hostname}&nbsp;↗
             </a>
           )}
           <span className="detail-meta">{t("scenarios.updated")}: {updated}</span>
@@ -199,7 +200,7 @@ export default function ScenarioDetail() {
       {scenario.source_url && (
         <p>
           <a href={scenario.source_url} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
-            {t("trust.checkOfficial")} ↗
+            {t("trust.checkOfficial")}&nbsp;↗
           </a>
         </p>
       )}
@@ -208,8 +209,8 @@ export default function ScenarioDetail() {
       <Reminder scenario={scenario} />
 
       <div className="sticky-ask">
-        <button type="button" className="btn btn-primary btn-lg" onClick={askAI}>
-          💬 {t("scenarios.askAI")}
+        <button type="button" className="btn btn-cta btn-lg" onClick={askAI}>
+          <Icon name="chat" size={20} /> {t("scenarios.askAI")}
         </button>
       </div>
     </article>

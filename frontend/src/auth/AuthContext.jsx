@@ -6,6 +6,25 @@ import { tokenStore, refreshAccessToken } from "../api/client";
 
 const AuthContext = createContext(null);
 
+// Non-sensitive hint (no token) that this browser once signed in. Without it a first-time
+// visitor skips the silent refresh probe entirely (no useless 400 / cold-start wait).
+export const SESSION_HINT_KEY = "govbot.hasSession";
+export function hasSessionHint() {
+  try {
+    return localStorage.getItem(SESSION_HINT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+export function setSessionHint(on) {
+  try {
+    if (on) localStorage.setItem(SESSION_HINT_KEY, "1");
+    else localStorage.removeItem(SESSION_HINT_KEY);
+  } catch {
+    /* storage unavailable — hint is only an optimisation */
+  }
+}
+
 export function AuthProvider({ children }) {
   const { i18n } = useTranslation();
   const [user, setUser] = useState(null);
@@ -33,6 +52,7 @@ export function AuthProvider({ children }) {
     // The refresh cookie travels with the request; there is no token for JS to send.
     if (revoke) authApi.logout().catch(() => {});
     tokenStore.clear();
+    setSessionHint(false);
     setUser(null);
   }, []);
 
@@ -42,7 +62,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
     async function bootstrap() {
-      if (window.location.pathname.startsWith("/embed")) {
+      if (window.location.pathname.startsWith("/embed") || !hasSessionHint()) {
         setLoading(false);
         return;
       }
@@ -50,8 +70,11 @@ export function AuthProvider({ children }) {
         if (!tokenStore.getAccess()) await refreshAccessToken({ silent: true });
         const { data } = await authApi.me();
         if (active) applyUser(data);
-      } catch {
+      } catch (error) {
         tokenStore.clear();
+        // The server said the session is gone: forget the hint. Network errors keep it.
+        const status = error?.response?.status;
+        if (status >= 400 && status < 500) setSessionHint(false);
       } finally {
         if (active) setLoading(false);
       }
@@ -74,6 +97,7 @@ export function AuthProvider({ children }) {
     async (email, password) => {
       const { data } = await authApi.login({ email, password });
       tokenStore.set({ access: data.access });
+      setSessionHint(true);
       applyUser(data.user);
       return data.user;
     },
@@ -89,6 +113,7 @@ export function AuthProvider({ children }) {
         preferred_language: language,
       });
       tokenStore.set({ access: data.access });
+      setSessionHint(true);
       applyUser(data.user);
       return data.user;
     },

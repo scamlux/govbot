@@ -16,11 +16,11 @@
   --warn-bg: #fff4d6;
 }
 /* Accents that carry white button text, darkened so #fff stays ≥ 4.5:1. */
-:root[data-accent="blue"]   { --brand: #2559c9; --brand-600: #1d4aa8; --brand-700: #173c88; }
+:root[data-accent="blue"] { --brand: #2559c9; --brand-600: #1d4aa8; --brand-700: #173c88; }
 :root[data-accent="violet"] { --brand: #6544d6; --brand-600: #5536bb; --brand-700: #432a96; }
-:root[data-accent="green"]  { --brand: #15803d; --brand-600: #116a32; --brand-700: #0d5427; }
-:root[data-accent="rose"]   { --brand: #c0306c; --brand-600: #a2275b; --brand-700: #821f49; }
-:root[data-accent="amber"]  { --brand: #955a0b; --brand-600: #7c4a09; --brand-700: #633b07; }
+:root[data-accent="green"] { --brand: #15803d; --brand-600: #116a32; --brand-700: #0d5427; }
+:root[data-accent="rose"] { --brand: #c0306c; --brand-600: #a2275b; --brand-700: #821f49; }
+:root[data-accent="amber"] { --brand: #955a0b; --brand-600: #7c4a09; --brand-700: #633b07; }
 :root[data-theme="dark"] {
   --muted: #93a5b2;
   --line-strong: #6a7f90;
@@ -36,14 +36,7 @@
 }
 
 /* ---- R1: one visible focus style (outline survives forced-colors, box-shadow doesn't) ---- */
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-summary:focus-visible,
-[tabindex]:focus-visible,
-.btn:focus-visible {
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible, .btn:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
   box-shadow: none;
@@ -78,10 +71,7 @@ html { scroll-padding-top: calc(var(--nav-h) + 16px); }
 }
 .conv-del { min-width: 36px; min-height: 36px; opacity: 0.55; }
 .conv-del:focus-visible, .conv-item:focus-within .conv-del { opacity: 1; }
-@media (hover: none) { .conv-del { opacity: 1; } }
-
-/* ---- B6: honour Save-Data / data saver (flag set in main.jsx) ---- */
-html[data-lite] .hero::before { display: none; }
+@media (hover: none) { .conv-del { opacity: 1; }}
 html[data-lite] .chat-messages { background-image: none !important; }
 html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
   animation-duration: 0s !important; transition-duration: 0s !important;
@@ -151,48 +141,11 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
 
 /* R2 — footer */
 .site-footer { background: var(--surface-2); border-top: 1px solid var(--line); margin-top: 3rem; }
-.site-footer-inner {
-  max-width: var(--maxw); margin: 0 auto; padding: 2rem 1.25rem 2.5rem;
-  display: grid; grid-template-columns: 1fr 1.4fr; gap: 2rem;
-}
-.site-footer-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; margin: 0 0 0.3rem; }
-.site-footer-about p { color: var(--ink-soft); font-size: 0.9rem; margin: 0 0 0.6rem; }
-.site-footer-links { display: flex; gap: 1rem; flex-wrap: wrap; }
-.site-footer-links a { font-weight: 600; font-size: 0.9rem; }
-.site-footer-title { font-size: 1rem; margin: 0 0 0.7rem; }
-@media (max-width: 760px) { .site-footer-inner { grid-template-columns: 1fr; } }
-
-/* ---- R3: landing — search, roles, situations ---- */
-.hero-search { display: flex; gap: 0.5rem; max-width: 620px; margin: 1.5rem auto 0; width: 100%; }
-.hero-search input {
-  flex: 1; min-width: 0; min-height: 52px; padding: 0 1rem; font: inherit; font-size: 1.02rem;
-  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink);
-}
 .roles { max-width: var(--maxw); margin: 2.5rem auto 0; }
 .roles h2 { margin: 0 0 0.25rem; font-size: 1.4rem; }
 .roles > p { margin: 0 0 1rem; color: var(--ink-soft); }
-.role-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.75rem; }
-.role-card {
-  display: flex; flex-direction: column; gap: 0.2rem; text-align: left; cursor: pointer; font: inherit;
-  background: var(--surface); color: var(--ink); border: 2px solid var(--line); border-radius: var(--radius);
-  padding: 0.9rem 1rem; min-height: 72px; transition: border-color 0.15s, background 0.15s;
-}
-.role-card:hover { border-color: var(--brand-soft); }
-.role-card[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-tint); }
-.role-card strong { font-size: 1.02rem; }
-.role-card span { font-size: 0.85rem; color: var(--ink-soft); }
 .situations { max-width: var(--maxw); margin: 1.5rem auto 0; }
 .situations h3 { font-size: 1.05rem; margin: 0 0 0.6rem; }
-.situation-list {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.6rem;
-  list-style: none; margin: 0; padding: 0;
-}
-.situation-link {
-  display: flex; align-items: center; min-height: 52px; padding: 0.6rem 0.9rem;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
-  color: var(--ink); font-weight: 600; text-decoration: none;
-}
-.situation-link:hover { border-color: var(--brand); text-decoration: none; }
 
 /* ---- R4: breadcrumbs, scenario meta, checklist, reminder, skeletons ---- */
 .breadcrumbs ol { list-style: none; display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 1rem; padding: 0; font-size: 0.88rem; }
@@ -214,7 +167,6 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
   min-height: 44px; padding: 0 0.7rem; border: 1px solid var(--line-strong); border-radius: var(--radius-xs);
   font: inherit; background: var(--surface); color: var(--ink);
 }
-.detail-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
 .sticky-ask { position: sticky; bottom: 1rem; display: flex; justify-content: center; margin-top: 1.5rem; z-index: 5; }
 .sticky-ask .btn { box-shadow: var(--shadow); }
 .skeleton {
@@ -224,7 +176,6 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 .skeleton-card { height: 128px; }
 .skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
-.wake-note { text-align: center; color: var(--ink-soft); font-size: 0.88rem; margin-top: 1rem; }
 
 /* ---- R4: command palette (Ctrl/⌘+K) ---- */
 .nav-search {
@@ -233,7 +184,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
   border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.85rem; font-weight: 600;
 }
 .nav-search kbd { font-family: inherit; font-size: 0.72rem; background: var(--surface-2); border-radius: 6px; padding: 0.05rem 0.35rem; }
-@media (max-width: 760px) { .nav-search kbd, .nav-search .nav-search-label { display: none; } }
+@media (max-width: 760px) { .nav-search kbd, .nav-search .nav-search-label { display: none; }}
 .palette-backdrop {
   position: fixed; inset: 0; z-index: 900; background: rgba(9, 42, 54, 0.42);
   display: flex; justify-content: center; align-items: flex-start; padding: 10vh 1rem 1rem;
@@ -267,8 +218,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
 @media (max-width: 900px) {
   .admin-layout { grid-template-columns: 1fr; }
   .admin-nav { position: static; flex-direction: row; overflow-x: auto; }
-  .admin-nav button { white-space: nowrap; }
-}
+  .admin-nav button { white-space: nowrap; }}
 .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; margin-bottom: 1.25rem; }
 .status-select {
   min-height: 36px; border: 1px solid var(--line-strong); border-radius: var(--radius-xs);
@@ -286,16 +236,10 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
 .prose h2 { font-size: 1.15rem; margin: 1.5rem 0 0.4rem; }
 .prose p, .prose li { color: var(--ink-soft); }
 .danger-zone { border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); }
-
-.hero-search + .hero-cta { margin-top: 1rem; }
 button.gap-q { background: none; border: none; padding: 0.15rem 0; font: inherit; text-align: left; cursor: pointer; color: var(--brand-700); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 28px; }
 /* R1 — long Uzbek labels must wrap on narrow phones instead of overflowing (320px). */
-.sticky-ask .btn, .hero-cta .btn, .detail-actions .btn { white-space: normal; max-width: 100%; text-align: center; }
+.sticky-ask .btn { white-space: normal; max-width: 100%; text-align: center; }
 .page { overflow-wrap: anywhere; }
-@media (max-width: 520px) {
-  .hero-search { flex-direction: column; }
-  .hero-search .btn { width: 100%; }
-}
 
 /* ---- D2: embeddable widget ---- */
 .embed-shell, .embed-shell .chat-layout { height: 100vh; }

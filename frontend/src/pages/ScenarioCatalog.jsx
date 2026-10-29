@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { scenariosApi } from "../api/endpoints";
 import { stripMarkdown } from "../utils/stripMarkdown";
+import Icon, { CategoryIcon } from "../components/Icon";
 
 export default function ScenarioCatalog() {
   const { t, i18n } = useTranslation();
@@ -49,7 +50,8 @@ export default function ScenarioCatalog() {
 
   return (
     <div className="page catalog">
-      <div className="section-head">
+      <div className="section-head st-page-head">
+        <p className="st-mono-label st-mono-label-day">{t("studio.eyebrowCatalog")}</p>
         <h1>{t("scenarios.title")}</h1>
         <p>{t("scenarios.subtitle")}</p>
       </div>
@@ -81,7 +83,7 @@ export default function ScenarioCatalog() {
             className={activeCategory === c.slug ? "filter-pill active" : "filter-pill"}
             onClick={() => selectCategory(c.slug)}
           >
-            <span aria-hidden="true">{c.icon}</span> {c.name}
+            <CategoryIcon slug={c.slug} fallback={c.icon} size={18} /> {c.name}
           </button>
         ))}
       </div>
@@ -106,7 +108,7 @@ export default function ScenarioCatalog() {
             <p className="muted">{t("scenarios.noResults")}</p>
             {search && (
               <Link to="/chat" state={{ prefill: search }} className="btn btn-primary">
-                💬 {t("scenarios.askAI")}
+                <Icon name="chat" size={20} /> {t("scenarios.askAI")}
               </Link>
             )}
           </div>

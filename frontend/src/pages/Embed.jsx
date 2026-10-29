@@ -27,7 +27,7 @@ export default function Embed() {
         <p className="embed-brand">GovBot</p>
         <p>{t("landing.heroSubtitle")}</p>
         <a className="btn btn-primary" href={`${site}/`} target="_blank" rel="noopener noreferrer">
-          {t("landing.ctaChat")} ↗
+          {t("landing.ctaChat")}&nbsp;↗
         </a>
         <AiDisclaimer />
       </div>

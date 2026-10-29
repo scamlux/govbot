@@ -317,7 +317,19 @@
     "about": "GovBot gives plain-language guidance on public services in Uzbekistan. It is not a government service.",
     "privacy": "Privacy",
     "catalog": "Catalog",
-    "help": "Help"
+    "help": "Help",
+    "aboutTitle": "About",
+    "navTitle": "Navigation"
+  },
+  "studio": {
+    "eyebrowRoles": "Your role",
+    "eyebrowSituations": "Situations",
+    "eyebrowTopics": "Topics",
+    "eyebrowHow": "How it works",
+    "howTitle": "Three simple steps",
+    "eyebrowCatalog": "Catalog",
+    "eyebrowHelp": "Help",
+    "ask": "Ask a question"
   },
   "roles": {
     "title": "Who are you?",

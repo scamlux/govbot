@@ -319,7 +319,19 @@
     "about": "GovBot простым языком объясняет госуслуги Узбекистана. Это не государственный сервис.",
     "privacy": "Конфиденциальность",
     "catalog": "Каталог",
-    "help": "Помощь"
+    "help": "Помощь",
+    "aboutTitle": "О сервисе",
+    "navTitle": "Навигация"
+  },
+  "studio": {
+    "eyebrowRoles": "Ваша роль",
+    "eyebrowSituations": "Ситуации",
+    "eyebrowTopics": "Темы",
+    "eyebrowHow": "Как это работает",
+    "howTitle": "Три простых шага",
+    "eyebrowCatalog": "Каталог",
+    "eyebrowHelp": "Помощь",
+    "ask": "Задать вопрос"
   },
   "roles": {
     "title": "Кто вы?",

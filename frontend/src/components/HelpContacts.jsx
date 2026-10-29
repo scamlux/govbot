@@ -30,12 +30,12 @@ export default function HelpContacts({ compact = false, intro }) {
         <ul className="help-links">
           <li>
             <a href="https://my.gov.uz" target="_blank" rel="noopener noreferrer">
-              {t("help.portalLink")} ↗
+              {t("help.portalLink")}&nbsp;↗
             </a>
           </li>
           <li>
             <a href="https://my.gov.uz/ru/for-foreigners" target="_blank" rel="noopener noreferrer">
-              {t("help.foreignersLink")} ↗
+              {t("help.foreignersLink")}&nbsp;↗
             </a>
           </li>
         </ul>

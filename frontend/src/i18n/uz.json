@@ -317,7 +317,19 @@
     "about": "GovBot O'zbekistondagi davlat xizmatlarini oddiy tilda tushuntiradi. Bu davlat xizmati emas.",
     "privacy": "Maxfiylik",
     "catalog": "Katalog",
-    "help": "Yordam"
+    "help": "Yordam",
+    "aboutTitle": "Xizmat haqida",
+    "navTitle": "Sahifalar"
+  },
+  "studio": {
+    "eyebrowRoles": "Sizning rolingiz",
+    "eyebrowSituations": "Holatlar",
+    "eyebrowTopics": "Mavzular",
+    "eyebrowHow": "Qanday ishlaydi",
+    "howTitle": "Uch oddiy qadam",
+    "eyebrowCatalog": "Katalog",
+    "eyebrowHelp": "Yordam",
+    "ask": "Savol berish"
   },
   "roles": {
     "title": "Siz kimsiz?",

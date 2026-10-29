@@ -12,6 +12,7 @@ import { ThemeProvider } from "./theme/ThemeContext";
 import { registerServiceWorker } from "./registerSW";
 import "./styles/global.css";
 import "./styles/upgrades.css";
+import "./styles/studio.css";
 
 // B6 — light mode for slow / metered connections: drop decorative backgrounds and motion.
 try {
