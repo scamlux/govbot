@@ -674,3 +674,32 @@ html[data-a11y="high"] .st-search { border: 2px solid #ffffff; }
 html[data-a11y="high"] .st-search:focus-within { outline: 4px solid #ffffff; outline-offset: 3px; }
 html[data-a11y="high"] .st-search-btn:focus-visible { outline: 4px solid #0b1e3f; }
 html[data-a11y="high"] .bubble-row.user .bubble { border: 2px solid var(--st-on-primary); }
+
+/* ---- R5: trust row = icon + 2-line label (title / small sub), equal columns ---- */
+.st-trust { align-items: stretch; }
+.st-trust-item { align-items: center; justify-content: center; gap: 14px; }
+.st-trust-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+.st-trust-title { font-weight: 700; font-size: 1rem; line-height: 1.3; color: #ffffff; }
+.st-trust-sub { font-size: 0.82rem; line-height: 1.35; color: var(--st-mist); }
+@media (max-width: 1100px) and (min-width: 720px) {
+  .st-trust-item { padding: 4px 12px; gap: 10px; }
+  .st-trust-sub { font-size: 0.78rem; }
+}
+@media (max-width: 719px) {
+  .st-trust-item { justify-content: center; }
+  .st-trust-text { text-align: left; }
+}
+
+/* ---- R5: sticky "Ask AI" bar — compact, fades over text, never hides the last lines ---- */
+.scenario-detail { padding-bottom: 2rem; }
+.sticky-ask {
+  bottom: 0; margin: 1.5rem 0 0; padding: 2.5rem 0 1rem;
+  background: linear-gradient(to top, var(--st-bg-paper, var(--bg)) 0%, var(--st-bg-paper, var(--bg)) 55%, transparent 100%);
+  pointer-events: none;
+}
+.sticky-ask .btn { pointer-events: auto; width: auto; max-width: min(100%, 420px); }
+.scenario-detail a, .scenario-detail button, .scenario-detail input, .scenario-detail summary,
+.scenario-detail [tabindex] { scroll-margin-bottom: 7.5rem; }
+
+/* R5: low-vision dark — avatar initial was white on the light-blue brand (1.9:1) */
+html[data-a11y="high"][data-theme="dark"] .avatar-fallback { color: #000000; }

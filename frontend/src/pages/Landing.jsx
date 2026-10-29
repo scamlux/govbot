@@ -140,13 +140,20 @@ export default function Landing() {
             {TRUST.map((icon, i) => (
               <li key={icon} className="st-trust-item">
                 <Icon name={icon} size={22} className="st-trust-icon" />
-                <span>
-                  {i === 0 && t("gov.trustSources")}
-                  {i === 1 &&
-                    (scenarioTotal > 0
-                      ? t("gov.trustScenarios", { count: scenarioTotal })
-                      : t("gov.trustScenariosNoCount"))}
-                  {i === 2 && t("gov.trustLangs")}
+                <span className="st-trust-text">
+                  <strong className="st-trust-title">
+                    {i === 0 && t("gov.trustSourcesTitle")}
+                    {i === 1 && t("gov.trustScenariosTitle")}
+                    {i === 2 && t("gov.trustLangsTitle")}
+                  </strong>
+                  <span className="st-trust-sub">
+                    {i === 0 && t("gov.trustSourcesSub")}
+                    {i === 1 &&
+                      (scenarioTotal > 0
+                        ? t("gov.trustScenariosSub", { count: scenarioTotal })
+                        : t("gov.trustScenariosSubNoCount"))}
+                    {i === 2 && t("gov.trustLangsSub")}
+                  </span>
                 </span>
               </li>
             ))}
