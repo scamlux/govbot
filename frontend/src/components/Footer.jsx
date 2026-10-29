@@ -2,14 +2,20 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import HelpContacts from "./HelpContacts";
-import Section from "./Section";
+import { Tricolor } from "./UtilityBar";
 
 /** R2 — site footer: official hotlines + what GovBot is (and isn't) (WCAG 3.2.6). */
 export default function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="site-footer st-footer" id="help">
-      <Section tone="dark" eyebrow={t("studio.eyebrowHelp")} title={t("help.title")}>
+    <footer className="site-footer st-footer st-tone-dark" id="help">
+      <Tricolor />
+      <div className="st-container st-footer-body">
+        <header className="st-section-head">
+          <p className="st-eyebrow">{t("studio.eyebrowHelp")}</p>
+          <h2>{t("help.title")}</h2>
+        </header>
+
         <HelpContacts compact />
 
         <div className="st-footer-cols">
@@ -44,7 +50,18 @@ export default function Footer() {
             <p className="help-source">{t("help.source")}</p>
           </div>
         </div>
-      </Section>
+
+        <div className="st-footer-legal">
+          <p>{t("gov.legal")}</p>
+          <nav aria-label={t("gov.legalNav")}>
+            <ul>
+              <li><Link to="/privacy">{t("footer.privacy")}</Link></li>
+              {/* Terms of use: dedicated page is pending — until then it points at /privacy. */}
+              <li><Link to="/privacy">{t("gov.terms")}</Link></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
     </footer>
   );
 }

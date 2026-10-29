@@ -10,9 +10,13 @@ import { AuthProvider } from "./auth/AuthContext";
 import { ConfigProvider } from "./config/ConfigContext";
 import { ThemeProvider } from "./theme/ThemeContext";
 import { registerServiceWorker } from "./registerSW";
+import { applyA11y, readA11y } from "./theme/a11y";
 import "./styles/global.css";
 import "./styles/upgrades.css";
 import "./styles/studio.css";
+
+// Round 4 — restore the low-vision mode before first paint.
+applyA11y(readA11y());
 
 // B6 — light mode for slow / metered connections: drop decorative backgrounds and motion.
 try {

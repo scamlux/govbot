@@ -17,28 +17,12 @@ const STEPS = [
   { icon: "globe", n: "03", key: "feature3" },
 ];
 
-/** Faint city silhouette behind the hero (decorative, ~5% opacity). [x, height, width] */
-const BUILDINGS = [
-  [0, 90, 70], [70, 140, 50], [120, 60, 80], [200, 170, 60], [260, 110, 90], [350, 200, 56],
-  [406, 80, 74], [480, 150, 64], [544, 120, 96], [640, 220, 52], [692, 100, 80], [772, 160, 70],
-  [842, 70, 84], [926, 190, 58], [984, 130, 92], [1076, 100, 66], [1142, 180, 60], [1202, 90, 88],
-  [1290, 150, 70], [1360, 110, 80],
+const TRUST = ["shield", "check", "globe"];
+const SOURCES = [
+  { host: "my.gov.uz", icon: "portal", desc: "gov.sourceMy" },
+  { host: "gov.uz", icon: "building", desc: "gov.sourceGov" },
+  { host: "lex.uz", icon: "law", desc: "gov.sourceLex" },
 ];
-function Skyline() {
-  return (
-    <svg
-      className="st-skyline"
-      viewBox="0 0 1440 240"
-      preserveAspectRatio="xMidYMax slice"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {BUILDINGS.map(([x, h, w]) => (
-        <rect key={x} x={x} y={240 - h} width={w} height={h} fill="currentColor" />
-      ))}
-    </svg>
-  );
-}
 
 function readRole() {
   try {
@@ -111,13 +95,15 @@ export default function Landing() {
     navigate(q ? `/scenarios?search=${encodeURIComponent(q)}` : "/scenarios");
   };
 
+  // "N verified scenarios" comes from the data; without it the item renders with no number.
+  const scenarioTotal = (categories || []).reduce((sum, c) => sum + (c.scenario_count || 0), 0);
+
   // B1 — when guest chat is on, signed-out visitors can ask straight away.
   const chatLabel = !user && guestChat ? t("landing.askGuest") : t("landing.ctaChat");
 
   return (
     <div className="st-landing">
       <section className="st-hero st-tone-night" aria-labelledby="hero-title">
-        <Skyline />
         <div className="st-container st-hero-inner">
           <p className="st-eyebrow">{t("tagline")}</p>
           <h1 id="hero-title" className="st-hero-title">
@@ -150,6 +136,21 @@ export default function Landing() {
               {t("landing.ctaScenarios")}
             </Link>
           </div>
+          <ul className="st-trust">
+            {TRUST.map((icon, i) => (
+              <li key={icon} className="st-trust-item">
+                <Icon name={icon} size={22} className="st-trust-icon" />
+                <span>
+                  {i === 0 && t("gov.trustSources")}
+                  {i === 1 &&
+                    (scenarioTotal > 0
+                      ? t("gov.trustScenarios", { count: scenarioTotal })
+                      : t("gov.trustScenariosNoCount"))}
+                  {i === 2 && t("gov.trustLangs")}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -237,6 +238,36 @@ export default function Landing() {
             </li>
           ))}
         </ol>
+      </Section>
+
+      <Section
+        tone="paper2"
+        className="st-section-last st-sources"
+        eyebrow={t("gov.sourcesEyebrow")}
+        title={t("gov.sourcesTitle")}
+        subtitle={t("gov.sourcesSubtitle")}
+      >
+        <ul className="st-grid st-grid-3 st-source-list">
+          {SOURCES.map((src) => (
+            <li key={src.host}>
+              <a
+                className="st-card st-source"
+                href={`https://${src.host}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="st-icon-tile"><Icon name={src.icon} /></span>
+                <strong className="st-source-host">{src.host}</strong>
+                <span className="st-card-text">{t(src.desc)}</span>
+                <span className="st-source-visit">
+                  {t("gov.sourceVisit")}
+                  <Icon name="external" size={16} />
+                  <span className="visually-hidden"> {t("gov.newTab")}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </Section>
     </div>
   );

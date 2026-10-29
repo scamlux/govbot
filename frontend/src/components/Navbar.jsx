@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../auth/AuthContext";
@@ -10,6 +10,7 @@ export default function Navbar({ onOpenSearch }) {
   const { t } = useTranslation();
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const onHome = useLocation().pathname === "/";
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -26,11 +27,14 @@ export default function Navbar({ onOpenSearch }) {
   if (isAdmin) links.push({ to: "/admin", label: t("nav.admin") });
 
   return (
-    <header className="navbar">
+    <header className={onHome ? "navbar navbar-hero" : "navbar"}>
       <div className="navbar-inner">
         <Link to="/" className="brand" onClick={() => setMenuOpen(false)}>
           <span className="brand-mark" aria-hidden="true" />
-          <span className="brand-name">{t("brand")}</span>
+          <span className="brand-text">
+            <span className="brand-name">{t("brand")}</span>
+            <span className="brand-sub">{t("gov.brandSub")}</span>
+          </span>
         </Link>
 
         <nav className={menuOpen ? "nav-links open" : "nav-links"} aria-label={t("nav.primary")}>
@@ -45,7 +49,7 @@ export default function Navbar({ onOpenSearch }) {
               {l.label}
             </NavLink>
           ))}
-          {/* Mobile-only drawer extras: language switch + logout (hidden ≥900px). */}
+          {/* Mobile-only drawer extras: language switch (≤640px) + logout (hidden on desktop). */}
           <div className="nav-drawer-extra">
             <LanguageSwitcher />
             {user && (
@@ -70,7 +74,6 @@ export default function Navbar({ onOpenSearch }) {
               <kbd aria-hidden="true">Ctrl K</kbd>
             </button>
           )}
-          <LanguageSwitcher />
           {user ? (
             <div className="user-chip">
               <Link to="/profile" className="avatar-link" title={t("nav.profile")} aria-label={t("nav.profile")}>

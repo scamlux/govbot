@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import UtilityBar from "./components/UtilityBar";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import CommandPalette from "./components/CommandPalette";
@@ -81,6 +82,7 @@ export default function App() {
     <div className="app-shell">
       {/* R1 — first focusable element: jump past the navigation. */}
       <a href="#main" className="skip-link">{t("common.skipToContent")}</a>
+      <UtilityBar />
       <OfflineBanner />
       <Navbar onOpenSearch={() => setPaletteOpen(true)} />
       <main id="main" tabIndex={-1} className={isChat ? "app-main app-main-flush" : "app-main"}>
