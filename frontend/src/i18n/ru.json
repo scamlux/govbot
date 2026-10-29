@@ -338,7 +338,7 @@
     "trustScenarios_few": "{{count}} готовых сценария",
     "trustScenarios_many": "{{count}} готовых сценариев",
     "trustScenarios_other": "{{count}} готовых сценария",
-    "trustScenariosNoCount": "Проверенные сценарии",
+    "trustScenariosNoCount": "Готовые сценарии",
     "trustLangs": "На 3 языках",
     "sourcesEyebrow": "Источники",
     "sourcesTitle": "Официальные источники",

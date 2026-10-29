@@ -334,7 +334,7 @@
     "trustSources": "Official sources: my.gov.uz, gov.uz, lex.uz",
     "trustScenarios_one": "{{count}} ready-made scenario",
     "trustScenarios_other": "{{count}} ready-made scenarios",
-    "trustScenariosNoCount": "Verified scenarios",
+    "trustScenariosNoCount": "Ready-made scenarios",
     "trustLangs": "In 3 languages",
     "sourcesEyebrow": "Sources",
     "sourcesTitle": "Official sources",

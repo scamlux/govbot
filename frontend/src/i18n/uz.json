@@ -334,7 +334,7 @@
     "trustSources": "Rasmiy manbalar: my.gov.uz, gov.uz, lex.uz",
     "trustScenarios_one": "{{count}} ta tayyor stsenariy",
     "trustScenarios_other": "{{count}} ta tayyor stsenariy",
-    "trustScenariosNoCount": "Tekshirilgan stsenariylar",
+    "trustScenariosNoCount": "Tayyor stsenariylar",
     "trustLangs": "3 tilda",
     "sourcesEyebrow": "Manbalar",
     "sourcesTitle": "Rasmiy manbalar",
