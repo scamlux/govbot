@@ -149,6 +149,15 @@ def test_search_folds_uzbek_apostrophes(category):
     assert [r["slug"] for r in rows] == ["passport-renewal"]
 
 
+def test_search_matches_okina_text_typed_with_ascii(category):
+    # The reverse of R4: catalog text in the correct ʻ (U+02BB), user types a plain '.
+    _scenario(category, body={"uz": "Davlat bojini toʻlang."})
+    for q in ("to'lang", "toʻlang", "to’lang"):
+        data = APIClient().get(reverse("scenario-list"), {"lang": "uz", "search": q}).json()
+        rows = data["results"] if isinstance(data, dict) else data
+        assert [r["slug"] for r in rows] == ["passport-renewal"], q
+
+
 # ---------------------------------------------------------------------------
 # E4 — stale report + link checker
 # ---------------------------------------------------------------------------
