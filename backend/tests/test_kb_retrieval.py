@@ -43,6 +43,12 @@ def test_keyword_merges_scenario_and_kb(scenario):
     assert kb["title"] == "Tax note"
 
 
+def test_keyword_kb_folds_uzbek_apostrophes():
+    _kb_source("Soliq toʻlovlari muddati.")
+    hits = retrieval._keyword_kb("soliq to'lovlari muddati", 3)
+    assert hits and hits[0][1] == 3.0
+
+
 def test_inactive_kb_excluded(scenario):
     _kb_source("passport passport passport secret", active=False)
     results = retrieval.retrieve("passport", "en")

@@ -114,9 +114,10 @@ _KEYWORD_STOP = {
 
 
 def _tokens(text: str) -> set[str]:
+    # Fold apostrophe variants first: ``\w`` keeps ``toʻlov`` whole but splits ``to'lov``.
     return {
         w.lower()
-        for w in _WORD_RE.findall(text or "")
+        for w in _WORD_RE.findall((text or "").translate(_APOSTROPHES))
         if len(w) > 2 and w.lower() not in _KEYWORD_STOP
     }
 
@@ -163,7 +164,7 @@ def _stems(text: str) -> set[str]:
     Merges inflections that exact-token overlap misses ("passport"/"passports",
     "паспорт"/"паспорта", "pasport"/"pasportim") in all three catalog languages.
     """
-    return {tok[:_STEM_LEN] for tok in _tokens((text or "").translate(_APOSTROPHES))}
+    return {tok[:_STEM_LEN] for tok in _tokens(text)}
 
 
 def _keyword_retrieve(query, language, k):

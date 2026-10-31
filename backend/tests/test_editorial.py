@@ -13,7 +13,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.models import User
-from chat.analytics import cluster_questions
+from chat.analytics import _top_terms, cluster_questions
 from chat.management.commands.eval_retrieval import evaluate
 from chat.models import Conversation, Message
 from knowledge.models import KnowledgeSource
@@ -147,6 +147,20 @@ def test_search_folds_uzbek_apostrophes(category):
     data = APIClient().get(reverse("scenario-list"), {"lang": "uz", "search": "Oʻzbekiston"}).json()
     rows = data["results"] if isinstance(data, dict) else data
     assert [r["slug"] for r in rows] == ["passport-renewal"]
+
+
+def test_search_matches_okina_text_typed_with_ascii(category):
+    # The reverse of R4: catalog text in the correct ʻ (U+02BB), user types a plain '.
+    _scenario(category, body={"uz": "Davlat bojini toʻlang."})
+    for q in ("to'lang", "toʻlang", "to’lang"):
+        data = APIClient().get(reverse("scenario-list"), {"lang": "uz", "search": q}).json()
+        rows = data["results"] if isinstance(data, dict) else data
+        assert [r["slug"] for r in rows] == ["passport-renewal"], q
+
+
+def test_top_terms_count_uzbek_words_whatever_the_apostrophe():
+    terms = _top_terms(["toʻlov qanday", "to'lov muddati", "to’lov"])
+    assert {"term": "to'lov", "count": 3} in terms
 
 
 # ---------------------------------------------------------------------------

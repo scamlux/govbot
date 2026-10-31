@@ -22,6 +22,7 @@ from django.utils import timezone
 from .models import Conversation, Message
 
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
+_TERM_RE = re.compile(r"\w+(?:'\w+)*", re.UNICODE)
 
 # Cross-language stopwords: high-frequency function words that would otherwise dominate the
 # "top terms" list without signalling a topic. Kept deliberately small.
@@ -48,9 +49,13 @@ def _since(days: int):
 
 
 def _top_terms(contents, limit=_TOP_TERMS):
+    from .safety import normalize_apostrophes
+
     counter: Counter = Counter()
     for text in contents:
-        for word in _WORD_RE.findall(text or ""):
+        # Fold ʻ/’ to ' and keep it word-internal, so toʻlov / to'lov / to’lov are one
+        # term instead of "toʻlov" + a stray "lov".
+        for word in _TERM_RE.findall(normalize_apostrophes(text)):
             w = word.lower()
             if len(w) >= _MIN_TERM_LEN and w not in _STOPWORDS and not w.isdigit():
                 counter[w] += 1

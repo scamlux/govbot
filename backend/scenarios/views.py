@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 
-from chat.safety import normalize_apostrophes
+from chat.safety import apostrophe_variants
 
 from .models import Category, Scenario, ScenarioRevision
 from .serializers import (
@@ -63,13 +63,21 @@ class ScenarioListView(LangSerializerContextMixin, generics.ListAPIView):
             qs = [s for s in qs if not s.audience or audience in s.audience]
             qs = Scenario.objects.filter(pk__in=[s.pk for s in qs]).select_related("category")
 
-        # R4 — fold ʻ ʼ ‘ ’ ` to ASCII ' so phone-keyboard Uzbek matches the catalog text.
-        search = normalize_apostrophes(self.request.query_params.get("search") or "").strip()
+        # R4 — catalog text mixes ASCII ' and ʻ, and so do users, so the term is
+        # expanded to every apostrophe spelling (stored text can't be folded in SQL).
+        search = (self.request.query_params.get("search") or "").strip()
         if search:
             lang = resolve_lang(self.request)
-            title_match = Q(**{f"title__{lang}__icontains": search})
-            tags_match = Q(tags__icontains=search)
-            body_match = Q(**{f"body__{lang}__icontains": search})
+
+            def any_spelling(lookup):
+                q = Q()
+                for variant in apostrophe_variants(search):
+                    q |= Q(**{lookup: variant})
+                return q
+
+            title_match = any_spelling(f"title__{lang}__icontains")
+            tags_match = any_spelling("tags__icontains")
+            body_match = any_spelling(f"body__{lang}__icontains")
             # Rank by where the term hit: a title match is far more relevant than
             # a passing mention in the body (e.g. "паспорт" as a required
             # document inside the driving-licence scenario). Title > tags > body,

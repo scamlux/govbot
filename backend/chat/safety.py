@@ -133,7 +133,23 @@ def resolve_reply_language(text: str, ui_language: str) -> str:
 def normalize_apostrophes(text: str) -> str:
     """Fold the many Uzbek apostrophe variants (ʻ ʼ ‘ ’ `) to ASCII ``'``.
 
-    The catalog content uses ASCII apostrophes, so a user typing ``oʻ`` or ``o’`` on a
-    phone keyboard would otherwise miss every ``o'`` match.
+    Fold *both* sides before comparing: user input and catalog text each mix ASCII
+    ``'`` and the correct ``ʻ`` (U+02BB), so folding only one side misses matches.
     """
     return (text or "").translate(_APOSTROPHES)
+
+
+_APOSTROPHE_FORMS = ("'", "ʻ", "ʼ", "‘", "’", "`")
+
+
+def apostrophe_variants(text: str) -> list[str]:
+    """``text`` folded, then re-spelled with each apostrophe form (for SQL ``icontains``).
+
+    Stored text can't be folded inside the query, so the search term is expanded instead:
+    ``to'lov`` → ``to'lov``, ``toʻlov``, ``toʼlov``, … — one form per spelling. Terms with
+    no apostrophe come back as a single item.
+    """
+    folded = normalize_apostrophes(text)
+    if "'" not in folded:
+        return [folded]
+    return [folded.replace("'", form) for form in _APOSTROPHE_FORMS]
