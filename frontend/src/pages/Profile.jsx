@@ -67,7 +67,7 @@ function PrivacySection() {
         <button type="button" className="btn btn-outline" onClick={exportData}>
           ⬇ {t("profile.export")}
         </button>
-        <button type="button" className="btn btn-danger-ghost" onClick={() => setConfirming(true)}>
+        <button type="button" className="btn btn-danger-outline" onClick={() => setConfirming(true)}>
           {t("profile.deleteAccount")}
         </button>
       </div>
@@ -119,13 +119,20 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
+  // #12 — language is applied locally at once but persisted together with the name in ONE PATCH.
+  const [pendingLang, setPendingLang] = useState(null);
+
   const saveAccount = async (e) => {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
     setError("");
     try {
-      await updateProfile({ full_name: fullName.trim() });
+      const patch = {};
+      if (fullName.trim() !== (user?.full_name || "")) patch.full_name = fullName.trim();
+      if (pendingLang && pendingLang !== user?.preferred_language) patch.preferred_language = pendingLang;
+      if (Object.keys(patch).length > 0) await updateProfile(patch);
+      setPendingLang(null);
       setSaved(true);
     } catch {
       setError(t("errors.generic"));
@@ -134,13 +141,10 @@ export default function Profile() {
     }
   };
 
-  const changeLanguage = async (code) => {
+  const changeLanguage = (code) => {
     i18n.changeLanguage(code);
-    try {
-      await updateProfile({ preferred_language: code });
-    } catch {
-      /* non-fatal — UI language already switched */
-    }
+    setPendingLang(code);
+    setSaved(false);
   };
 
   return (

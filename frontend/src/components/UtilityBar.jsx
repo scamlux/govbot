@@ -49,6 +49,7 @@ export default function UtilityBar() {
             >
               <Icon name="eye" size={16} />
               <span className="utilbar-a11y-text">{t("gov.a11y")}</span>
+              <span className="utilbar-a11y-short" aria-hidden="true">{t("r6.a11yShort")}</span>
             </button>
             <div className="utilbar-lang">
               <LanguageSwitcher />

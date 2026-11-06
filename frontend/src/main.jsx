@@ -14,6 +14,7 @@ import { applyA11y, readA11y } from "./theme/a11y";
 import "./styles/global.css";
 import "./styles/upgrades.css";
 import "./styles/studio.css";
+import "./styles/r6.css";
 
 // Round 4 — restore the low-vision mode before first paint.
 applyA11y(readA11y());

@@ -313,6 +313,9 @@ RETRIEVAL_MIN_SCORE = env.float("RETRIEVAL_MIN_SCORE", default=0.28)
 # E5 — kill-switch. "ai" (default) answers with the LLM; "catalog_only" never calls the
 # LLM and replies with links to matching catalog scenarios instead.
 CHAT_MODE = env("CHAT_MODE", default="ai")
+# P0 — circuit breaker: after an OpenAI failure, skip the call for this many seconds and
+# answer from the catalog (0 disables the breaker). Shared via the Django cache.
+LLM_COOLDOWN_SECONDS = env.int("LLM_COOLDOWN_SECONDS", default=120)
 # B1 — anonymous guest chat (stateless, nothing stored). Off by default because every
 # guest message spends OpenAI budget; IP-throttled by GUEST_THROTTLE_* when on.
 GUEST_CHAT_ENABLED = env.bool("GUEST_CHAT_ENABLED", default=False)

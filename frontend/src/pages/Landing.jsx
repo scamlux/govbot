@@ -44,6 +44,17 @@ export default function Landing() {
   const [role, setRole] = useState(readRole);
   const [situations, setSituations] = useState(null);
   const [query, setQuery] = useState("");
+  // #19 — shorter placeholder on phones so it is not cut off.
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 520px)").matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia?.("(max-width: 520px)");
+    if (!mq) return undefined;
+    const on = (e) => setNarrow(e.matches);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -122,7 +133,7 @@ export default function Landing() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("landing.searchPlaceholder")}
+              placeholder={narrow ? t("r6.searchShort") : t("landing.searchPlaceholder")}
             />
             <button type="submit" className="st-search-btn">
               {t("common.search")}

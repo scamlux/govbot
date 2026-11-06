@@ -1,14 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { scenariosApi } from "../api/endpoints";
+import { useAuth } from "../auth/AuthContext";
+import { useConfig } from "../config/ConfigContext";
+import { askAiTarget } from "../utils/pendingQuestion";
 import { stripMarkdown } from "../utils/stripMarkdown";
 import Icon, { CategoryIcon } from "../components/Icon";
 
 export default function ScenarioCatalog() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { guest_chat: guestChat } = useConfig();
+  const navigate = useNavigate();
 
   const activeCategory = searchParams.get("category") || "";
   const [categories, setCategories] = useState([]);
@@ -107,9 +113,16 @@ export default function ScenarioCatalog() {
           <div className="catalog-empty">
             <p className="muted">{t("scenarios.noResults")}</p>
             {search && (
-              <Link to="/chat" state={{ prefill: search }} className="btn btn-primary">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  const target = askAiTarget({ canChat: user || guestChat, question: search });
+                  navigate(target.to, { state: target.state });
+                }}
+              >
                 <Icon name="chat" size={20} /> {t("scenarios.askAI")}
-              </Link>
+              </button>
             )}
           </div>
         ) : (

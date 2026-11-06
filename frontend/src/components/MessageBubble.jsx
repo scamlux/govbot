@@ -4,10 +4,11 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import HelpContacts from "./HelpContacts";
+import Icon from "./Icon";
 import { useSpeechOutput } from "../hooks/useSpeechOutput";
 
 // Canned replies that are not real answers — no "ungrounded" warning or TTS for them.
-const NON_ANSWER_MODELS = new Set(["mock", "catalog"]);
+const NON_ANSWER_MODELS = new Set(["mock", "catalog", "fallback"]);
 
 /**
  * A single chat message.
@@ -31,11 +32,19 @@ export default function MessageBubble({
   uiLanguage,
   langNames,
   model,
+  kind,
+  onRetry,
 }) {
   const { t, i18n } = useTranslation();
   const isUser = role === "user";
+  // #1 — error / degraded (fallback) replies are notices, not answers: no rating, no TTS.
+  const noticeKind = !isUser && !pending ? kind || (model === "fallback" ? "degraded" : null) : null;
   const canRate =
-    !isUser && !pending && typeof messageId === "number" && typeof onFeedback === "function";
+    !isUser &&
+    !pending &&
+    !noticeKind &&
+    typeof messageId === "number" &&
+    typeof onFeedback === "function";
   const hasSources = !isUser && Array.isArray(sources) && sources.length > 0;
   const isRealAnswer = !isUser && !pending && !!content && !NON_ANSWER_MODELS.has(model);
   // A6 — only flag persisted/streamed real answers; error and stopped bubbles have string ids.
@@ -43,6 +52,33 @@ export default function MessageBubble({
   const answerLang = language || uiLanguage || i18n.language;
   const showAnsweredIn = !isUser && language && uiLanguage && language !== uiLanguage;
   const [rated, setRated] = useState(feedback?.rating ?? null);
+
+  if (noticeKind) {
+    return (
+      <div className="bubble-row assistant">
+        <div className="bubble-avatar" aria-hidden="true" />
+        <div className="bubble">
+          <div className={`notice notice-${noticeKind === "error" ? "error" : "info"}`} role={noticeKind === "error" ? "alert" : "status"}>
+            <Icon name={noticeKind === "error" ? "alert" : "info"} size={22} className="notice-icon" />
+            <div className="notice-body">
+              <strong className="notice-title">
+                {noticeKind === "error" ? t("r6.errorTitle") : t("r6.degradedTitle")}
+              </strong>
+              <div className="notice-text markdown">
+                <ReactMarkdown>{content || ""}</ReactMarkdown>
+              </div>
+              {hasSources && <Sources sources={sources} label={t("chat.sources")} />}
+              {typeof onRetry === "function" && (
+                <button type="button" className="btn btn-outline btn-sm notice-retry" onClick={onRetry}>
+                  <Icon name="refresh" size={18} /> {t("r6.retry")}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={isUser ? "bubble-row user" : "bubble-row assistant"}>
@@ -73,17 +109,19 @@ export default function MessageBubble({
         {showUngrounded && <p className="ungrounded-note">{t("trust.ungrounded")}</p>}
         {hasSources && <Sources sources={sources} label={t("chat.sources")} />}
         {canRate && (
-          <FeedbackBar
-            feedback={feedback}
-            onFeedback={(rating, reason) => {
-              setRated(rating);
-              onFeedback(messageId, rating, reason);
-            }}
-          />
-        )}
-        {canRate && rated === "down" && (
-          <div className="msg-handoff">
-            <HelpContacts compact intro={t("help.notHelpful")} />
+          <div className="bubble-footer">
+            <FeedbackBar
+              feedback={feedback}
+              onFeedback={(rating, reason) => {
+                setRated(rating);
+                onFeedback(messageId, rating, reason);
+              }}
+            />
+            {rated === "down" && (
+              <div className="msg-handoff">
+                <HelpContacts compact intro={t("help.notHelpful")} />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -222,18 +260,19 @@ function FeedbackBar({ feedback, onFeedback }) {
         👎
       </button>
       {showReason && (
-        <span className="fb-reason">
-          <input
-            type="text"
+        <div className="fb-reason">
+          <textarea
+            rows={3}
             value={reason}
+            maxLength={500}
             onChange={(e) => setReason(e.target.value)}
             placeholder={t("chat.feedbackReasonPlaceholder")}
             aria-label={t("chat.feedbackReasonPlaceholder")}
           />
-          <button type="button" className="btn btn-ghost btn-sm" onClick={submitReason}>
+          <button type="button" className="btn btn-primary btn-sm" onClick={submitReason}>
             {t("common.send")}
           </button>
-        </span>
+        </div>
       )}
     </div>
   );

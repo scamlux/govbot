@@ -9,11 +9,15 @@
   ],
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/((?!scenarios).*)",
       "headers": [
         { "key": "x-vercel-enable-rewrite-caching", "value": "0" },
         { "key": "Cache-Control", "value": "no-store" }
       ]
+    },
+    {
+      "source": "/api/scenarios/(.*)",
+      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }]
     },
     {
       "source": "/assets/(.*)",

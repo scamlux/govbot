@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 
-from chat.safety import apostrophe_variants
+from chat.safety import apostrophe_variants, normalize_apostrophes
 
 from .models import Category, Scenario, ScenarioRevision
 from .serializers import (
@@ -38,8 +38,83 @@ class LangSerializerContextMixin:
         return ctx
 
 
+SEARCH_RESULT_LIMIT = 12
+PUBLIC_CACHE_CONTROL = "public, max-age=300"
+
+
+def add_public_cache(response):
+    """Mark a *successful* public catalog response as CDN/browser cacheable (5 min)."""
+    if response.status_code == 200:
+        response["Cache-Control"] = PUBLIC_CACHE_CONTROL
+    return response
+
+
+def _fold(text) -> str:
+    return normalize_apostrophes(str(text or "")).casefold()
+
+
+def _terms(search: str) -> list[list[str]]:
+    """Whitespace-split query -> per term, every folded apostrophe spelling."""
+    return [
+        [_fold(v) for v in apostrophe_variants(word)]
+        for word in search.split()
+    ]
+
+
+def _hit(variants: list[str], haystacks: list[str]) -> bool:
+    return any(v in h for v in variants for h in haystacks)
+
+
+def rank_search(qs, search: str):
+    """Language-independent, ranked catalog search (Python-side: the catalog is small).
+
+    * every whitespace-separated term must match (AND), against title / tags / body in
+      **all** languages, so "паспорт" finds scenarios while the UI is in Uzbek;
+    * rank: all terms in the title (3) > all in title+tags (2) > body-only (1);
+    * body-only hits are dropped when any title/tag hit exists;
+    * at most ``SEARCH_RESULT_LIMIT`` results, ordered by rank then catalog order.
+    Python matching also fixes SQLite's ASCII-only ``icontains`` for Cyrillic and the
+    JSON-escaped (``\\uXXXX``) stored tags.
+    """
+    terms = _terms(search)
+    if not terms:
+        return qs
+    scored = []
+    for s in qs:
+        title = [_fold(v) for v in (s.title or {}).values()]
+        tags = [_fold(t) for t in (s.tags or [])]
+        body = [_fold(v) for v in (s.body or {}).values()]
+        if not all(_hit(t, title + tags + body) for t in terms):
+            continue
+        if all(_hit(t, title) for t in terms):
+            rank = 3
+        elif all(_hit(t, title + tags) for t in terms):
+            rank = 2
+        else:
+            rank = 1
+        scored.append((-rank, s.order, s.slug, s.pk))
+    scored.sort()
+    if any(r <= -2 for r, *_ in scored):
+        scored = [row for row in scored if row[0] <= -2]
+    pks = [row[3] for row in scored[:SEARCH_RESULT_LIMIT]]
+    position = Case(
+        *[When(pk=pk, then=Value(i)) for i, pk in enumerate(pks)],
+        default=Value(len(pks)),
+        output_field=IntegerField(),
+    )
+    return (
+        Scenario.objects.filter(pk__in=pks)
+        .select_related("category")
+        .annotate(search_position=position)
+        .order_by("search_position")
+    )
+
+
 class CategoryListView(LangSerializerContextMixin, generics.ListAPIView):
     serializer_class = CategorySerializer
+
+    def list(self, request, *args, **kwargs):
+        return add_public_cache(super().list(request, *args, **kwargs))
 
     def get_queryset(self):
         return Category.objects.annotate(
@@ -67,35 +142,11 @@ class ScenarioListView(LangSerializerContextMixin, generics.ListAPIView):
         # expanded to every apostrophe spelling (stored text can't be folded in SQL).
         search = (self.request.query_params.get("search") or "").strip()
         if search:
-            lang = resolve_lang(self.request)
-
-            def any_spelling(lookup):
-                q = Q()
-                for variant in apostrophe_variants(search):
-                    q |= Q(**{lookup: variant})
-                return q
-
-            title_match = any_spelling(f"title__{lang}__icontains")
-            tags_match = any_spelling("tags__icontains")
-            body_match = any_spelling(f"body__{lang}__icontains")
-            # Rank by where the term hit: a title match is far more relevant than
-            # a passing mention in the body (e.g. "паспорт" as a required
-            # document inside the driving-licence scenario). Title > tags > body,
-            # then the catalog's own order. Without this, results came back in
-            # plain catalog order and body-only matches outranked title matches.
-            qs = (
-                qs.filter(title_match | body_match | tags_match)
-                .annotate(
-                    search_rank=Case(
-                        When(title_match, then=Value(3)),
-                        When(tags_match, then=Value(2)),
-                        default=Value(1),
-                        output_field=IntegerField(),
-                    )
-                )
-                .order_by("-search_rank", "order", "slug")
-            )
+            qs = rank_search(qs, search)
         return qs
+
+    def list(self, request, *args, **kwargs):
+        return add_public_cache(super().list(request, *args, **kwargs))
 
 
 class ScenarioDetailView(LangSerializerContextMixin, generics.RetrieveAPIView):
@@ -104,6 +155,9 @@ class ScenarioDetailView(LangSerializerContextMixin, generics.RetrieveAPIView):
 
     def get_queryset(self):
         return Scenario.objects.filter(is_published=True).select_related("category")
+
+    def retrieve(self, request, *args, **kwargs):
+        return add_public_cache(super().retrieve(request, *args, **kwargs))
 
 
 # ---------------------------------------------------------------------------

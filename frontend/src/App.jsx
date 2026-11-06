@@ -8,6 +8,7 @@ import Footer from "./components/Footer";
 import CommandPalette from "./components/CommandPalette";
 import OfflineBanner from "./components/OfflineBanner";
 import Spinner from "./components/Spinner";
+import { useDocumentTitle } from "./hooks/useDocumentTitle";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AdminRoute from "./auth/AdminRoute";
 import { useAuth } from "./auth/AuthContext";
@@ -51,6 +52,7 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   // The chat page manages its own full-height layout without the page container.
   const isChat = location.pathname.startsWith("/chat");
+  useDocumentTitle(location.pathname);
 
   // R4 — Ctrl/⌘+K opens the search palette from anywhere.
   useEffect(() => {

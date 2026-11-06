@@ -8,6 +8,7 @@ import logging
 from collections.abc import Iterator
 
 from django.conf import settings
+from django.core.cache import cache
 
 from . import retrieval, safety
 
@@ -141,6 +142,41 @@ CATALOG_ONLY_EMPTY = {
         "Browse the [catalog](/scenarios) or contact the responsible agency via my.gov.uz."
     ),
 }
+
+# P0 — OpenAI failed (quota/auth/timeout/outage): never a silent generic error. We answer from
+# the curated catalog instead, with a short localized notice, and flag the reply as degraded.
+FALLBACK_INTRO = {
+    "uz": "AI hozir mavjud emas — mana katalogdagi tegishli materiallar:",
+    "ru": "ИИ сейчас недоступен — вот подходящие материалы из каталога:",
+    "en": "AI is unavailable right now — here are the matching materials from the catalog:",
+}
+FALLBACK_EMPTY = {
+    "uz": (
+        "AI hozir mavjud emas. [Katalogni](/scenarios) ko'rib chiqing, my.gov.uz portaliga "
+        "kiring yoki 1242 raqamiga qo'ng'iroq qiling."
+    ),
+    "ru": (
+        "ИИ сейчас недоступен. Посмотрите [каталог](/scenarios), откройте портал my.gov.uz "
+        "или позвоните по номеру 1242."
+    ),
+    "en": (
+        "AI is unavailable right now. Browse the [catalog](/scenarios), visit my.gov.uz "
+        "or call 1242."
+    ),
+}
+FALLBACK_MODEL = "fallback"
+DEGRADED_REASON = "llm_unavailable"
+
+# Circuit breaker state lives in the shared Django cache (DatabaseCache in prod) so every
+# gunicorn worker sees it.
+LLM_COOLDOWN_KEY = "govbot:llm:cooldown"
+LLM_LAST_ERROR_KEY = "govbot:llm:last_error"
+LLM_LAST_ERROR_TTL = 24 * 60 * 60
+
+
+class FallbackChunk(str):
+    """A streamed text chunk produced by the catalog fallback (marks the reply degraded)."""
+
 
 MOCK_REPLY = {
     "uz": (
@@ -385,6 +421,78 @@ def catalog_only_reply(snippets: list[dict] | None, language: str) -> str:
     return "\n".join(lines)
 
 
+def _cooldown_seconds() -> int:
+    return int(getattr(settings, "LLM_COOLDOWN_SECONDS", 120))
+
+
+def llm_breaker_open() -> bool:
+    """True while the OpenAI circuit breaker is open (recent failure, within cooldown)."""
+    try:
+        return bool(cache.get(LLM_COOLDOWN_KEY))
+    except Exception:  # noqa: BLE001 — a broken cache must never break chat
+        logger.exception("LLM breaker cache read failed")
+        return False
+
+
+def _record_llm_failure(exc: Exception) -> None:
+    """Open the breaker and remember the error *class* only (message may hold secrets)."""
+    try:
+        cooldown = _cooldown_seconds()
+        if cooldown > 0:
+            cache.set(LLM_COOLDOWN_KEY, 1, cooldown)
+        cache.set(LLM_LAST_ERROR_KEY, type(exc).__name__, LLM_LAST_ERROR_TTL)
+    except Exception:  # noqa: BLE001
+        logger.exception("LLM breaker cache write failed")
+
+
+def _record_llm_success() -> None:
+    try:
+        cache.delete(LLM_LAST_ERROR_KEY)
+    except Exception:  # noqa: BLE001
+        logger.exception("LLM breaker cache write failed")
+
+
+def llm_status() -> dict:
+    """Monitoring view: ``{"llm_ok", "last_error", "breaker_open"}`` (no secrets)."""
+    if is_mock_mode() or is_catalog_only():
+        return {"llm_ok": True, "last_error": None, "breaker_open": False}
+    breaker = llm_breaker_open()
+    try:
+        last_error = cache.get(LLM_LAST_ERROR_KEY)
+    except Exception:  # noqa: BLE001
+        last_error = None
+    return {"llm_ok": not breaker, "last_error": last_error, "breaker_open": breaker}
+
+
+def fallback_reply(snippets: list[dict] | None, language: str) -> str:
+    """Deterministic catalog answer shown when the LLM is unavailable (localized notice)."""
+    lang = _lang(language)
+    items = [
+        s for s in (snippets or [])
+        if (s.get("origin") or "scenario") == "scenario" and s.get("slug")
+    ]
+    if not items:
+        return FALLBACK_EMPTY[lang]
+    lines = [FALLBACK_INTRO[lang], ""]
+    seen = set()
+    for snip in items:
+        if snip["slug"] in seen:
+            continue
+        seen.add(snip["slug"])
+        lines.append(f"- [{snip.get('title') or snip['slug']}](/scenarios/{snip['slug']})")
+    return "\n".join(lines)
+
+
+def _degraded_reply(snippets, lang, sources) -> dict:
+    return {
+        "content": fallback_reply(snippets, lang),
+        "model": FALLBACK_MODEL,
+        "tokens": None,
+        "sources": sources,
+        "degraded": True,
+    }
+
+
 def _client():
     from openai import OpenAI
 
@@ -420,6 +528,9 @@ def generate_reply(
     if is_mock_mode():
         return {"content": MOCK_REPLY[lang], "model": "mock", "tokens": None, "sources": sources}
 
+    if llm_breaker_open():
+        return _degraded_reply(snippets, lang, sources)
+
     payload = build_payload(messages, lang, snippets=snippets, plain=plain)
     try:
         response = _client().chat.completions.create(
@@ -430,20 +541,17 @@ def generate_reply(
         )
         choice = response.choices[0]
         usage = getattr(response, "usage", None)
+        _record_llm_success()
         return {
             "content": choice.message.content or "",
             "model": settings.OPENAI_MODEL,
             "tokens": getattr(usage, "total_tokens", None) if usage else None,
             "sources": sources,
         }
-    except Exception:  # noqa: BLE001 — surface a friendly message, log the detail
+    except Exception as exc:  # noqa: BLE001 — log the detail, answer from the catalog
         logger.exception("OpenAI request failed")
-        return {
-            "content": FRIENDLY_ERROR[lang],
-            "model": settings.OPENAI_MODEL,
-            "tokens": None,
-            "sources": [],
-        }
+        _record_llm_failure(exc)
+        return _degraded_reply(snippets, lang, sources)
 
 
 def stream_reply(
@@ -472,7 +580,14 @@ def stream_reply(
             yield word + " "
         return
 
+    if snippets is None:
+        snippets = retrieve_snippets(messages, lang)
+    if llm_breaker_open():
+        yield FallbackChunk(fallback_reply(snippets, lang))
+        return
+
     payload = build_payload(messages, lang, snippets=snippets, plain=plain)
+    started = False
     try:
         stream = _client().chat.completions.create(
             model=settings.OPENAI_MODEL,
@@ -484,7 +599,11 @@ def stream_reply(
         for chunk in stream:
             delta = chunk.choices[0].delta
             if delta and delta.content:
+                started = True
                 yield delta.content
-    except Exception:  # noqa: BLE001
+        _record_llm_success()
+    except Exception as exc:  # noqa: BLE001
         logger.exception("OpenAI streaming request failed")
-        yield FRIENDLY_ERROR[lang]
+        _record_llm_failure(exc)
+        text = fallback_reply(snippets, lang)
+        yield FallbackChunk(("\n\n" + text) if started else text)

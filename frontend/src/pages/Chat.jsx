@@ -11,7 +11,9 @@ import MessageBubble from "../components/MessageBubble";
 import RelatedQuestions from "../components/RelatedQuestions";
 import Spinner from "../components/Spinner";
 import { useSpeechInput } from "../hooks/useSpeechInput";
+import Icon from "../components/Icon";
 import { exportConversationMarkdown } from "../utils/exportConversation";
+import { takePendingQuestion } from "../utils/pendingQuestion";
 
 // S3 — mirror the server-side cap (CHAT_MAX_MESSAGE_CHARS) as a client hint.
 const MAX_CHARS = 4000;
@@ -59,6 +61,8 @@ export default function Chat({ guest = false, embedded = false }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // R5 — simple-language answers, remembered per browser.
   const [plain, setPlain] = useState(readPlain);
+  // #1 — set when a streamed reply arrives flagged as a fallback (LLM unavailable).
+  const [degradedSeen, setDegradedSeen] = useState(false);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -175,7 +179,7 @@ export default function Chat({ guest = false, embedded = false }) {
   }, []);
 
   const send = useCallback(
-    async (text) => {
+    async (text, baseMessages) => {
       const content = text.trim();
       if (!content || sending) return;
       setSending(true);
@@ -189,7 +193,7 @@ export default function Chat({ guest = false, embedded = false }) {
         content,
         created_at: new Date().toISOString(),
       };
-      const priorMessages = messages;
+      const priorMessages = baseMessages ?? messages;
       setMessages((prev) => [...prev, optimistic]);
       setStreamingText("");
       setStreamingSources([]);
@@ -212,6 +216,9 @@ export default function Chat({ guest = false, embedded = false }) {
         onSources: (srcs) => {
           if (activeIdRef.current !== convId && !isGuest) return;
           setStreamingSources(srcs); // B2
+        },
+        onStatus: (status) => {
+          if (status?.degraded) setDegradedSeen(true);
         },
       };
 
@@ -239,7 +246,8 @@ export default function Chat({ guest = false, embedded = false }) {
             content: result.content,
             sources: result.sources || [],
             language: result.language,
-            model: liveModel,
+            model: result.degraded ? "fallback" : liveModel,
+            kind: result.degraded ? "degraded" : undefined,
           });
           setStreamingText(null);
           setStreamingSources([]);
@@ -261,7 +269,8 @@ export default function Chat({ guest = false, embedded = false }) {
           } else {
             commitAssistant({
               id: `err-${Date.now()}`,
-              content: err?.status === 429 ? t("chat.rateLimited") : t("errors.loadChat"),
+              kind: "error",
+              content: err?.status === 429 ? t("chat.rateLimited") : t("r6.errorBody"),
             });
           }
           setStreamingText(null);
@@ -291,10 +300,28 @@ export default function Chat({ guest = false, embedded = false }) {
     ]
   );
 
+  // #1 — resend the last user question, replacing the failed / fallback reply.
+  const retryLast = useCallback(() => {
+    if (sending) return;
+    let idx = -1;
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i].role === "user") {
+        idx = i;
+        break;
+      }
+    }
+    if (idx < 0) return;
+    const base = messages.slice(0, idx);
+    setMessages(base);
+    send(messages[idx].content, base);
+  }, [messages, send, sending]);
+
   // Pre-fill from "Ask the AI about this" (scenario detail / search palette) — runs once.
   useEffect(() => {
     if (prefillConsumed.current) return;
-    const prefill = location.state?.prefill;
+    // #10 — router state first, then the question saved before the login detour.
+    const saved = takePendingQuestion();
+    const prefill = location.state?.prefill || saved;
     if (prefill) {
       prefillConsumed.current = true;
       setInput(prefill);
@@ -344,6 +371,8 @@ export default function Chat({ guest = false, embedded = false }) {
       title: activeConversation?.title || t("chat.newChat"),
       messages,
       sourcesLabel: t("chat.sources"),
+      youLabel: `${t("r6.exportYou")}`,
+      botLabel: t("r6.exportBot"),
     });
   }, [activeConversation, messages, t]);
 
@@ -377,6 +406,7 @@ export default function Chat({ guest = false, embedded = false }) {
         .join(" ")}
     >
       <AiOnboarding />
+      <div className="chat-shell">
       {!isGuest && sidebarOpen && (
         <div className="chat-sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
       )}
@@ -386,7 +416,7 @@ export default function Chat({ guest = false, embedded = false }) {
           aria-label={t("chat.conversations")}
         >
           <button type="button" className="btn btn-primary btn-block" onClick={startNewChat}>
-            + {t("chat.newChat")}
+            <Icon name="plus" size={18} /> {t("chat.newChat")}
           </button>
           <h2 className="sidebar-title">{t("chat.conversations")}</h2>
           <ul className="conv-list">
@@ -409,7 +439,7 @@ export default function Chat({ guest = false, embedded = false }) {
                   aria-label={`${t("common.delete")}: ${c.title || t("chat.newChat")}`}
                   onClick={(e) => deleteConversation(c.id, e)}
                 >
-                  ×
+                  <span aria-hidden="true">×</span>
                 </button>
               </li>
             ))}
@@ -421,41 +451,52 @@ export default function Chat({ guest = false, embedded = false }) {
         <h1 id="chat-heading" className="visually-hidden">
           {activeTitle}
         </h1>
-        <div className="chat-mobilebar">
+        <div className="chat-toolbar">
           {!isGuest && (
             <button
               type="button"
-              className="chat-sidebar-toggle"
+              className="btn btn-outline btn-sm chat-sidebar-toggle"
+              aria-expanded={sidebarOpen}
               aria-label={t("chat.conversations")}
               onClick={() => setSidebarOpen(true)}
             >
-              ☰
+              <Icon name="list" size={18} />
+              <span className="chat-toolbar-text">{t("chat.conversations")}</span>
             </button>
           )}
-          <span className="chat-mobilebar-title">{activeTitle}</span>
-          {!isGuest && activeId && (
+          <span className="chat-toolbar-title">{activeTitle}</span>
+          <div className="chat-toolbar-actions">
+            {!isGuest && activeId && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm chat-toolbar-new"
+                onClick={startNewChat}
+                aria-label={t("chat.newChat")}
+              >
+                <Icon name="plus" size={18} />
+                <span className="chat-toolbar-text">{t("chat.newChat")}</span>
+              </button>
+            )}
             <button
               type="button"
-              className="chat-mobilebar-action"
-              onClick={startNewChat}
-              aria-label={t("chat.newChat")}
-              title={t("chat.newChat")}
-            >
-              ✎
-            </button>
-          )}
-          {canExport && (
-            <button
-              type="button"
-              className="chat-export-btn"
+              className="btn btn-outline btn-sm"
               onClick={exportConversation}
+              disabled={!canExport}
               aria-label={t("chat.export")}
               title={t("chat.export")}
             >
-              ⬇
+              <Icon name="download" size={18} />
+              <span className="chat-toolbar-text">{t("chat.export")}</span>
             </button>
-          )}
+          </div>
         </div>
+
+        {(aiMode === "degraded" || degradedSeen) && (
+          <div className="notice notice-info chat-notice" role="status">
+            <Icon name="info" size={20} className="notice-icon" />
+            <span>{t("r6.degradedBanner")}</span>
+          </div>
+        )}
 
         {isGuest && !embedded && (
           <div className="guest-banner" role="note">
@@ -496,8 +537,8 @@ export default function Chat({ guest = false, embedded = false }) {
               </div>
             </div>
           ) : (
-            <>
-              {messages.map((m) => (
+            <div className="chat-column">
+              {messages.map((m, idx) => (
                 <MessageBubble
                   key={m.id}
                   role={m.role}
@@ -510,6 +551,10 @@ export default function Chat({ guest = false, embedded = false }) {
                   feedback={m.feedback}
                   onFeedback={submitFeedback}
                   model={m.model}
+                  kind={m.kind}
+                  onRetry={
+                    m.kind && idx === messages.length - 1 && !sending ? retryLast : undefined
+                  }
                 />
               ))}
               {streamingText !== null && (
@@ -523,7 +568,7 @@ export default function Chat({ guest = false, embedded = false }) {
               {streamingText === null && !sending && (
                 <RelatedQuestions items={relatedQuestions} onPick={send} />
               )}
-            </>
+            </div>
           )}
         </div>
 
@@ -597,6 +642,7 @@ export default function Chat({ guest = false, embedded = false }) {
           <AiDisclaimer />
         </div>
       </section>
+      </div>
     </div>
   );
 }

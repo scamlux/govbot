@@ -146,6 +146,7 @@ class MessageCreateView(_ThrottledChatView):
                 "assistant_message": MessageSerializer(assistant_msg).data,
                 "sources": sources,
                 "language": language,
+                "degraded": bool(reply.get("degraded")),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -158,6 +159,8 @@ class MessageStreamView(_ThrottledChatView):
       event: meta     -> {"user_message_id": ...}
       data: {"delta": "..."}        (repeated)
       event: sources  -> {"sources": [{slug, title, source_url}]}   (B1, before done)
+      event: status   -> {"degraded": true, "reason": "llm_unavailable"}  (only when the LLM
+                         failed and the reply is the catalog fallback; before done)
       event: done     -> {"assistant_message_id": ..., "content": "..."}
     """
 
@@ -184,9 +187,11 @@ class MessageStreamView(_ThrottledChatView):
         def event_stream():
             yield _sse("meta", {"user_message_id": user_msg.id, "language": language})
             parts: list[str] = []
+            degraded = False
             for chunk in services.stream_reply(
                 history, language, snippets=snippets, plain=plain
             ):
+                degraded = degraded or isinstance(chunk, services.FallbackChunk)
                 parts.append(chunk)
                 yield _sse_data({"delta": chunk})
             full = "".join(parts)
@@ -194,12 +199,14 @@ class MessageStreamView(_ThrottledChatView):
                 conversation=conversation,
                 role=Message.ASSISTANT,
                 content=full,
-                model=services.reply_model_label(),
+                model=services.FALLBACK_MODEL if degraded else services.reply_model_label(),
                 sources=sources or None,  # B3
             )
             conversation.save(update_fields=["updated_at"])
             if sources:
                 yield _sse("sources", {"sources": sources})
+            if degraded:
+                yield _sse("status", _DEGRADED_STATUS)
             yield _sse("done", {"assistant_message_id": assistant_msg.id, "content": full})
 
         response = StreamingHttpResponse(
@@ -323,13 +330,17 @@ class GuestMessageStreamView(APIView):
         def event_stream():
             yield _sse("meta", {"guest": True, "language": language})
             parts: list[str] = []
+            degraded = False
             for chunk in services.stream_reply(
                 history, language, snippets=snippets, plain=plain
             ):
+                degraded = degraded or isinstance(chunk, services.FallbackChunk)
                 parts.append(chunk)
                 yield _sse_data({"delta": chunk})
             if sources:
                 yield _sse("sources", {"sources": sources})
+            if degraded:
+                yield _sse("status", _DEGRADED_STATUS)
             yield _sse("done", {"assistant_message_id": None, "content": "".join(parts)})
 
         response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
@@ -352,12 +363,34 @@ class PublicConfigView(APIView):
             {
                 "guest_chat": bool(getattr(settings, "GUEST_CHAT_ENABLED", False)),
                 "chat_mode": getattr(settings, "CHAT_MODE", "ai"),
-                "ai_mode": "catalog_only"
-                if services.is_catalog_only()
-                else ("mock" if services.is_mock_mode() else "live"),
+                "ai_mode": _ai_mode(),
                 "telegram_bot": bool(getattr(settings, "TELEGRAM_BOT_TOKEN", "")),
             }
         )
+
+
+class LlmHealthView(APIView):
+    """``GET /api/health/llm/`` — public, secret-free LLM status for monitoring.
+
+    ``{"llm_ok": bool, "last_error": "<exception class>" | null, "breaker_open": bool}``.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response(services.llm_status())
+
+
+_DEGRADED_STATUS = {"degraded": True, "reason": services.DEGRADED_REASON}
+
+
+def _ai_mode() -> str:
+    if services.is_catalog_only():
+        return "catalog_only"
+    if services.is_mock_mode():
+        return "mock"
+    return "degraded" if services.llm_breaker_open() else "live"
 
 
 def _sse_data(payload: dict) -> str:

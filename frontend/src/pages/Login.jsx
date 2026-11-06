@@ -3,6 +3,9 @@ import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../auth/AuthContext";
+import Icon from "../components/Icon";
+import PasswordField from "../components/PasswordField";
+import { peekPendingQuestion } from "../utils/pendingQuestion";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -17,6 +20,7 @@ export default function Login() {
 
   const from = location.state?.from?.pathname || "/chat";
   const prefill = location.state?.prefill;
+  const hasPending = Boolean(prefill || peekPendingQuestion());
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -32,13 +36,19 @@ export default function Login() {
     }
   };
 
-  if (user) return <Navigate to={from} replace />;
+  if (user) return <Navigate to={from} replace state={prefill ? { prefill } : undefined} />;
 
   return (
     <div className="login-page">
       <div className="login-card">
         <div className="login-mark" aria-hidden="true" />
         <h1>{t("auth.loginTitle")}</h1>
+        {hasPending && (
+          <p className="notice notice-info login-notice" role="status">
+            <Icon name="info" size={20} className="notice-icon" />
+            <span>{t("r6.carriedQuestion")}</span>
+          </p>
+        )}
         <p className="login-sub">{t("auth.loginSubtitle")}</p>
 
         <form className="auth-form" onSubmit={onSubmit}>
@@ -54,17 +64,12 @@ export default function Login() {
             />
           </label>
 
-          <label className="field">
-            <span>{t("auth.password")}</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </label>
+          <PasswordField
+            label={t("auth.password")}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
           {error && <p className="form-error" role="alert">{error}</p>}
 

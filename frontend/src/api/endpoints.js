@@ -101,11 +101,18 @@ export async function fetchRelated(message, lang) {
  * Parse a Server-Sent Events body produced by the chat stream endpoints, invoking
  * callbacks as frames arrive. Shared by the signed-in and guest streams.
  */
-async function readSseStream(resp, { onDelta, onMeta, onSources }) {
+async function readSseStream(resp, { onDelta, onMeta, onSources, onStatus }) {
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let result = { assistantMessageId: null, content: "", sources: [], language: null };
+  let result = {
+    assistantMessageId: null,
+    content: "",
+    sources: [],
+    language: null,
+    degraded: false,
+    degradedReason: null,
+  };
 
   // Parse the SSE stream frame by frame (frames separated by a blank line).
   for (;;) {
@@ -134,6 +141,12 @@ async function readSseStream(resp, { onDelta, onMeta, onSources }) {
         // B1 — grounding citations arrive just before `done`.
         result.sources = payload.sources || [];
         onSources?.(result.sources);
+      } else if (event === "status") {
+        // #1 — the backend flags a fallback (LLM unavailable) reply before `done`.
+        if (payload.degraded) {
+          result = { ...result, degraded: true, degradedReason: payload.reason || null };
+        }
+        onStatus?.(payload);
       } else if (event === "done") {
         result = {
           ...result,
@@ -162,7 +175,7 @@ export async function streamMessage(
   conversationId,
   content,
   language,
-  { onDelta, onMeta, onSources, signal, plain = false } = {}
+  { onDelta, onMeta, onSources, onStatus, signal, plain = false } = {}
 ) {
   const doFetch = (token) =>
     fetch(
@@ -194,7 +207,7 @@ export async function streamMessage(
     error.status = resp.status;
     throw error;
   }
-  return readSseStream(resp, { onDelta, onMeta, onSources });
+  return readSseStream(resp, { onDelta, onMeta, onSources, onStatus });
 }
 
 /**
@@ -204,7 +217,7 @@ export async function streamMessage(
 export async function streamGuestMessage(
   content,
   language,
-  { history = [], onDelta, onMeta, onSources, signal, plain = false } = {}
+  { history = [], onDelta, onMeta, onSources, onStatus, signal, plain = false } = {}
 ) {
   const resp = await fetch(`${API_BASE_URL}/chat/guest/stream/`, {
     method: "POST",
@@ -217,5 +230,5 @@ export async function streamGuestMessage(
     error.status = resp.status;
     throw error;
   }
-  return readSseStream(resp, { onDelta, onMeta, onSources });
+  return readSseStream(resp, { onDelta, onMeta, onSources, onStatus });
 }

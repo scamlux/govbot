@@ -11,10 +11,16 @@ function slugify(text) {
   );
 }
 
-export function conversationToMarkdown({ title, messages, sourcesLabel = "Sources" }) {
+export function conversationToMarkdown({
+  title,
+  messages,
+  sourcesLabel = "Sources",
+  youLabel = "You",
+  botLabel = "GovBot",
+}) {
   const lines = [`# ${title || "Conversation"}`, ""];
   for (const m of messages) {
-    const who = m.role === "user" ? "🧑 You" : "🏛️ GovBot";
+    const who = m.role === "user" ? youLabel : botLabel;
     lines.push(`## ${who}`, "", m.content || "", "");
     if (m.role !== "user" && Array.isArray(m.sources) && m.sources.length > 0) {
       lines.push(`**${sourcesLabel}**`);
@@ -28,8 +34,8 @@ export function conversationToMarkdown({ title, messages, sourcesLabel = "Source
   return lines.join("\n");
 }
 
-export function exportConversationMarkdown({ title, messages, sourcesLabel }) {
-  const markdown = conversationToMarkdown({ title, messages, sourcesLabel });
+export function exportConversationMarkdown({ title, messages, sourcesLabel, youLabel, botLabel }) {
+  const markdown = conversationToMarkdown({ title, messages, sourcesLabel, youLabel, botLabel });
   const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

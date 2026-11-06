@@ -5,6 +5,7 @@ from .views import (
     ConversationDetailView,
     ConversationListCreateView,
     GuestMessageStreamView,
+    LlmHealthView,
     MessageCreateView,
     MessageFeedbackView,
     MessageStreamView,
@@ -25,6 +26,8 @@ urlpatterns = [
     path("chat/guest/stream/", GuestMessageStreamView.as_view(), name="guest-stream"),
     # Public, non-secret feature flags for the SPA.
     path("config/", PublicConfigView.as_view(), name="public-config"),
+    # P0 — public, secret-free LLM status (llm_ok + last error class) for monitoring.
+    path("health/llm/", LlmHealthView.as_view(), name="health-llm"),
     # D1 — Telegram bot webhook (404 unless TELEGRAM_BOT_TOKEN is set).
     path("telegram/webhook/", TelegramWebhookView.as_view(), name="telegram-webhook"),
 ]

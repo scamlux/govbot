@@ -81,7 +81,8 @@ def test_search_ranks_title_matches_above_body_matches(catalog):
     resp = APIClient().get(reverse("scenario-list"), {"lang": "ru", "search": "паспорт"})
     assert resp.status_code == 200
     slugs = [s["slug"] for s in resp.json()]
-    assert slugs.index("passport-renewal") < slugs.index("driving-licence")
+    # Body-only mentions are now dropped entirely when title/tag matches exist.
+    assert slugs == ["passport-renewal"]
 
 
 def test_scenario_detail_localized(catalog):

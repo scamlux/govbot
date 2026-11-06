@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { scenariosApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import { useConfig } from "../config/ConfigContext";
+import { askAiTarget } from "../utils/pendingQuestion";
 
 const DEBOUNCE_MS = 300;
 
@@ -77,10 +78,8 @@ export default function CommandPalette({ open, onClose }) {
       navigate(`/scenarios/${option.id}`);
       return;
     }
-    const canChat = user || guestChat;
-    navigate(canChat ? "/chat" : "/login", {
-      state: canChat ? { prefill: q } : { from: { pathname: "/chat" }, prefill: q },
-    });
+    const target = askAiTarget({ canChat: user || guestChat, question: q });
+    navigate(target.to, { state: target.state });
   };
 
   const onKeyDown = (e) => {

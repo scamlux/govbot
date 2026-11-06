@@ -9,6 +9,7 @@ import { useConfig } from "../config/ConfigContext";
 import Spinner from "../components/Spinner";
 import Icon, { CategoryIcon } from "../components/Icon";
 import { buildIcs, downloadIcs } from "../utils/ics";
+import { askAiTarget } from "../utils/pendingQuestion";
 
 const PROGRESS_KEY = (slug) => `govbot.checklist.${slug}`;
 
@@ -74,7 +75,7 @@ function Checklist({ slug, items }) {
 
 /** C4 — a user-chosen reminder exported as an .ics calendar file (no dates invented). */
 function Reminder({ scenario }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [date, setDate] = useState("");
   const save = () => {
     if (!date) return;
@@ -91,13 +92,26 @@ function Reminder({ scenario }) {
   };
   return (
     <div className="reminder">
-      <label>
-        {t("scenarios.remindDate")}
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </label>
-      <button type="button" className="btn btn-outline" onClick={save} disabled={!date}>
-        📅 {t("scenarios.remindSave")}
+      <div className="reminder-field">
+        <label htmlFor="reminder-date">{t("scenarios.remindDate")}</label>
+        <input
+          id="reminder-date"
+          type="date"
+          lang={i18n.language}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </div>
+      <button
+        type="button"
+        className="btn btn-outline"
+        onClick={save}
+        aria-disabled={!date}
+        aria-describedby={date ? undefined : "reminder-help"}
+      >
+        <Icon name="calendar" size={18} /> {t("scenarios.remindSave")}
       </button>
+      {!date && <p id="reminder-help" className="reminder-help">{t("r6.remindHelper")}</p>}
     </div>
   );
 }
@@ -127,13 +141,15 @@ export default function ScenarioDetail() {
     };
   }, [slug, i18n.language]);
 
+  useEffect(() => {
+    if (scenario?.title) document.title = `${scenario.title} — GovBot`;
+  }, [scenario]);
+
   const askAI = () => {
     const prefill = t("scenarios.askPrefill", { title: scenario.title });
     // B1 — guests go straight to the chat when guest mode is on.
-    const canChat = user || guestChat;
-    navigate(canChat ? "/chat" : "/login", {
-      state: canChat ? { prefill } : { from: { pathname: "/chat" }, prefill },
-    });
+    const target = askAiTarget({ canChat: user || guestChat, question: prefill });
+    navigate(target.to, { state: target.state });
   };
 
   if (loading) return <div className="page"><Spinner /></div>;
@@ -171,24 +187,28 @@ export default function ScenarioDetail() {
         </span>
         <h1>{scenario.title}</h1>
         {/* A2 / A3 — official source + verification status, right under the title */}
-        <div className="scenario-meta">
-          {scenario.verified_at ? (
-            <span className="verified-badge">✓ {t("trust.verified", { date: fmt(scenario.verified_at) })}</span>
-          ) : (
-            <span className="verified-badge unverified">{t("trust.notVerified")}</span>
-          )}
+        <p className="meta-strip">
+          <Icon name="info" size={16} className="meta-icon" />
           {scenario.source_url && (
-            <a
-              className="source-link"
-              href={scenario.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t("scenarios.source")}: {new URL(scenario.source_url).hostname}&nbsp;↗
-            </a>
+            <>
+              <span>
+                {t("r6.metaSource")}:{" "}
+                <a className="source-link" href={scenario.source_url} target="_blank" rel="noopener noreferrer">
+                  {new URL(scenario.source_url).hostname}
+                </a>
+              </span>
+              <span className="meta-sep" aria-hidden="true">·</span>
+            </>
           )}
-          <span className="detail-meta">{t("scenarios.updated")}: {updated}</span>
-        </div>
+          <span>{t("r6.metaUpdated")}: {updated}</span>
+          <span className="meta-sep" aria-hidden="true">·</span>
+          <span>
+            {t("r6.metaStatus")}:{" "}
+            {scenario.verified_at
+              ? t("r6.metaStatusVerified", { date: fmt(scenario.verified_at) })
+              : t("r6.metaStatusReview")}
+          </span>
+        </p>
       </header>
 
       <Checklist slug={scenario.slug} items={scenario.checklist || []} />

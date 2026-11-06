@@ -1,8 +1,50 @@
+import re
+
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import serializers
 
 from .models import LANGUAGE_CODES, Category, Scenario, ScenarioRevision, localize
+
+
+EXCERPT_LENGTH = 160
+_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+(.*?)\s*#*\s*$")
+_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_EMPHASIS_RE = re.compile(r"(\*{1,3}|_{2,3}|~~|`)")
+_LIST_MARKER_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+
+
+def _plain(line: str) -> str:
+    """One markdown line -> plain text (no heading/list markers, emphasis, link targets)."""
+    line = _HEADING_RE.sub(r"\1", line)
+    line = _LIST_MARKER_RE.sub("", line)
+    line = _LINK_RE.sub(r"\1", line)
+    return " ".join(_EMPHASIS_RE.sub("", line).split())
+
+
+def make_excerpt(body: str, title: str = "") -> str:
+    """List-card preview: markdown stripped, a leading line equal to the title dropped."""
+    lines = [ln for ln in (body or "").splitlines() if ln.strip()]
+    plain = [_plain(ln) for ln in lines]
+    plain = [ln for ln in plain if ln]
+    if plain and title and plain[0].casefold() == " ".join(title.split()).casefold():
+        plain = plain[1:]
+    text = " ".join(plain)
+    return (text[:EXCERPT_LENGTH] + "…") if len(text) > EXCERPT_LENGTH else text
+
+
+def strip_leading_title_heading(body: str, title: str) -> str:
+    """Remove the first line when it is a markdown heading equal to the scenario title."""
+    if not body or not title:
+        return body
+    lines = body.split("\n")
+    first = next((i for i, ln in enumerate(lines) if ln.strip()), None)
+    if first is None:
+        return body
+    match = _HEADING_RE.match(lines[first])
+    if not match or _plain(match.group(1)).casefold() != " ".join(title.split()).casefold():
+        return body
+    return "\n".join(lines[first + 1:]).lstrip("\n")
 
 
 class TranslationsField(serializers.JSONField):
@@ -58,9 +100,9 @@ class ScenarioListSerializer(LangContextMixin, serializers.ModelSerializer):
         return localize(obj.title, self.lang())
 
     def get_excerpt(self, obj):
-        body = localize(obj.body, self.lang())
-        text = " ".join(body.split())
-        return (text[:160] + "…") if len(text) > 160 else text
+        return make_excerpt(
+            localize(obj.body, self.lang()), localize(obj.title, self.lang())
+        )
 
 
 class ScenarioDetailSerializer(LangContextMixin, serializers.ModelSerializer):
@@ -80,7 +122,10 @@ class ScenarioDetailSerializer(LangContextMixin, serializers.ModelSerializer):
         return localize(obj.title, self.lang())
 
     def get_body(self, obj):
-        return localize(obj.body, self.lang())
+        # The page already renders the title as its H1, so drop a duplicate leading heading.
+        return strip_leading_title_heading(
+            localize(obj.body, self.lang()), localize(obj.title, self.lang())
+        )
 
     def get_checklist(self, obj):
         return obj.checklist_for(self.lang())

@@ -126,6 +126,40 @@ const PATHS = {
   ),
   external: <path d="M14 4.5h5.5V10M19.5 4.5 11 13M17.5 14v4a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V8A1.5 1.5 0 0 1 6 6.5h4" />,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5.5M12 7.6v.1" />
+    </>
+  ),
+  alert: (
+    <>
+      <path d="M12 4 2.8 19.5h18.4z" />
+      <path d="M12 10v4.5M12 17v.1" />
+    </>
+  ),
+  eyeOff: (
+    <>
+      <path d="M3 12s3.5-6.5 9-6.5S21 12 21 12s-3.5 6.5-9 6.5S3 12 3 12z" />
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="m4 4 16 16" />
+    </>
+  ),
+  list: <path d="M8.5 6.5H20M8.5 12H20M8.5 17.5H20M4 6.5h.1M4 12h.1M4 17.5h.1" />,
+  download: <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14" />,
+  refresh: (
+    <>
+      <path d="M19.5 12a7.5 7.5 0 1 1-2.3-5.4" />
+      <path d="M19.5 4.5v4h-4" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="4" y="5.5" width="16" height="14" rx="2" />
+      <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
   search: (
     <>
       <circle cx="11" cy="11" r="6.5" />

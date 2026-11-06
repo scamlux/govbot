@@ -65,7 +65,28 @@ describe("streamMessage", () => {
       content: "Hello, world",
       sources: [{ type: "kb", title: "Doc" }],
       language: null, // meta frame here carries no language
+      degraded: false,
+      degradedReason: null,
     });
+  });
+
+  it("surfaces the degraded status frame (#1)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        sseResponse([
+          'data: {"delta": "Katalog"}\n\n',
+          'event: status\ndata: {"degraded": true, "reason": "llm_unavailable"}\n\n',
+          'event: done\ndata: {"assistant_message_id": 9, "content": "Katalog"}\n\n',
+        ])
+      )
+    );
+    const onStatus = vi.fn();
+    const result = await streamMessage(3, "q", "uz", { onStatus });
+    expect(onStatus).toHaveBeenCalledWith({ degraded: true, reason: "llm_unavailable" });
+    expect(result.degraded).toBe(true);
+    expect(result.degradedReason).toBe("llm_unavailable");
+    expect(result.content).toBe("Katalog");
   });
 
   it("reports the reply language from the meta frame (A7)", async () => {
@@ -109,7 +130,7 @@ describe("streamMessage", () => {
     expect(refreshAccessToken).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe("Bearer fresh");
-    expect(result).toEqual({ assistantMessageId: 1, content: "ok", sources: [], language: null });
+    expect(result).toMatchObject({ assistantMessageId: 1, content: "ok", sources: [], language: null });
   });
 });
 

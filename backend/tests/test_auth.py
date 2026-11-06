@@ -86,6 +86,20 @@ def test_me_endpoint_returns_profile_and_updates_language():
     assert patched.json()["preferred_language"] == "en"
 
 
+def test_me_patch_accepts_language_and_full_name_in_one_request():
+    client = APIClient()
+    access = register(client).json()["access"]
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+    patched = client.patch(
+        reverse("me"), {"preferred_language": "ru", "full_name": "Новое Имя"}, format="json"
+    )
+    assert patched.status_code == 200
+    assert patched.json()["preferred_language"] == "ru"
+    assert patched.json()["full_name"] == "Новое Имя"
+    me = client.get(reverse("me")).json()
+    assert (me["preferred_language"], me["full_name"]) == ("ru", "Новое Имя")
+
+
 def test_me_requires_auth():
     resp = APIClient().get(reverse("me"))
     assert resp.status_code == 401
