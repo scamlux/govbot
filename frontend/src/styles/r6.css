@@ -320,3 +320,8 @@ html[data-a11y="high"] .btn-danger { background: #8f1d12; color: #fff; }
 html[data-a11y="high"] .btn-danger-outline { color: #8f1d12; border-color: #8f1d12; }
 html[data-a11y="high"][data-theme="dark"] .btn-danger-outline { color: #ffb4ab; border-color: #ffb4ab; }
 .chat-toolbar .btn { white-space: nowrap; }
+
+/* R7 — the sidebar already has "New chat" when it is visible (>900px); keep the toolbar copy for mobile only. */
+@media (min-width: 901px) {
+  .chat-toolbar-new { display: none; }
+}

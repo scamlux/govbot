@@ -251,11 +251,15 @@ export default function Chat({ guest = false, embedded = false }) {
           });
           setStreamingText(null);
           setStreamingSources([]);
-          fetchRelated(content, result.language || i18n.language)
-            .then((qs) => {
-              if (isGuest || activeIdRef.current === convId) setRelatedQuestions(qs);
-            })
-            .catch(() => setRelatedQuestions([]));
+          // A degraded (catalog-fallback) reply already lists catalog links; extra
+          // "related questions" chips under a failure notice would only add noise.
+          if (!result.degraded) {
+            fetchRelated(content, result.language || i18n.language)
+              .then((qs) => {
+                if (isGuest || activeIdRef.current === convId) setRelatedQuestions(qs);
+              })
+              .catch(() => setRelatedQuestions([]));
+          }
         }
         refreshConversations();
       } catch (err) {

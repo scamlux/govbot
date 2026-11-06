@@ -215,7 +215,11 @@ admin update and before a restore, so restores are undoable.
   the last active staff account cannot delete itself.
 - `GET /api/auth/me/export/` — JSON download of profile, conversations, messages, feedback (F3).
 - `GET /api/config/` — public, non-secret flags: `guest_chat`, `chat_mode`, `ai_mode`
-  (`live`/`mock`/`catalog_only`), `telegram_bot`.
+  (`live`/`mock`/`catalog_only`/`degraded` — `degraded` while the LLM circuit breaker is
+  open), `telegram_bot`.
+- `GET /api/health/llm/` — public, secret-free LLM status for monitoring:
+  `{llm_ok, last_error, breaker_open}`; `last_error` is only the exception class name
+  (e.g. `RateLimitError`), never the message.
 - `POST /api/chat/guest/stream/` `{content, language, plain?, history[]}` — stateless guest
   SSE turn (B1). 404 unless `GUEST_CHAT_ENABLED`; IP-throttled (`GUEST_THROTTLE_*`); nothing
   persisted. `/api/chat/related/` is also open to guests only while guest chat is enabled.
@@ -252,7 +256,14 @@ admin update and before a restore, so restores are undoable.
   - never invents specific legal article numbers, fees, or deadlines it isn't sure about;
     instead points to the responsible official body.
 - Includes recent conversation history (last N=10 messages) for context.
-- Handles API errors gracefully → friendly localized error message.
+- Handles API errors gracefully → never a bare error: on any OpenAI failure (quota, auth,
+  timeout) the reply falls back to the catalog (`catalog_only_reply`) with a localized
+  "AI unavailable" notice; the message is stored with `model="fallback"`, the SSE stream
+  emits `event: status {"degraded": true, "reason": "llm_unavailable"}` before `done`, and
+  non-stream responses carry `degraded: true`. A circuit breaker (shared cache) skips
+  OpenAI for `LLM_COOLDOWN_SECONDS` (default 120, `0` disables) after a failure so users
+  don't wait on a dead provider. The frontend shows degraded replies as notices with a
+  Retry button and no 👍/👎 or related-question chips.
 - **Mockable:** if `OPENAI_API_KEY` is unset, returns a clear localized canned reply so the
   app runs in development without a key.
 - **Trust & safety (2026-10):**
@@ -381,7 +392,8 @@ admin update and before a restore, so restores are undoable.
 `GUEST_THROTTLE_GLOBAL` (300/day, one cap for all guests), `GUEST_THROTTLE_RELATED`
 (10/min), `NUM_PROXIES` (optional, unset),
 `CHAT_AUTODETECT_LANGUAGE`, `CONVERSATION_RETENTION_DAYS`, `ADMIN_CAN_READ_CONVERSATIONS`,
-`SCENARIO_STALE_DAYS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_THROTTLE`.
+`SCENARIO_STALE_DAYS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_THROTTLE`,
+`LLM_COOLDOWN_SECONDS` (default 120; seconds to skip OpenAI after a failure, 0 = off).
 
 **Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL` (`/api` in production — same-origin).
 
