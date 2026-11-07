@@ -376,6 +376,9 @@
     "residentHint": "Yashash guvohnomasi, ish ruxsatnomasi, ro'yxatdan o'tish",
     "touristHint": "Viza, vaqtincha ro'yxatga olish, favqulodda yordam"
   },
+  "meta": {
+    "description": "GovBot — O'zbekiston davlat xizmatlari haqidagi savollarga uch tilda sodda javoblar: hujjatlar, soliqlar, viza, ro'yxatga olish."
+  },
   "r6": {
     "degradedBanner": "AI hozir vaqtincha ishlamayapti. Javoblar tayyor katalog asosida beriladi va to'liq bo'lmasligi mumkin.",
     "degradedTitle": "Tayyor katalogdan javob",

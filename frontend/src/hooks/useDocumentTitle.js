@@ -22,6 +22,20 @@ export function titleKeyFor(pathname) {
   return "r6.docNotFound";
 }
 
+const DESCRIPTION_SELECTORS = [
+  'meta[name="description"]',
+  'meta[property="og:description"]',
+  'meta[name="twitter:description"]',
+];
+
+/** Localizes the static description tags from index.html (kept there as the no-JS fallback). */
+export function applyDocumentLanguage(description, lang) {
+  for (const selector of DESCRIPTION_SELECTORS) {
+    document.head.querySelector(selector)?.setAttribute("content", description);
+  }
+  if (lang) document.documentElement.setAttribute("lang", lang);
+}
+
 /** Sets `document.title` per route in the active language. Detail pages override it. */
 export function useDocumentTitle(pathname) {
   const { t, i18n } = useTranslation();
@@ -29,4 +43,8 @@ export function useDocumentTitle(pathname) {
     const key = titleKeyFor(pathname);
     if (key) document.title = t(key);
   }, [pathname, i18n.language, t]);
+
+  useEffect(() => {
+    applyDocumentLanguage(t("meta.description"), i18n.language);
+  }, [i18n.language, t]);
 }

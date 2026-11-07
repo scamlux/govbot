@@ -12,6 +12,9 @@ _HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+(.*?)\s*#*\s*$")
 _LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 _EMPHASIS_RE = re.compile(r"(\*{1,3}|_{2,3}|~~|`)")
 _LIST_MARKER_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+# "Bu nima:" / "Кому:" / "What it is:" — a short service label opening the text (<= 4 words, e.g. "Who it is for").
+_LEADING_LABEL_RE = re.compile(r"^([^\s:.!?]+(?:\s+[^\s:.!?]+){0,3}):\s+(?=\S)")
+LABEL_MAX_CHARS = 25
 
 
 def _plain(line: str) -> str:
@@ -22,14 +25,23 @@ def _plain(line: str) -> str:
     return " ".join(_EMPHASIS_RE.sub("", line).split())
 
 
+def _strip_leading_label(text: str) -> str:
+    """Drop a short leading "Label:" so the preview opens with a real sentence."""
+    match = _LEADING_LABEL_RE.match(text)
+    if not match or len(match.group(1)) > LABEL_MAX_CHARS:
+        return text
+    rest = text[match.end():]
+    return rest[:1].upper() + rest[1:]
+
+
 def make_excerpt(body: str, title: str = "") -> str:
-    """List-card preview: markdown stripped, a leading line equal to the title dropped."""
-    lines = [ln for ln in (body or "").splitlines() if ln.strip()]
+    """List-card preview: headings skipped, markdown stripped, a leading "Label:" dropped."""
+    lines = [ln for ln in (body or "").splitlines() if ln.strip() and not _HEADING_RE.match(ln)]
     plain = [_plain(ln) for ln in lines]
     plain = [ln for ln in plain if ln]
     if plain and title and plain[0].casefold() == " ".join(title.split()).casefold():
         plain = plain[1:]
-    text = " ".join(plain)
+    text = _strip_leading_label(" ".join(plain))
     return (text[:EXCERPT_LENGTH] + "…") if len(text) > EXCERPT_LENGTH else text
 
 

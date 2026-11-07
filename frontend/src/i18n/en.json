@@ -376,6 +376,9 @@
     "residentHint": "Residence permit, work permit, registration",
     "touristHint": "Visa, temporary registration, emergency help"
   },
+  "meta": {
+    "description": "GovBot — plain-language answers about Uzbekistan public services in three languages: documents, taxes, visas, registration."
+  },
   "r6": {
     "degradedBanner": "The AI is temporarily unavailable. Answers come from the ready-made catalog and may be incomplete.",
     "degradedTitle": "Answer from the ready-made catalog",

@@ -116,6 +116,28 @@ def test_excerpt_keeps_non_title_first_line_and_truncates():
     assert len(out) <= 161 and out.endswith("…")
 
 
+@pytest.mark.parametrize("body, expected", [
+    ("## Kompaniyani tugatish\n**Kim uchun:** faoliyatni to'xtatmoqchi bo'lgan ta'sischilar.\n**Qadamlar:**\n1. Qaror qabul qiling.",
+     "Faoliyatni to'xtatmoqchi bo'lgan ta'sischilar."),
+    ("## Смена адреса\n\n**Что это:** Обновление регистрации при переезде.\n\n**Как оформить:**\n1. Обратитесь.",
+     "Обновление регистрации при переезде."),
+    ("## Changing your address\n\n**What it is:** Updating your registration.\n\n**How:**\n1. Apply.",
+     "Updating your registration."),
+    ("# Haydovchilik guvohnomasi\n## Yangi guvohnoma\nYangi guvohnoma olish uchun ariza bering.",
+     "Yangi guvohnoma olish uchun ariza bering."),
+])
+def test_excerpt_skips_headings_and_leading_label(body, expected):
+    # Heading text deliberately differs from the title: every heading line is skipped.
+    assert make_excerpt(body, "Other title").startswith(expected)
+
+
+def test_excerpt_keeps_long_or_sentence_prefix_before_colon():
+    long_label = "Bu juda uzun sarlavha emas lekin ko'p so'z: matn"
+    assert make_excerpt(long_label) == long_label
+    sentence = "Hujjatlar tayyor bo'lsa. Keyin: ariza bering"
+    assert make_excerpt(sentence) == sentence
+
+
 def test_list_api_excerpt_does_not_repeat_title(catalog):
     s = Scenario.objects.get(slug="passport-renewal")
     s.body = {**s.body, "en": "# Passport renewal\nGo to the office."}

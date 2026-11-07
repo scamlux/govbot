@@ -139,7 +139,7 @@ export default function Landing() {
             <ul className="hero-chips" aria-label={t("landing.situationsTitle")}>
               {chips.map((s) => (
                 <li key={s.slug}>
-                  <Link className="topic-chip" to={`/scenarios/${s.slug}`}>
+                  <Link className="topic-chip" to={`/scenarios/${s.slug}`} title={s.title}>
                     {s.title}
                   </Link>
                 </li>

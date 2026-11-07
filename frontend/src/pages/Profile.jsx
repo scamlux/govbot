@@ -8,8 +8,9 @@ import { useTheme, ACCENTS, FONT_SCALES, CHAT_BACKGROUNDS } from "../theme/Theme
 import { SUPPORTED_LANGUAGES } from "../i18n";
 
 // R1 — kept in sync with the (contrast-fixed) accents in styles/upgrades.css.
+// "teal" is the legacy storage key of the default accent, which studio.css now renders as brand navy.
 const ACCENT_HEX = {
-  teal: "#0c6c8a",
+  teal: "#0b1e3f",
   blue: "#2559c9",
   violet: "#6544d6",
   green: "#15803d",
@@ -18,9 +19,9 @@ const ACCENT_HEX = {
 };
 // R1 — screen readers announce a colour name, not the internal key.
 const ACCENT_NAMES = {
-  uz: { teal: "Moviy-yashil", blue: "Ko'k", violet: "Binafsha", green: "Yashil", rose: "Pushti", amber: "Qahrabo" },
-  ru: { teal: "Бирюзовый", blue: "Синий", violet: "Фиолетовый", green: "Зелёный", rose: "Розовый", amber: "Янтарный" },
-  en: { teal: "Teal", blue: "Blue", violet: "Violet", green: "Green", rose: "Rose", amber: "Amber" },
+  uz: { teal: "To'q ko'k", blue: "Ko'k", violet: "Binafsha", green: "Yashil", rose: "Pushti", amber: "Qahrabo" },
+  ru: { teal: "Тёмно-синий", blue: "Синий", violet: "Фиолетовый", green: "Зелёный", rose: "Розовый", amber: "Янтарный" },
+  en: { teal: "Navy", blue: "Blue", violet: "Violet", green: "Green", rose: "Rose", amber: "Amber" },
 };
 
 /** F3 — download my data / delete my account. */
