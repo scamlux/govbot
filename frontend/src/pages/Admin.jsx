@@ -40,7 +40,6 @@ export default function Admin() {
     <div className="page admin">
       <div className="admin-head">
         <h1>{t("admin.title")}</h1>
-        <p className="muted">{t("admin.subtitle")}</p>
       </div>
 
       {/* R6 — side navigation (plain buttons + aria-current; no fake tab semantics). */}
@@ -458,7 +457,6 @@ function AnalyticsPanel({ onCreateScenario }) {
                         <button
                           type="button"
                           className="gap-q gap-create"
-                          title={t("admin.createScenario")}
                           onClick={() => onCreateScenario?.(g.question)}
                         >
                           {g.question}
@@ -592,7 +590,6 @@ function UsersPanel() {
                         type="button"
                         className="btn btn-outline btn-sm"
                         disabled={isSelf || busy === u.id}
-                        title={t("admin.toggleStaff")}
                         onClick={() => patchUser(u.id, { is_staff: !u.is_staff })}
                       >
                         {u.is_staff ? t("admin.demote") : t("admin.promote")}
@@ -797,7 +794,6 @@ function ScenariosPanel({ prefill, onPrefillConsumed }) {
           className="btn btn-primary"
           onClick={() => setEditing("new")}
           disabled={categories.length === 0}
-          title={categories.length === 0 ? t("admin.needCategory") : ""}
         >
           + {t("admin.newScenario")}
         </button>
@@ -1319,7 +1315,6 @@ function UsagePanel() {
                     key={d.date}
                     className="bar"
                     style={{ height: `${Math.round((d.messages / maxMsg) * 100)}%` }}
-                    title={`${d.date}: ${d.messages}`}
                   />
                 ))}
               </div>

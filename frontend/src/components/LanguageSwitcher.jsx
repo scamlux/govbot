@@ -21,7 +21,7 @@ export default function LanguageSwitcher() {
           className={i18n.language === lang.code ? "lang-btn active" : "lang-btn"}
           aria-pressed={i18n.language === lang.code}
           onClick={() => change(lang.code)}
-          title={lang.label}
+          lang={lang.code}
         >
           {lang.short}
         </button>

@@ -423,5 +423,16 @@
     "ask": "Спросить ИИ: «{{q}}»",
     "empty": "Подходящих тем нет.",
     "hint": "↑↓ — выбор · Enter — открыть · Esc — закрыть"
+  },
+  "sky": {
+    "eyebrow": "Госуслуги · AI-помощник",
+    "scroll": "Скролл",
+    "rolesEyebrow": "Для кого",
+    "catalogEyebrow": "Каталог",
+    "howEyebrow": "Как это работает",
+    "allTopics": "Все темы",
+    "open": "Открыть",
+    "closingTitle": "Есть вопрос?",
+    "closingAction": "Спросите."
   }
 }

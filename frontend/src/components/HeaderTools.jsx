@@ -18,7 +18,7 @@ export default function HeaderTools() {
 
   return (
     <div className="header-tools">
-      <a href="tel:1242" className="tool-btn tool-hotline" aria-label={t("gov.hotline")} title={t("gov.hotline")}>
+      <a href="tel:1242" className="tool-btn tool-hotline" aria-label={t("gov.hotline")}>
         <Icon name="phone" size={20} />
         <span className="tool-hotline-num">1242</span>
       </a>
@@ -27,7 +27,6 @@ export default function HeaderTools() {
         className="tool-btn tool-a11y"
         aria-pressed={high}
         aria-label={t("gov.a11yLabel")}
-        title={t("gov.a11yLabel")}
         onClick={toggle}
       >
         <Icon name="eye" size={20} />

@@ -419,5 +419,16 @@
     "ask": "Ask the AI: “{{q}}”",
     "empty": "No matching topics.",
     "hint": "↑↓ to move · Enter to open · Esc to close"
+  },
+  "sky": {
+    "eyebrow": "Public services · AI assistant",
+    "scroll": "Scroll",
+    "rolesEyebrow": "Who it's for",
+    "catalogEyebrow": "Catalog",
+    "howEyebrow": "How it works",
+    "allTopics": "All topics",
+    "open": "Open",
+    "closingTitle": "Have a question?",
+    "closingAction": "Ask."
   }
 }

@@ -16,6 +16,7 @@ import "./styles/upgrades.css";
 import "./styles/studio.css";
 import "./styles/r6.css";
 import "./styles/clean.css";
+import "./styles/skyline.css";
 
 // Round 4 — restore the low-vision mode before first paint.
 applyA11y(readA11y());

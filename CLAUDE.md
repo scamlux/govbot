@@ -334,7 +334,9 @@ admin update and before a restore, so restores are undoable.
 
 ### 5.3 UX/design
 - Clean, modern, trustworthy "civic" feel — friendly, not bureaucratic. Responsive
-  (mobile-first), accessible (labels, focus states, keyboard nav). Light theme.
+  (mobile-first), accessible (labels, focus states, keyboard nav). Dark "Skyline Studio"
+  theme only (`styles/skyline.css`, imported last; near-black canvas, periwinkle accent,
+  pill buttons; every token pair AA). No hover tooltips (`title=`) or hint microcopy.
 
 ### 5.4 Post-MVP features
 - **Sources chips (B2):** grounded assistant answers render clickable source chips linking to
@@ -356,8 +358,9 @@ admin update and before a restore, so restores are undoable.
 - **Scenario detail:** breadcrumbs, official source link, "verified on" badge
   (`verified_at`), documents checklist with local progress (C1/C2), `.ics` reminder on a
   user-chosen date (C4), sticky "Ask the AI".
-- **Landing:** search box, role picker (citizen / resident / tourist) driving "popular
-  situations" via `?audience=`; guest CTA when guest chat is on.
+- **Landing:** Skyline-style hero (GOVBOT wordmark, two pill CTAs), category marquee,
+  role cards (citizen / resident / tourist) linking to `/scenarios?audience=`, category
+  cards, 3 steps, closing CTA with official sources; guest CTA label when guest chat is on.
 - **Chat:** guest mode (`<Chat guest />`, nothing stored), stop button (AbortController),
   "simple language" toggle, read-aloud (Web Speech TTS, only when a voice exists for the
   language), "answered in …" note when the reply language differs from the UI.

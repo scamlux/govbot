@@ -1,57 +1,38 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { scenariosApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import { useConfig } from "../config/ConfigContext";
-import Icon, { CategoryIcon } from "../components/Icon";
+import Icon from "../components/Icon";
 import Section from "../components/Section";
 
-const ROLE_KEY = "govbot.role";
 const ROLES = ["citizen", "resident", "tourist"];
-const SITUATIONS_SHOWN = 6;
-const CHIPS_SHOWN = 4;
-const STEPS = [{ key: "feature1" }, { key: "feature2" }, { key: "feature3" }];
-
-const TRUST = ["shield", "check", "globe"];
-const SOURCES = [
-  { host: "my.gov.uz", desc: "gov.sourceMy" },
-  { host: "gov.uz", desc: "gov.sourceGov" },
-  { host: "lex.uz", desc: "gov.sourceLex" },
+const STEPS = ["feature1", "feature2", "feature3"];
+// Skyline-style wordmark: solid and outline letters alternate in pairs.
+const WORDMARK = [
+  { ch: "G", outline: false },
+  { ch: "O", outline: false },
+  { ch: "V", outline: true },
+  { ch: "B", outline: false },
+  { ch: "O", outline: false },
+  { ch: "T", outline: true },
 ];
+const SOURCES = ["my.gov.uz", "gov.uz", "lex.uz"];
 
-function readRole() {
-  try {
-    const saved = localStorage.getItem(ROLE_KEY);
-    return ROLES.includes(saved) ? saved : "";
-  } catch {
-    return "";
-  }
+/** "01 / 07" — the Skyline card counter. */
+function counter(index, total) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(index + 1)} / ${pad(total)}`;
 }
 
 export default function Landing() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { guest_chat: guestChat } = useConfig();
-  const navigate = useNavigate();
   // null = still loading (cold API): render placeholders instead of blocking the page.
   const [categories, setCategories] = useState(null);
-  // B3 / R3 — role chosen by the visitor; drives the "popular situations" list.
-  const [role, setRole] = useState(readRole);
-  const [situations, setSituations] = useState(null);
-  const [query, setQuery] = useState("");
-  // #19 — shorter placeholder on phones so it is not cut off.
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 520px)").matches
-  );
-  useEffect(() => {
-    const mq = window.matchMedia?.("(max-width: 520px)");
-    if (!mq) return undefined;
-    const on = (e) => setNarrow(e.matches);
-    mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -64,174 +45,118 @@ export default function Landing() {
     };
   }, [i18n.language]);
 
-  useEffect(() => {
-    let active = true;
-    scenariosApi
-      .list(i18n.language, { audience: role || undefined })
-      .then(({ data }) => {
-        if (!active) return;
-        const rows = Array.isArray(data) ? data : data?.results || [];
-        // Role-specific topics first, then the universal ones.
-        const ranked = role
-          ? [...rows].sort(
-              (a, b) =>
-                Number((b.audience || []).includes(role)) - Number((a.audience || []).includes(role))
-            )
-          : rows;
-        setSituations(ranked.slice(0, SITUATIONS_SHOWN));
-      })
-      .catch(() => active && setSituations([]));
-    return () => {
-      active = false;
-    };
-  }, [i18n.language, role]);
-
-  const chooseRole = (next) => {
-    const value = next === role ? "" : next;
-    setRole(value);
-    try {
-      if (value) localStorage.setItem(ROLE_KEY, value);
-      else localStorage.removeItem(ROLE_KEY);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const onSearch = (e) => {
-    e.preventDefault();
-    const q = query.trim();
-    navigate(q ? `/scenarios?search=${encodeURIComponent(q)}` : "/scenarios");
-  };
-
-  // "N verified scenarios" comes from the data; without it the item renders with no number.
-  const scenarioTotal = (categories || []).reduce((sum, c) => sum + (c.scenario_count || 0), 0);
-
   // B1 — when guest chat is on, signed-out visitors can ask straight away.
   const chatLabel = !user && guestChat ? t("landing.askGuest") : t("landing.ctaChat");
-
-  const chips = (situations || []).slice(0, CHIPS_SHOWN);
+  const cats = categories || [];
 
   return (
-    <div className="landing">
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="st-container hero-inner">
-          <h1 id="hero-title" className="hero-title">
-            {t("landing.heroTitle")}
-          </h1>
-          <p className="hero-sub">{t("landing.heroSubtitle")}</p>
-          <form className="hero-search" role="search" onSubmit={onSearch}>
-            <label htmlFor="hero-search-input" className="visually-hidden">
-              {t("common.search")}
-            </label>
-            <Icon name="search" size={20} className="hero-search-icon" />
-            <input
-              id="hero-search-input"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={narrow ? t("r6.searchShort") : t("landing.searchPlaceholder")}
-            />
-            <button type="submit" className="btn btn-primary hero-search-btn">
-              {t("common.search")}
-            </button>
-          </form>
-          {chips.length > 0 && (
-            <ul className="hero-chips" aria-label={t("landing.situationsTitle")}>
-              {chips.map((s) => (
-                <li key={s.slug}>
-                  <Link className="topic-chip" to={`/scenarios/${s.slug}`} title={s.title}>
-                    {s.title}
-                  </Link>
-                </li>
+    <div className="landing sky">
+      <section className="sky-hero" aria-labelledby="hero-title">
+        <div className="st-container sky-hero-inner">
+          <p className="sky-eyebrow">{t("sky.eyebrow")}</p>
+          <h1 id="hero-title" className="sky-wordmark">
+            <span className="visually-hidden">GovBot — {t("landing.heroTitle")}</span>
+            <span aria-hidden="true">
+              {WORDMARK.map((l, i) => (
+                <span key={i} className={l.outline ? "sky-letter is-outline" : "sky-letter"}>
+                  {l.ch}
+                </span>
               ))}
-            </ul>
-          )}
-          <div className="hero-cta">
-            <Link to="/chat" className="btn btn-primary btn-lg">
-              {chatLabel} <Icon name="arrow" size={20} className="btn-arrow" />
+            </span>
+          </h1>
+          <p className="sky-lead">{t("landing.heroSubtitle")}</p>
+          <div className="sky-actions">
+            <Link to="/chat" className="sky-pill sky-pill-primary">
+              {chatLabel} <Icon name="arrow" size={18} />
             </Link>
-            <Link to="/scenarios" className="text-link">
+            <Link to="/scenarios" className="sky-pill sky-pill-ghost">
               {t("landing.ctaScenarios")}
             </Link>
           </div>
-          <ul className="trust-row">
-            {TRUST.map((icon, i) => (
-              <li key={icon} className="trust-item">
-                <Icon name={icon} size={18} />
-                <span>
-                  {i === 0 && t("gov.trustSourcesTitle")}
-                  {i === 1 &&
-                    (scenarioTotal > 0
-                      ? t("gov.trustScenariosSub", { count: scenarioTotal })
-                      : t("gov.trustScenariosTitle"))}
-                  {i === 2 && t("gov.trustLangsTitle")}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <span className="sky-scroll" aria-hidden="true">{t("sky.scroll")}</span>
         </div>
       </section>
 
-      <Section title={t("roles.title")} subtitle={t("roles.subtitle")}>
-        <div className="grid grid-3 roles">
-          {ROLES.map((r) => (
-            <button
-              key={r}
-              type="button"
-              className="card role-card"
-              aria-pressed={role === r}
-              onClick={() => chooseRole(r)}
-            >
-              <span className="card-icon"><Icon name={r} size={20} /></span>
-              <strong>{t(`roles.${r}`)}</strong>
-              <span className="card-text">{t(`roles.${r}Hint`)}</span>
-            </button>
+      {cats.length > 0 && (
+        <div className="sky-marquee" aria-hidden="true">
+          <div className="sky-marquee-track">
+            {[0, 1].map((copy) => (
+              <span key={copy} className="sky-marquee-group">
+                {cats.map((c, i) => (
+                  <span key={c.slug} className={i % 2 ? "sky-marquee-item is-outline" : "sky-marquee-item"}>
+                    {c.name} /
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Section eyebrow={t("sky.rolesEyebrow")} title={t("roles.title")}>
+        <div className="sky-grid sky-grid-3">
+          {ROLES.map((r, i) => (
+            <Link key={r} to={`/scenarios?audience=${r}`} className="sky-card">
+              <span className="sky-counter">{counter(i, ROLES.length)}</span>
+              <h3 className="sky-card-title">{t(`roles.${r}`)}</h3>
+              <p className="sky-card-text">{t(`roles.${r}Hint`)}</p>
+              <span className="sky-card-foot">
+                {t("sky.open")} <Icon name="arrow" size={16} />
+              </span>
+            </Link>
           ))}
         </div>
       </Section>
 
-      <Section tint title={t("landing.categoriesTitle")} subtitle={t("landing.categoriesSubtitle")}>
-        <div className="cats" aria-busy={categories === null}>
+      <Section
+        eyebrow={t("sky.catalogEyebrow")}
+        title={t("landing.categoriesTitle")}
+        action={<Link to="/scenarios" className="sky-head-link">{t("sky.allTopics")} →</Link>}
+      >
+        <div className="sky-grid sky-grid-cats" aria-busy={categories === null}>
           {categories === null
             ? Array.from({ length: 4 }, (_, i) => (
-                <span key={i} className="card cat st-skeleton" aria-hidden="true" />
+                <span key={i} className="sky-card st-skeleton" aria-hidden="true" />
               ))
-            : categories.map((c) => (
-                <Link to={`/scenarios?category=${c.slug}`} className="card cat" key={c.slug}>
-                  <span className="card-icon"><CategoryIcon slug={c.slug} fallback={c.icon} /></span>
-                  <span className="cat-name">{c.name}</span>
-                  <span className="card-text">{t("scenarios.itemsCount", { count: c.scenario_count })}</span>
+            : cats.map((c, i) => (
+                <Link to={`/scenarios?category=${c.slug}`} className="sky-card sky-card-cat" key={c.slug}>
+                  <span className="sky-counter">{counter(i, cats.length)}</span>
+                  <h3 className="sky-card-title">{c.name}</h3>
+                  <span className="sky-card-value">
+                    {t("scenarios.itemsCount", { count: c.scenario_count })}
+                  </span>
                 </Link>
               ))}
         </div>
       </Section>
 
-      <Section title={t("studio.howTitle")}>
-        <ol className="steps">
-          {STEPS.map((s, i) => (
-            <li key={s.key} className="step">
-              <span className="step-num" aria-hidden="true">{i + 1}</span>
-              <h3>{t(`landing.${s.key}Title`)}</h3>
-              <p>{t(`landing.${s.key}Body`)}</p>
+      <Section eyebrow={t("sky.howEyebrow")} title={t("studio.howTitle")}>
+        <ol className="sky-grid sky-grid-3 sky-steps">
+          {STEPS.map((key, i) => (
+            <li key={key} className="sky-card sky-step">
+              <span className="sky-counter">{counter(i, STEPS.length)}</span>
+              <h3 className="sky-card-title">{t(`landing.${key}Title`)}</h3>
+              <p className="sky-card-text">{t(`landing.${key}Body`)}</p>
             </li>
           ))}
         </ol>
       </Section>
 
-      <section className="sources-line" aria-labelledby="sources-title">
+      <section className="sky-closing" aria-labelledby="closing-title">
         <div className="st-container">
-          <h2 id="sources-title" className="sources-title">{t("gov.sourcesTitle")}</h2>
-          <ul>
-            {SOURCES.map((src) => (
-              <li key={src.host}>
-                <a
-                  href={`https://${src.host}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={t(src.desc)}
-                >
-                  {src.host}
-                  <Icon name="external" size={14} />
+          <h2 id="closing-title" className="sky-closing-title">
+            {t("sky.closingTitle")} <span className="is-outline">{t("sky.closingAction")}</span>
+          </h2>
+          <div className="sky-actions">
+            <Link to="/chat" className="sky-pill sky-pill-primary">
+              {chatLabel} <Icon name="arrow" size={18} />
+            </Link>
+          </div>
+          <ul className="sky-sources" aria-label={t("gov.sourcesTitle")}>
+            {SOURCES.map((host) => (
+              <li key={host}>
+                <a href={`https://${host}`} target="_blank" rel="noopener noreferrer">
+                  {host} <Icon name="external" size={14} />
                   <span className="visually-hidden"> {t("gov.newTab")}</span>
                 </a>
               </li>

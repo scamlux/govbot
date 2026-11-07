@@ -7,15 +7,15 @@ import Modal from "../components/Modal";
 import { useTheme, ACCENTS, FONT_SCALES, CHAT_BACKGROUNDS } from "../theme/ThemeContext";
 import { SUPPORTED_LANGUAGES } from "../i18n";
 
-// R1 — kept in sync with the (contrast-fixed) accents in styles/upgrades.css.
-// "teal" is the legacy storage key of the default accent, which studio.css now renders as brand navy.
+// Kept in sync with the accents in styles/skyline.css. "teal" is the legacy storage key of the
+// default accent, which renders as Skyline periwinkle.
 const ACCENT_HEX = {
-  teal: "#0b1e3f",
-  blue: "#2559c9",
-  violet: "#6544d6",
-  green: "#15803d",
-  rose: "#c0306c",
-  amber: "#955a0b",
+  teal: "#8fa6cf",
+  blue: "#7aa7ff",
+  violet: "#b6a2ff",
+  green: "#6fcf97",
+  rose: "#f08fb4",
+  amber: "#e8b15a",
 };
 // R1 — screen readers announce a colour name, not the internal key.
 const ACCENT_NAMES = {
@@ -152,7 +152,6 @@ export default function Profile() {
     <div className="page profile">
       <div className="section-head">
         <h1>{t("profile.title")}</h1>
-        <p className="muted">{t("profile.subtitle")}</p>
       </div>
 
       {/* ---- Account ---- */}
@@ -211,23 +210,6 @@ export default function Profile() {
         </div>
 
         <div className="field">
-          <span>{t("profile.theme")}</span>
-          <div className="seg">
-            {["light", "dark", "system"].map((m) => (
-              <button
-                type="button"
-                key={m}
-                className={theme.mode === m ? "seg-btn active" : "seg-btn"}
-                aria-pressed={theme.mode === m}
-                onClick={() => theme.set({ mode: m })}
-              >
-                {t(`profile.theme_${m}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
           <span>{t("profile.accent")}</span>
           <div className="swatch-row">
             {ACCENTS.map((a) => (
@@ -237,7 +219,6 @@ export default function Profile() {
                 className={theme.accent === a ? "swatch active" : "swatch"}
                 style={{ "--sw": ACCENT_HEX[a] }}
                 aria-label={accentNames[a]}
-                title={accentNames[a]}
                 aria-pressed={theme.accent === a}
                 onClick={() => theme.set({ accent: a })}
               />
@@ -279,7 +260,6 @@ export default function Profile() {
           </div>
         </div>
 
-        <p className="muted profile-hint">{t("profile.appearanceHint")}</p>
       </section>
 
       <PrivacySection />

@@ -71,7 +71,6 @@ export default function Navbar({ onOpenSearch }) {
               className="tool-btn nav-search"
               onClick={onOpenSearch}
               aria-label={t("nav.searchHint")}
-              title={t("nav.searchHint")}
             >
               <Icon name="search" size={20} />
             </button>
@@ -81,7 +80,7 @@ export default function Navbar({ onOpenSearch }) {
           </div>
           {user ? (
             <div className="user-chip">
-              <Link to="/profile" className="avatar-link" title={t("nav.profile")} aria-label={t("nav.profile")}>
+              <Link to="/profile" className="avatar-link" aria-label={t("nav.profile")}>
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt="" className="avatar" />
                 ) : (

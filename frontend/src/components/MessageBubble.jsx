@@ -142,7 +142,6 @@ function ReadAloud({ text, lang }) {
         onClick={() => (speaking ? stop() : speak(text))}
         aria-pressed={speaking}
         aria-label={speaking ? t("chat.stopReading") : t("chat.readAloud")}
-        title={speaking ? t("chat.stopReading") : t("chat.readAloud")}
       >
         {speaking ? "■" : "🔊"}
       </button>

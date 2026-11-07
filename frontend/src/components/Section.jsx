@@ -1,23 +1,22 @@
 import { useId } from "react";
 
 /**
- * Clean landing section: optional centred header (H2 + one-line subtitle).
- * `tint` adds the subtle #f6f8fb background where grouping helps.
+ * Skyline-style landing section: a dotted uppercase eyebrow over a large left-aligned H2,
+ * with an optional quiet link (`action`) on the right of the heading row.
  */
-export default function Section({ title, subtitle, tint = false, id, className = "", children }) {
+export default function Section({ eyebrow, title, action, id, className = "", children }) {
   const uid = useId();
   const titleId = title ? `${uid}-title` : undefined;
   return (
-    <section
-      id={id}
-      className={`sec${tint ? " sec-tint" : ""} ${className}`.trim()}
-      aria-labelledby={titleId}
-    >
+    <section id={id} className={`sky-sec ${className}`.trim()} aria-labelledby={titleId}>
       <div className="st-container">
-        {(title || subtitle) && (
-          <header className="sec-head">
-            {title && <h2 id={titleId}>{title}</h2>}
-            {subtitle && <p className="sec-sub">{subtitle}</p>}
+        {(eyebrow || title) && (
+          <header className="sky-sec-head">
+            <div>
+              {eyebrow && <p className="sky-eyebrow sky-eyebrow-left">{eyebrow}</p>}
+              {title && <h2 id={titleId} className="sky-sec-title">{title}</h2>}
+            </div>
+            {action}
           </header>
         )}
         {children}

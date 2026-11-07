@@ -419,5 +419,16 @@
     "ask": "AI dan so'rash: «{{q}}»",
     "empty": "Mos mavzu topilmadi.",
     "hint": "↑↓ — tanlash · Enter — ochish · Esc — yopish"
+  },
+  "sky": {
+    "eyebrow": "Davlat xizmatlari · AI yordamchi",
+    "scroll": "Pastga",
+    "rolesEyebrow": "Kim uchun",
+    "catalogEyebrow": "Katalog",
+    "howEyebrow": "Qanday ishlaydi",
+    "allTopics": "Barcha mavzular",
+    "open": "Ochish",
+    "closingTitle": "Savolingiz bormi?",
+    "closingAction": "So'rang."
   }
 }

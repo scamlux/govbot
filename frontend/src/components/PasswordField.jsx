@@ -30,7 +30,6 @@ export default function PasswordField({ label, hint, value, onChange, autoComple
           onClick={() => setVisible((v) => !v)}
           aria-pressed={visible}
           aria-label={toggleLabel}
-          title={toggleLabel}
         >
           <Icon name={visible ? "eyeOff" : "eye"} size={20} />
         </button>

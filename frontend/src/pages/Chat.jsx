@@ -487,7 +487,6 @@ export default function Chat({ guest = false, embedded = false }) {
               onClick={exportConversation}
               disabled={!canExport}
               aria-label={t("chat.export")}
-              title={t("chat.export")}
             >
               <Icon name="download" size={18} />
               <span className="chat-toolbar-text">{t("chat.export")}</span>
@@ -578,7 +577,7 @@ export default function Chat({ guest = false, embedded = false }) {
 
         <div className="chat-composer">
           <div className="chat-options">
-            <label className="toggle" title={t("chat.plainLanguageHint")}>
+            <label className="toggle">
               <input
                 type="checkbox"
                 checked={plain}
@@ -588,7 +587,7 @@ export default function Chat({ guest = false, embedded = false }) {
             </label>
           </div>
           <form className="chat-input-bar" onSubmit={onSubmit}>
-            <span className="lang-indicator" title={t("common.language")}>
+            <span className="lang-indicator">
               {i18n.language.toUpperCase()}
             </span>
             <textarea
@@ -617,7 +616,6 @@ export default function Chat({ guest = false, embedded = false }) {
                 onClick={toggleVoice}
                 aria-label={t("chat.voiceInput")}
                 aria-pressed={listening}
-                title={t("chat.voiceInput")}
               >
                 🎤
               </button>
@@ -628,7 +626,6 @@ export default function Chat({ guest = false, embedded = false }) {
                 className="chat-send chat-stop"
                 onClick={stop}
                 aria-label={t("chat.stopAnswer")}
-                title={t("chat.stopAnswer")}
               >
                 ■
               </button>
