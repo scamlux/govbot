@@ -57,7 +57,7 @@ html { scroll-padding-top: calc(var(--nav-h) + 16px); }
 }
 
 /* ---- R1: target sizes (WCAG 2.5.8 ≥ 24px; aim for 32–44px) ---- */
-.lang-btn { min-height: 32px; min-width: 36px; }
+
 .fb-btn { min-width: 40px; min-height: 36px; padding: 0.3rem 0.6rem; }
 .modal-close { min-width: 40px; min-height: 40px; }
 .modal-title { margin: 0; font-size: 1.15rem; }
@@ -114,7 +114,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
   display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700;
   color: var(--verified); background: var(--verified-bg); border-radius: 999px; padding: 0.15rem 0.6rem;
 }
-.verified-badge.unverified { color: var(--warn-ink); background: var(--warn-bg); }
+
 .ungrounded-note {
   margin: 0.5rem 0 0; font-size: 0.82rem; color: var(--warn-ink); background: var(--warn-bg);
   border-radius: var(--radius-xs); padding: 0.4rem 0.6rem;
@@ -136,7 +136,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
 .help-label { font-size: 0.85rem; color: var(--ink-soft); }
 .help-contacts.compact .help-line { min-height: 36px; padding: 0.2rem 0.6rem; }
 .help-links a { font-size: 0.88rem; font-weight: 600; }
-.help-source { font-size: 0.75rem; color: var(--ink-soft); margin: 0.5rem 0 0; }
+
 .msg-handoff { margin-top: 0.6rem; }
 
 /* R2 — footer */
@@ -151,8 +151,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
 .breadcrumbs ol { list-style: none; display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 1rem; padding: 0; font-size: 0.88rem; }
 .breadcrumbs li + li::before { content: "›"; margin-right: 0.35rem; color: var(--ink-soft); }
 .breadcrumbs [aria-current="page"] { color: var(--ink-soft); }
-.scenario-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin: 0.5rem 0 1.25rem; font-size: 0.88rem; }
-.scenario-meta .source-link { font-weight: 700; }
+
 .checklist-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; margin: 0 0 1.5rem; }
 .checklist-box h2 { font-size: 1.1rem; margin: 0 0 0.6rem; }
 .checklist-box ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.35rem; }
@@ -178,13 +177,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after {
 .skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
 
 /* ---- R4: command palette (Ctrl/⌘+K) ---- */
-.nav-search {
-  display: inline-flex; align-items: center; gap: 0.4rem; min-height: 40px; padding: 0 0.75rem;
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
-  border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.85rem; font-weight: 600;
-}
-.nav-search kbd { font-family: inherit; font-size: 0.72rem; background: var(--surface-2); border-radius: 6px; padding: 0.05rem 0.35rem; }
-@media (max-width: 760px) { .nav-search kbd, .nav-search .nav-search-label { display: none; }}
+
 .palette-backdrop {
   position: fixed; inset: 0; z-index: 900; background: rgba(9, 42, 54, 0.42);
   display: flex; justify-content: center; align-items: flex-start; padding: 10vh 1rem 1rem;
@@ -243,6 +236,6 @@ button.gap-q { background: none; border: none; padding: 0.15rem 0; font: inherit
 
 /* ---- D2: embeddable widget ---- */
 .embed-shell, .embed-shell .chat-layout { height: 100vh; }
-.chat-layout-embedded .chat-mobilebar { display: none; }
+
 .embed-fallback { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 0.8rem; padding: 1.5rem; text-align: center; }
 .embed-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; margin: 0; }

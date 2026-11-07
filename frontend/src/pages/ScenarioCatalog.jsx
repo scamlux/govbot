@@ -57,7 +57,6 @@ export default function ScenarioCatalog() {
   return (
     <div className="page catalog">
       <div className="section-head st-page-head">
-        <p className="st-eyebrow">{t("studio.eyebrowCatalog")}</p>
         <h1>{t("scenarios.title")}</h1>
         <p>{t("scenarios.subtitle")}</p>
       </div>

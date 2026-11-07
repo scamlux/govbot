@@ -2,39 +2,26 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import HelpContacts from "./HelpContacts";
-import { Tricolor } from "./UtilityBar";
 
-/** R2 — site footer: official hotlines + what GovBot is (and isn't) (WCAG 3.2.6). */
+/** Light compact footer: hotlines in one row, three short link columns, legal line. */
 export default function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="site-footer st-footer st-tone-dark" id="help">
-      <Tricolor />
-      <div className="st-container st-footer-body">
-        <header className="st-section-head">
-          <p className="st-eyebrow">{t("studio.eyebrowHelp")}</p>
-          <h2>{t("help.title")}</h2>
-        </header>
-
+    <footer className="site-footer" id="help">
+      <div className="st-container footer-body">
         <HelpContacts compact />
 
-        <div className="st-footer-cols">
-          <div className="st-footer-col">
-            <h3 className="st-footer-heading">{t("footer.aboutTitle")}</h3>
-            <p className="st-footer-brand">GovBot</p>
-            <p>{t("footer.about")}</p>
-          </div>
-          <nav className="st-footer-col" aria-label={t("footer.navTitle")}>
-            <h3 className="st-footer-heading">{t("footer.navTitle")}</h3>
+        <div className="footer-cols">
+          <nav className="footer-col" aria-label={t("footer.navTitle")}>
+            <h2 className="footer-heading">{t("footer.navTitle")}</h2>
             <ul>
               <li><Link to="/">{t("nav.home")}</Link></li>
               <li><Link to="/scenarios">{t("footer.catalog")}</Link></li>
               <li><Link to="/chat">{t("nav.chat")}</Link></li>
-              <li><Link to="/privacy">{t("footer.privacy")}</Link></li>
             </ul>
           </nav>
-          <div className="st-footer-col">
-            <h3 className="st-footer-heading">{t("footer.help")}</h3>
+          <div className="footer-col">
+            <h2 className="footer-heading">{t("footer.help")}</h2>
             <ul>
               <li>
                 <a href="https://my.gov.uz" target="_blank" rel="noopener noreferrer">
@@ -47,19 +34,20 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
-            <p className="help-source">{t("help.source")}</p>
           </div>
-        </div>
-
-        <div className="st-footer-legal">
-          <p>{t("gov.legal")}</p>
-          <nav aria-label={t("gov.legalNav")}>
+          <nav className="footer-col" aria-label={t("gov.legalNav")}>
+            <h2 className="footer-heading">{t("gov.legalNav")}</h2>
             <ul>
               <li><Link to="/privacy">{t("footer.privacy")}</Link></li>
               {/* Terms of use: dedicated page is pending — until then it points at /privacy. */}
               <li><Link to="/privacy">{t("gov.terms")}</Link></li>
             </ul>
           </nav>
+        </div>
+
+        <div className="footer-legal">
+          <p>{t("footer.about")}</p>
+          <p>{t("gov.legal")}</p>
         </div>
       </div>
     </footer>

@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../auth/AuthContext";
+import HeaderTools from "./HeaderTools";
 import Icon from "./Icon";
 import LanguageSwitcher from "./LanguageSwitcher";
 
+/** Single white header: logo left, nav centre, utilities + actions right. */
 export default function Navbar({ onOpenSearch }) {
   const { t } = useTranslation();
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
-  const onHome = useLocation().pathname === "/";
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -27,14 +28,11 @@ export default function Navbar({ onOpenSearch }) {
   if (isAdmin) links.push({ to: "/admin", label: t("nav.admin") });
 
   return (
-    <header className={onHome ? "navbar navbar-hero" : "navbar"}>
+    <header className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="brand" onClick={() => setMenuOpen(false)}>
           <span className="brand-mark" aria-hidden="true" />
-          <span className="brand-text">
-            <span className="brand-name">{t("brand")}</span>
-            <span className="brand-sub">{t("gov.brandSub")}</span>
-          </span>
+          <span className="brand-name">{t("brand")}</span>
         </Link>
 
         <nav className={menuOpen ? "nav-links open" : "nav-links"} aria-label={t("nav.primary")}>
@@ -49,31 +47,38 @@ export default function Navbar({ onOpenSearch }) {
               {l.label}
             </NavLink>
           ))}
-          {/* Mobile-only drawer extras: language switch (≤640px) + logout (hidden on desktop). */}
+
+          {/* Mobile drawer extras (hidden on desktop): language, account. */}
           <div className="nav-drawer-extra">
             <LanguageSwitcher />
-            {user && (
+            {user ? (
               <button type="button" className="btn btn-outline btn-block" onClick={handleLogout}>
                 {t("nav.logout")}
               </button>
+            ) : (
+              <Link to="/login" className="btn btn-primary btn-block" onClick={() => setMenuOpen(false)}>
+                {t("nav.login")}
+              </Link>
             )}
           </div>
         </nav>
 
         <div className="nav-actions">
+          <HeaderTools />
           {onOpenSearch && (
             <button
               type="button"
-              className="nav-search"
+              className="tool-btn nav-search"
               onClick={onOpenSearch}
               aria-label={t("nav.searchHint")}
               title={t("nav.searchHint")}
             >
-              <Icon name="search" size={18} />
-              <span className="nav-search-label">{t("nav.search")}</span>
-              <kbd aria-hidden="true">Ctrl K</kbd>
+              <Icon name="search" size={20} />
             </button>
           )}
+          <div className="nav-lang">
+            <LanguageSwitcher />
+          </div>
           {user ? (
             <div className="user-chip">
               <Link to="/profile" className="avatar-link" title={t("nav.profile")} aria-label={t("nav.profile")}>
@@ -85,7 +90,7 @@ export default function Navbar({ onOpenSearch }) {
                   </span>
                 )}
               </Link>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
+              <button type="button" className="btn btn-ghost btn-sm nav-logout" onClick={handleLogout}>
                 {t("nav.logout")}
               </button>
             </div>
@@ -101,7 +106,9 @@ export default function Navbar({ onOpenSearch }) {
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
           >
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </button>
         </div>
       </div>

@@ -1,36 +1,23 @@
 import { useId } from "react";
 
-const TONES = { day: "paper", night: "dark" };
-
 /**
- * Skyline-style "sheet": a full-width block whose top corners are rounded (36px) and which
- * overlaps the previous block. `tone` = paper | paper2 | dark | night. The header is
- * centred: eyebrow (short line + label), H2, subtitle.
+ * Clean landing section: optional centred header (H2 + one-line subtitle).
+ * `tint` adds the subtle #f6f8fb background where grouping helps.
  */
-export default function Section({
-  eyebrow,
-  title,
-  subtitle,
-  tone = "paper",
-  id,
-  className = "",
-  children,
-}) {
+export default function Section({ title, subtitle, tint = false, id, className = "", children }) {
   const uid = useId();
   const titleId = title ? `${uid}-title` : undefined;
-  const t = TONES[tone] || tone;
   return (
     <section
       id={id}
-      className={`st-section st-tone-${t} ${className}`.trim()}
+      className={`sec${tint ? " sec-tint" : ""} ${className}`.trim()}
       aria-labelledby={titleId}
     >
-      <div className="st-container st-section-body">
-        {(eyebrow || title || subtitle) && (
-          <header className="st-section-head">
-            {eyebrow && <p className="st-eyebrow">{eyebrow}</p>}
+      <div className="st-container">
+        {(title || subtitle) && (
+          <header className="sec-head">
             {title && <h2 id={titleId}>{title}</h2>}
-            {subtitle && <p className="st-section-sub">{subtitle}</p>}
+            {subtitle && <p className="sec-sub">{subtitle}</p>}
           </header>
         )}
         {children}
