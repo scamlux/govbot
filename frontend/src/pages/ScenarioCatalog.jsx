@@ -130,16 +130,14 @@ export default function ScenarioCatalog() {
               <Link to={`/scenarios/${s.slug}`} className="scenario-card" key={s.slug}>
                 <h3>{s.title}</h3>
                 <p className="scenario-excerpt">{stripMarkdown(s.excerpt)}</p>
-                <div className="scenario-tags">
-                  {s.verified_at && (
+                {/* Tags are search keywords (English-only), so the card keeps just the trust badge. */}
+                {s.verified_at && (
+                  <div className="scenario-tags">
                     <span className="verified-badge">
                       ✓ {t("trust.verified", { date: new Date(s.verified_at).toLocaleDateString(i18n.language) })}
                     </span>
-                  )}
-                  {s.tags?.slice(0, 3).map((tag) => (
-                    <span className="tag" key={tag}>#{tag}</span>
-                  ))}
-                </div>
+                  </div>
+                )}
               </Link>
             ))}
           </div>
