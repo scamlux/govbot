@@ -9,6 +9,8 @@ import { askAiTarget } from "../utils/pendingQuestion";
 import { stripMarkdown } from "../utils/stripMarkdown";
 import Icon, { CategoryIcon } from "../components/Icon";
 
+const AUDIENCES = ["citizen", "resident", "tourist"];
+
 export default function ScenarioCatalog() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +19,8 @@ export default function ScenarioCatalog() {
   const navigate = useNavigate();
 
   const activeCategory = searchParams.get("category") || "";
+  const audienceParam = searchParams.get("audience");
+  const audience = AUDIENCES.includes(audienceParam) ? audienceParam : "";
   const [categories, setCategories] = useState([]);
   const [scenarios, setScenarios] = useState([]);
   const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -35,11 +39,15 @@ export default function ScenarioCatalog() {
     setLoading(true);
     setError(null);
     scenariosApi
-      .list(i18n.language, { category: activeCategory || undefined, search: search || undefined })
+      .list(i18n.language, {
+        category: activeCategory || undefined,
+        search: search || undefined,
+        audience: audience || undefined,
+      })
       .then(({ data }) => setScenarios(data))
       .catch(() => setError(t("errors.loadScenarios")))
       .finally(() => setLoading(false));
-  }, [i18n.language, activeCategory, search, t]);
+  }, [i18n.language, activeCategory, audience, search, t]);
 
   // Debounce search; reload on category/language change immediately.
   useEffect(() => {
@@ -51,6 +59,12 @@ export default function ScenarioCatalog() {
     const next = new URLSearchParams(searchParams);
     if (slug) next.set("category", slug);
     else next.delete("category");
+    setSearchParams(next, { replace: true });
+  };
+
+  const clearAudience = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("audience");
     setSearchParams(next, { replace: true });
   };
 
@@ -71,6 +85,12 @@ export default function ScenarioCatalog() {
 
       {/* R1 — a filter group, not tabs: there are no tab panels to point at. */}
       <div className="filter-row" role="group" aria-label={t("common.search")}>
+        {audience && (
+          <button type="button" className="filter-pill active" onClick={clearAudience}>
+            {t(`roles.${audience}`)} <span aria-hidden="true">×</span>
+            <span className="visually-hidden"> — {t("roles.all")}</span>
+          </button>
+        )}
         <button
           type="button"
           aria-pressed={!activeCategory}

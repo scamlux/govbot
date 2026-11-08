@@ -25,6 +25,8 @@ const Profile = lazy(() => import("./pages/Profile"));
 const ScenarioCatalog = lazy(() => import("./pages/ScenarioCatalog"));
 const ScenarioDetail = lazy(() => import("./pages/ScenarioDetail"));
 const Admin = lazy(() => import("./pages/Admin"));
+const About = lazy(() => import("./pages/About"));
+const Guide = lazy(() => import("./pages/Guide"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Embed = lazy(() => import("./pages/Embed"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -96,6 +98,8 @@ export default function App() {
           <Route path="/chat" element={<ChatRoute />} />
           <Route path="/scenarios" element={<ScenarioCatalog />} />
           <Route path="/scenarios/:slug" element={<ScenarioDetail />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/guide" element={<Guide />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route
             path="/profile"

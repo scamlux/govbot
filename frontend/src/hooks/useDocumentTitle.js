@@ -9,6 +9,8 @@ export const TITLE_KEYS = [
   ["/register", "r6.docRegister"],
   ["/chat", "r6.docChat"],
   ["/profile", "r6.docProfile"],
+  ["/about", "r6.docAbout"],
+  ["/guide", "r6.docGuide"],
   ["/privacy", "r6.docPrivacy"],
   ["/admin", "r6.docAdmin"],
   ["/embed", "r6.docEmbed"],

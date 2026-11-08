@@ -21,9 +21,10 @@ export default function Navbar({ onOpenSearch }) {
   };
 
   const links = [
-    { to: "/", label: t("nav.home"), end: true },
     { to: "/scenarios", label: t("nav.scenarios") },
     { to: "/chat", label: t("nav.chat") },
+    { to: "/about", label: t("nav.about") },
+    { to: "/guide", label: t("nav.guide") },
   ];
   if (isAdmin) links.push({ to: "/admin", label: t("nav.admin") });
 
@@ -31,7 +32,12 @@ export default function Navbar({ onOpenSearch }) {
     <header className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="brand" onClick={() => setMenuOpen(false)}>
-          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-mark" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none" strokeWidth="2.4">
+              <polygon className="brand-sq-a" points="10,10 30,10 30,30 10,30" />
+              <polygon className="brand-sq-b" points="20,5.9 34.1,20 20,34.1 5.9,20" />
+            </svg>
+          </span>
           <span className="brand-name">{t("brand")}</span>
         </Link>
 

@@ -85,6 +85,41 @@ const PATHS = {
     </>
   ),
   // utility bar + trust row + official sources
+  // landing "for everyone" cards + accessibility block (round 9)
+  "aud-citizen": (
+    <>
+      <rect x="4" y="3" width="16" height="18" rx="3" />
+      <circle cx="12" cy="10" r="3" />
+      <path d="M8 17h8" />
+    </>
+  ),
+  "aud-student": (
+    <>
+      <path d="M2 9l10-5 10 5-10 5z" />
+      <path d="M6 11v5c2 2 10 2 12 0v-5" />
+    </>
+  ),
+  "aud-elder": <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z" />,
+  "aud-business": (
+    <>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18" />
+    </>
+  ),
+  "aud-resident": (
+    <>
+      <path d="M3 21h18M5 21V8l7-5 7 5v13" />
+      <path d="M10 21v-6h4v6" />
+    </>
+  ),
+  "aud-tourist": <path d="M2 16l20-8-6 12-3-5-5 3z" />,
+  mic: (
+    <>
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
+    </>
+  ),
+  lines: <path d="M4 6h16M4 12h10M4 18h7" />,
   eye: (
     <>
       <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />

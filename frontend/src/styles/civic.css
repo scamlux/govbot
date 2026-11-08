@@ -1,0 +1,228 @@
+/* ==========================================================================
+   Round 9 — direction D "Samarqand x Paxta" (imported LAST; replaces skyline.css).
+   Light only: cotton-grey page #F5F6F8, white 28px cards, turquoise accent #0A6E78,
+   gold ornament (decor only), glass sticky header, pill buttons, 22px inputs.
+   Every shared token is re-pointed here, so catalog, scenario, chat, auth, profile,
+   admin, privacy, 404 and embed inherit the new look. Landing / about / guide
+   blocks live in civic-pages.css.
+   Contrast (WCAG formula, docs/research/design-review-2026-10-29.md, Round 9):
+   ink #1D1D1F / muted #636366 on #F5F6F8 and #FFF; white on every accent >= 4.5:1;
+   accent text on #F5F6F8 >= 4.5:1; form borders #86868B >= 3:1.
+   ========================================================================== */
+
+/* ---- 1. Accent presets (Profile picker). One pair per key; everything below reads --accent. ---- */
+:root,
+:root[data-accent="teal"]   { --accent: #0A6E78; --accent-hover: #075A62; --accent-tint: #E6F3F4; }
+:root[data-accent="blue"]   { --accent: #1F57C4; --accent-hover: #1D4AA8; --accent-tint: #E7EEFB; }
+:root[data-accent="violet"] { --accent: #6544D6; --accent-hover: #5536BB; --accent-tint: #EEEAFB; }
+:root[data-accent="green"]  { --accent: #15803D; --accent-hover: #116A32; --accent-tint: #E4F3EA; }
+:root[data-accent="rose"]   { --accent: #C0306C; --accent-hover: #A2275B; --accent-tint: #FAE8F0; }
+:root[data-accent="amber"]  { --accent: #955A0B; --accent-hover: #7C4A09; --accent-tint: #FBF0DE; }
+
+/* ---- 2. Tokens. `:root[data-accent]` ties with the older accent rules and wins by order. ---- */
+:root,
+:root[data-accent],
+:root[data-theme="light"] {
+  --civic-bg: #F5F6F8;
+  --civic-card: #FFFFFF;
+  --civic-ink: #1D1D1F;
+  --civic-muted: #636366;
+  --civic-line: rgba(0, 0, 0, 0.06);
+  --civic-gold: #C9A55A;
+  --civic-gold-deep: #B8913F;
+  --civic-radius: 28px;
+  --civic-radius-input: 22px;
+  --civic-shadow: 0 1px 2px rgba(29, 29, 31, 0.04), 0 14px 40px -18px rgba(29, 29, 31, 0.16);
+
+  --bg: var(--civic-bg);
+  --surface: var(--civic-card);
+  --surface-2: #ECEDF1;
+  --surface-3: #E8E9ED;
+  --tint: #ECEEF1;
+  --hover-bg: #F5F6F8;
+  --bubble-bot: #E9E9EB;
+  --ink: var(--civic-ink);
+  --ink-soft: #424245;
+  --muted: var(--civic-muted);
+  --line: var(--civic-line);
+  --line-soft: rgba(0, 0, 0, 0.04);
+  --line-strong: #86868B;
+  --card-line-hover: #B6B6BB;
+  --link: var(--accent);
+  --navy: var(--accent);
+  --navy-hover: var(--accent-hover);
+  --focus: var(--accent);
+  --focus-inner: #1D1D1F;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+
+  --st-bg-paper: var(--civic-bg);
+  --st-bg-paper-2: var(--civic-card);
+  --st-ink: var(--civic-ink);
+  --st-muted: var(--civic-muted);
+  --st-line: var(--civic-line);
+  --st-line-strong: #86868B;
+  --st-navy: var(--accent);
+  --st-primary: var(--accent);
+  --st-on-primary: #FFFFFF;
+  --st-ring: var(--accent);
+  --st-card-line-hover: var(--card-line-hover);
+
+  --btn-bg: var(--accent);
+  --btn-fg: #FFFFFF;
+  --btn-bg-hover: var(--accent-hover);
+  --btn-line: #86868B;
+  --btn-outline-fg: var(--civic-ink);
+
+  --brand: var(--accent);
+  --brand-600: var(--accent-hover);
+  --brand-700: var(--accent-hover);
+  --brand-tint: var(--accent-tint);
+  --brand-soft: var(--accent-tint);
+  --brand-50: var(--accent-tint);
+
+  --radius: 28px;
+  --radius-sm: 22px;
+  --radius-xs: 14px;
+  --shadow-sm: none;
+  --shadow: var(--civic-shadow);
+  --card-shadow: none;
+  --nav-h: 64px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Golos Text", "Noto Sans", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Golos Text", "Noto Sans", Inter, system-ui, sans-serif;
+
+  --info-ink: #0b3a7a; --info-bg: #e8f0fb; --info-line: #5d8ad0;
+  --ok-ink: #0d5c36;   --ok-bg: #e3f4ea;   --ok-line: #3f9a69;
+  --warn-ink2: #4d3200; --warn-bg2: #fff1cc; --warn-line: #b57a00;
+  --err-ink: #8c1d13;  --err-bg: #fbeae8;  --err-line: #c8483c;
+  color-scheme: light;
+}
+
+html, body { background: var(--civic-bg); color: var(--civic-ink); font-family: var(--font-sans); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.03em; }
+::selection { background: var(--accent); color: #FFFFFF; }
+
+/* ---- 3. Glass sticky header (under the tricolour hairline) ---- */
+.navbar {
+  background: rgba(245, 246, 248, 0.74);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--civic-line);
+}
+.brand-name { font: 700 1.15rem/1 var(--font-display); letter-spacing: -0.02em; }
+.brand-mark { width: 28px; height: 28px; border: 0; border-radius: 0; background: none; display: inline-flex; }
+.brand-mark::after { content: none; }
+.brand-mark svg { display: block; }
+.brand-sq-a { stroke: var(--accent); }
+.brand-sq-b { stroke: var(--civic-gold-deep); }
+.nav-link { color: var(--civic-ink); border-radius: 999px; padding: 0 12px; font-weight: 500; white-space: nowrap; }
+@media (max-width: 1280px) { .tool-hotline-num { display: none; } }
+.nav-link:hover { background: rgba(0, 0, 0, 0.05); color: var(--civic-ink); }
+.nav-link.active { color: var(--accent-hover); background: var(--accent-tint); box-shadow: none; border-radius: 999px; font-weight: 600; }
+.tool-btn { border-radius: 999px; color: var(--ink-soft); }
+.tool-btn:hover { background: rgba(0, 0, 0, 0.05); }
+.tool-btn[aria-pressed="true"] { background: var(--accent); color: #FFFFFF; }
+.nav-lang { border-left: 0; padding-left: 0; margin-left: 2px; }
+.lang-switcher { padding: 3px; gap: 2px; background: var(--surface-3); border-radius: 14px; }
+.lang-btn { min-width: 44px; border-radius: 11px; color: #424245; }
+.lang-btn:hover { background: rgba(255, 255, 255, 0.6); }
+.lang-btn.active { background: #FFFFFF; color: var(--civic-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.nav-cta.btn { padding: 0 20px; }
+.avatar-fallback { background: var(--accent); color: #FFFFFF; }
+@media (max-width: 960px) {
+  .nav-links { background: rgba(245, 246, 248, 0.97); }
+  .nav-link { border-radius: 0; }
+  .nav-link.active { background: transparent; box-shadow: inset 3px 0 0 var(--accent); }
+  .nav-drawer-extra .lang-btn { border: 0; margin-inline: 0; }
+}
+
+/* ---- 4. Buttons: pills ---- */
+.btn { border-radius: 999px; }
+.btn-lg { border-radius: 999px; }
+.btn-primary { background: var(--btn-bg); color: var(--btn-fg); }
+.btn-primary:hover:not(:disabled) { background: var(--btn-bg-hover); color: var(--btn-fg); }
+.btn-outline { background: #FFFFFF; border: 1px solid #D2D2D7; color: var(--civic-ink); }
+.btn-outline:hover { background: #FFFFFF; border-color: var(--civic-ink); color: var(--civic-ink); }
+.btn-ghost { color: var(--civic-ink); }
+.btn-ghost:hover { background: rgba(0, 0, 0, 0.05); }
+
+/* ---- 5. Fields: 22px ---- */
+.field input, .field select, .field textarea, .search-box, .search-input, .palette-input {
+  background: #FFFFFF; color: var(--civic-ink); border: 1px solid var(--line-strong); border-radius: var(--civic-radius-input);
+}
+.field textarea { border-radius: 18px; }
+input::placeholder, textarea::placeholder { color: var(--civic-muted); opacity: 1; }
+.catalog .search-box { border-radius: var(--civic-radius-input); background: #FFFFFF; }
+.field input:focus, .field select:focus, .field textarea:focus, .catalog .search-box:focus { border-color: var(--accent); }
+.field input:disabled { background: var(--surface-2); }
+
+/* ---- 6. Cards: white, 28px, no hairline noise ---- */
+.card, .scenario-card, .login-card, .checklist-box, .admin-card, .st-card, .palette {
+  background: #FFFFFF; border: 1px solid var(--civic-line); border-radius: var(--civic-radius); box-shadow: none;
+}
+.kpi-tile, .status-card, .analytics-block { background: #FFFFFF; border: 1px solid var(--civic-line); border-radius: 22px; box-shadow: none; }
+a.card:hover, button.card:hover, .scenario-card:hover { background: #FFFFFF; border-color: var(--card-line-hover); box-shadow: var(--civic-shadow); }
+.scenario-card { padding: 28px 24px; }
+.filter-pill { border-radius: 999px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); color: var(--civic-ink); }
+.filter-pill:hover { background: #FFFFFF; border-color: var(--civic-ink); }
+.filter-pill.active { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
+.seg { background: var(--surface-3); border: 0; border-radius: 14px; }
+.seg-btn { border-radius: 11px; color: #424245; }
+.seg-btn.active { background: #FFFFFF; color: var(--civic-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.swatch { border: 3px solid #FFFFFF; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2); }
+.swatch.active { box-shadow: 0 0 0 2px var(--civic-ink); }
+.login-mark, .chat-empty-mark, .bubble-avatar {
+  background-color: var(--accent); background-image: linear-gradient(#FFFFFF, #FFFFFF);
+}
+.sticky-ask { background: linear-gradient(to top, var(--civic-bg) 0%, var(--civic-bg) 60%, transparent 100%); }
+.breadcrumbs a, .text-link:hover, .source-link { color: var(--accent-hover); }
+.checklist-box input[type="checkbox"] { accent-color: var(--accent); }
+
+/* ---- 7. Chat ---- */
+.chat-sidebar { background: #FFFFFF; border-right: 1px solid var(--civic-line); }
+.conv-item:hover { background: var(--surface-2); }
+.conv-item.active { background: var(--accent-tint); color: var(--accent-hover); box-shadow: none; }
+.bubble-row.user .bubble { background: var(--accent); color: #FFFFFF; border-radius: 22px 22px 6px 22px; }
+.bubble-row.assistant .bubble { background: var(--bubble-bot); color: var(--civic-ink); border-radius: 22px 22px 22px 6px; }
+.chat-input-bar { background: #FFFFFF; border-radius: var(--civic-radius-input); border-color: var(--line-strong); }
+.chat-input-bar:focus-within { border-color: var(--accent); }
+.chat-send { border-radius: 999px; background: var(--accent); color: #FFFFFF; }
+.chat-send:hover:not(:disabled) { background: var(--accent-hover); }
+.chat-send:disabled { background: var(--accent); }
+.chat-mic { border-radius: 999px; }
+.chip, .related-questions-chips .chip, .suggestions .chip, .source-chip { border-radius: 999px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); color: var(--civic-ink); }
+.chip:hover { background: #FFFFFF; border-color: var(--civic-ink); }
+.source-chip a { color: var(--accent-hover); }
+.cursor-blink { color: var(--accent); }
+.guest-banner { border-radius: 18px; }
+
+/* ---- 8. Footer: white, centred ---- */
+.site-footer { background: #FFFFFF; border-top: 1px solid var(--civic-line); color: var(--civic-muted); }
+.site-footer .help-number { color: var(--civic-ink); }
+.footer-col a:hover { color: var(--accent-hover); }
+.footer-cols { border-top-color: var(--civic-line); }
+
+/* ---- 9. Keyboard focus: keep the yellow ring, dark inner line reads on light ---- */
+:root { --focus-inner: #1D1D1F; }
+
+/* ---- 10. Low-vision mode: opaque header, solid borders, no ornament, darker secondary text ---- */
+html[data-a11y="high"][data-theme] {
+  --civic-muted: #3A3A3C; --muted: #3A3A3C; --ink-soft: #1D1D1F; --line: #1D1D1F; --civic-line: #1D1D1F;
+  --line-strong: #1D1D1F; --card-line-hover: #000000; --tint: #FFFFFF; --hover-bg: #EEEEEE; --bubble-bot: #EEEEEE;
+  --btn-line: #1D1D1F; --btn-outline-fg: #000000; --btn-bg-hover: #000000;
+  --accent: #075A62; --accent-hover: #000000; --btn-bg: #075A62; --btn-fg: #FFFFFF; --navy: #075A62; --link: #075A62;
+}
+html[data-a11y="high"] .navbar { background: #FFFFFF; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html[data-a11y="high"] .lp-orn, html[data-a11y="high"] .lp-frieze, html[data-a11y="high"] .lp-arch { display: none; }
+html[data-a11y="high"] .card, html[data-a11y="high"] .scenario-card, html[data-a11y="high"] .lp-card,
+html[data-a11y="high"] .lp-chip, html[data-a11y="high"] .lp-ask, html[data-a11y="high"] .lp-sample,
+html[data-a11y="high"] .lp-phone, html[data-a11y="high"] .lp-install { border: 2px solid #1D1D1F; }
+html[data-a11y="high"] .lp-eyebrow { border: 2px solid #1D1D1F; background: #FFFFFF; }
+html[data-a11y="high"] .lp-band, html[data-a11y="high"] .site-footer { border-block: 2px solid #1D1D1F; }
+html[data-a11y="high"] .nav-link.active { background: transparent; box-shadow: inset 0 -4px 0 var(--accent); }
+html[data-a11y="high"] .lp-muted, html[data-a11y="high"] .lp-lead, html[data-a11y="high"] .lp-card p { color: #3A3A3C; }
+html[data-a11y="high"] .lang-btn.active, html[data-a11y="high"] .seg-btn.active { outline: 2px solid #1D1D1F; }
+
+/* ---- 11. Touch targets ---- */
+.modal-close { min-width: 44px; min-height: 44px; }
+label:has(> input[type="checkbox"]) { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }

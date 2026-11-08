@@ -1,22 +1,20 @@
 import { useId } from "react";
 
 /**
- * Skyline-style landing section: a dotted uppercase eyebrow over a large left-aligned H2,
- * with an optional quiet link (`action`) on the right of the heading row.
+ * Centred page section of the "Samarqand x Paxta" look: big H2, optional lead paragraph.
+ * `band` puts the section on a full-width white strip (regions, pipeline).
  */
-export default function Section({ eyebrow, title, action, id, className = "", children }) {
+export default function Section({ id, title, lead, band = false, className = "", children }) {
   const uid = useId();
   const titleId = title ? `${uid}-title` : undefined;
+  const classes = ["lp-sec", band ? "lp-band" : "", className].filter(Boolean).join(" ");
   return (
-    <section id={id} className={`sky-sec ${className}`.trim()} aria-labelledby={titleId}>
-      <div className="st-container">
-        {(eyebrow || title) && (
-          <header className="sky-sec-head">
-            <div>
-              {eyebrow && <p className="sky-eyebrow sky-eyebrow-left">{eyebrow}</p>}
-              {title && <h2 id={titleId} className="sky-sec-title">{title}</h2>}
-            </div>
-            {action}
+    <section id={id} className={classes} aria-labelledby={titleId}>
+      <div className="lp-wrap">
+        {title && (
+          <header className="lp-sec-head">
+            <h2 id={titleId} className="lp-h2">{title}</h2>
+            {lead && <p className="lp-lead lp-lead-sm">{lead}</p>}
           </header>
         )}
         {children}

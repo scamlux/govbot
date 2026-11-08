@@ -334,9 +334,10 @@ admin update and before a restore, so restores are undoable.
 
 ### 5.3 UX/design
 - Clean, modern, trustworthy "civic" feel — friendly, not bureaucratic. Responsive
-  (mobile-first), accessible (labels, focus states, keyboard nav). Dark "Skyline Studio"
-  theme only (`styles/skyline.css`, imported last; near-black canvas, periwinkle accent,
-  pill buttons; every token pair AA). No hover tooltips (`title=`) or hint microcopy.
+  (mobile-first), accessible (labels, focus states, keyboard nav). Light "Samarqand × Paxta"
+  theme only (direction D: `styles/civic.css` + `civic-pages.css`, imported last; #F5F6F8 page,
+  white 28px cards, turquoise #0A6E78 accent, gold decor-only ornament, glass header, pill
+  buttons, `color-scheme: light`; every token pair AA). No hover tooltips (`title=`) or hint microcopy.
 
 ### 5.4 Post-MVP features
 - **Sources chips (B2):** grounded assistant answers render clickable source chips linking to
@@ -358,9 +359,12 @@ admin update and before a restore, so restores are undoable.
 - **Scenario detail:** breadcrumbs, official source link, "verified on" badge
   (`verified_at`), documents checklist with local progress (C1/C2), `.ics` reminder on a
   user-chosen date (C4), sticky "Ask the AI".
-- **Landing:** Skyline-style hero (GOVBOT wordmark, two pill CTAs), category marquee,
-  role cards (citizen / resident / tourist) linking to `/scenarios?audience=`, category
-  cards, 3 steps, closing CTA with official sources; guest CTA label when guest chat is on.
+- **Landing:** direction D — pill eyebrow, H1 "Har bir savolga — aniq yo'l.", hero ask box (text + mic +
+  "So'rash" via `askAiTarget`), girih frieze + gold arch, sample answer, 6 audience cards, accessibility
+  block, 14-region band, 3 steps, closing CTA; "3 ta savol — ro'yxatsiz" only when `guest_chat`; no pricing.
+  **`/about`** (problem, bento, 5-step pipeline, principles, roadmap) and **`/guide`** (6 steps with CSS phone
+  mock-ups + "Install app" card: `beforeinstallprompt` captured at boot in `utils/pwaInstall.js`, iOS Share →
+  Add to Home Screen text, hidden in standalone). Nav: Katalog, AI suhbat, Loyiha haqida, Yo'riqnoma (+ Admin).
 - **Chat:** guest mode (`<Chat guest />`, nothing stored), stop button (AbortController),
   "simple language" toggle, read-aloud (Web Speech TTS, only when a voice exists for the
   language), "answered in …" note when the reply language differs from the UI.

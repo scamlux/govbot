@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 /**
  * Per-device appearance: accent colour, font scale and chat background. The site has one
- * theme (Skyline dark), so there is no light/system switch. Persisted to localStorage and
+ * theme (light "Samarqand × Paxta", styles/civic.css), so there is no theme switch. Persisted to localStorage and
  * applied as data-* attributes on <html>, which the CSS reads to swap tokens.
  */
 
@@ -34,7 +34,7 @@ export function ThemeProvider({ children }) {
   // Reflect appearance onto <html> for the CSS to key off, and persist.
   useEffect(() => {
     const root = document.documentElement;
-    root.setAttribute("data-theme", "dark");
+    root.setAttribute("data-theme", "light");
     root.setAttribute("data-accent", appearance.accent);
     root.setAttribute("data-font", appearance.font);
     root.setAttribute("data-chat-bg", appearance.chatBg);

@@ -7,21 +7,23 @@ import Modal from "../components/Modal";
 import { useTheme, ACCENTS, FONT_SCALES, CHAT_BACKGROUNDS } from "../theme/ThemeContext";
 import { SUPPORTED_LANGUAGES } from "../i18n";
 
-// Kept in sync with the accents in styles/skyline.css. "teal" is the legacy storage key of the
-// default accent, which renders as Skyline periwinkle.
+// Kept in sync with the accents in styles/civic.css. Every value carries white button text at
+// >= 4.5:1 and reads as text on the #F5F6F8 page. "teal" is the legacy storage key of the
+// default accent ("Samarqand" turquoise).
 const ACCENT_HEX = {
-  teal: "#8fa6cf",
-  blue: "#7aa7ff",
-  violet: "#b6a2ff",
-  green: "#6fcf97",
-  rose: "#f08fb4",
-  amber: "#e8b15a",
+  teal: "#0A6E78",
+  blue: "#1F57C4",
+  violet: "#6544D6",
+  green: "#15803D",
+  rose: "#C0306C",
+  amber: "#955A0B",
 };
+
 // R1 — screen readers announce a colour name, not the internal key.
 const ACCENT_NAMES = {
-  uz: { teal: "To'q ko'k", blue: "Ko'k", violet: "Binafsha", green: "Yashil", rose: "Pushti", amber: "Qahrabo" },
-  ru: { teal: "Тёмно-синий", blue: "Синий", violet: "Фиолетовый", green: "Зелёный", rose: "Розовый", amber: "Янтарный" },
-  en: { teal: "Navy", blue: "Blue", violet: "Violet", green: "Green", rose: "Rose", amber: "Amber" },
+  uz: { teal: "Firuza", blue: "Ko'k", violet: "Binafsha", green: "Yashil", rose: "Pushti", amber: "Qahrabo" },
+  ru: { teal: "Бирюзовый", blue: "Синий", violet: "Фиолетовый", green: "Зелёный", rose: "Розовый", amber: "Янтарный" },
+  en: { teal: "Turquoise", blue: "Blue", violet: "Violet", green: "Green", rose: "Rose", amber: "Amber" },
 };
 
 /** F3 — download my data / delete my account. */

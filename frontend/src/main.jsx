@@ -10,13 +10,15 @@ import { AuthProvider } from "./auth/AuthContext";
 import { ConfigProvider } from "./config/ConfigContext";
 import { ThemeProvider } from "./theme/ThemeContext";
 import { registerServiceWorker } from "./registerSW";
+import "./utils/pwaInstall"; // captures beforeinstallprompt before the lazy /guide chunk loads
 import { applyA11y, readA11y } from "./theme/a11y";
 import "./styles/global.css";
 import "./styles/upgrades.css";
 import "./styles/studio.css";
 import "./styles/r6.css";
 import "./styles/clean.css";
-import "./styles/skyline.css";
+import "./styles/civic-pages.css";
+import "./styles/civic.css";
 
 // Round 4 — restore the low-vision mode before first paint.
 applyA11y(readA11y());

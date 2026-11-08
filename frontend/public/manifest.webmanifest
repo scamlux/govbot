@@ -1,25 +1,23 @@
 {
-  "name": "GovBot — Government Information Made Simple",
+  "name": "GovBot — Davlat xizmatlari yordamchisi",
   "short_name": "GovBot",
-  "description": "Multilingual AI answers about Uzbekistan public services, plus an offline-readable Scenario Catalog.",
+  "description": "O'zbekiston davlat xizmatlari bo'yicha uch tilda aniq javoblar va oflayn o'qiladigan stsenariylar katalogi.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0b0b0d",
-  "theme_color": "#0b0b0d",
+  "orientation": "portrait-primary",
+  "background_color": "#F5F6F8",
+  "theme_color": "#F5F6F8",
   "lang": "uz",
+  "dir": "ltr",
+  "categories": ["government", "utilities", "productivity"],
   "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-maskable.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Savol berish", "short_name": "Savol", "url": "/chat", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Stsenariylar katalogi", "short_name": "Katalog", "url": "/scenarios", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
   ]
 }

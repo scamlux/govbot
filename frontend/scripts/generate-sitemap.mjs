@@ -14,6 +14,8 @@ const API_BASE =
 const staticUrls = [
   { loc: "/", changefreq: "weekly", priority: "1.0" },
   { loc: "/scenarios", changefreq: "weekly", priority: "0.8" },
+  { loc: "/about", changefreq: "monthly", priority: "0.6" },
+  { loc: "/guide", changefreq: "monthly", priority: "0.6" },
   { loc: "/login", changefreq: "monthly", priority: "0.4" },
   { loc: "/register", changefreq: "monthly", priority: "0.4" },
 ];

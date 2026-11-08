@@ -9,10 +9,10 @@
  *    /api/auth, /api/admin (incl. /api/admin/scenarios) — are never cached, so no user ever
  *    sees another user's or a stale admin response.
  */
-// v2 (B2): the catalog API lives on a different origin in production (Render, while the
+// v3 (round 9): drops the cached dark Skyline CSS of v2. v2 (B2): the catalog API lives on a different origin in production (Render, while the
 // SPA is on Vercel). Bumping the version makes old clients install this worker and drop
 // v1 caches.
-const VERSION = "govbot-v2";
+const VERSION = "govbot-v3";
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const API_CACHE = `${VERSION}-api`;

@@ -18,6 +18,8 @@ export default function Footer() {
               <li><Link to="/">{t("nav.home")}</Link></li>
               <li><Link to="/scenarios">{t("footer.catalog")}</Link></li>
               <li><Link to="/chat">{t("nav.chat")}</Link></li>
+              <li><Link to="/about">{t("nav.about")}</Link></li>
+              <li><Link to="/guide">{t("nav.guide")}</Link></li>
             </ul>
           </nav>
           <div className="footer-col">
