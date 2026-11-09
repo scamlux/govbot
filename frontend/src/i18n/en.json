@@ -346,6 +346,18 @@
   "meta": {
     "description": "GovBot — plain-language answers about Uzbekistan public services in three languages: documents, taxes, visas, registration."
   },
+  "native": {
+    "share": "Share",
+    "shareCopied": "Copied to clipboard",
+    "shareFailed": "Could not share",
+    "shareSignature": "— GovBot",
+    "remindSave": "Remind me",
+    "remindSet": "Reminder set for {{date}} at 09:00",
+    "remindDenied": "Notifications are turned off. Allow them in app settings.",
+    "remindPast": "Choose a future date",
+    "remindFailed": "Could not set the reminder",
+    "notificationBody": "Time to check this topic: {{title}}"
+  },
   "r6": {
     "degradedBanner": "The AI is temporarily unavailable. Answers come from the ready-made catalog and may be incomplete.",
     "degradedTitle": "Answer from the ready-made catalog",

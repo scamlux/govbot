@@ -194,6 +194,14 @@ const PATHS = {
       <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
     </>
   ),
+  share: (
+    <>
+      <circle cx="17.5" cy="6.5" r="2.5" />
+      <circle cx="6.5" cy="12" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+      <path d="m8.7 10.8 6.6-3.1M8.7 13.2l6.6 3.1" />
+    </>
+  ),
   plus: <path d="M12 5v14M5 12h14" />,
   search: (
     <>

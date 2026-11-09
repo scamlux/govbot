@@ -278,3 +278,4 @@ html[data-a11y="high"][data-theme="dark"] .btn-danger-outline { color: #ffb4ab; 
 @media (min-width: 901px) {
   .chat-toolbar-new { display: none; }
 }
+.detail-share-row { margin: 16px 0; }

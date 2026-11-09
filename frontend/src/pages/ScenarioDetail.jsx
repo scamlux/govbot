@@ -8,7 +8,10 @@ import { useAuth } from "../auth/AuthContext";
 import { useConfig } from "../config/ConfigContext";
 import Spinner from "../components/Spinner";
 import Icon, { CategoryIcon } from "../components/Icon";
+import ShareButton from "../components/ShareButton";
+import { isNativeApp, notificationId, reminderTime, scheduleReminder } from "../native/bridge";
 import { buildIcs, downloadIcs } from "../utils/ics";
+import { stripMarkdown } from "../utils/stripMarkdown";
 import { askAiTarget } from "../utils/pendingQuestion";
 
 const PROGRESS_KEY = (slug) => `govbot.checklist.${slug}`;
@@ -77,8 +80,26 @@ function Checklist({ slug, items }) {
 function Reminder({ scenario }) {
   const { t, i18n } = useTranslation();
   const [date, setDate] = useState("");
+  const [message, setMessage] = useState("");
+  const native = isNativeApp();
+  const saveNative = async () => {
+    const result = await scheduleReminder({
+      id: notificationId(`${scenario.slug}|${date}`),
+      title: `GovBot: ${scenario.title}`,
+      body: t("native.notificationBody", { title: scenario.title }),
+      at: reminderTime(date),
+    });
+    if (result.ok) setMessage(t("native.remindSet", { date }));
+    else if (result.reason === "denied") setMessage(t("native.remindDenied"));
+    else if (result.reason === "past") setMessage(t("native.remindPast"));
+    else setMessage(t("native.remindFailed"));
+  };
   const save = () => {
     if (!date) return;
+    if (native) {
+      saveNative();
+      return;
+    }
     const url = `${window.location.origin}/scenarios/${scenario.slug}`;
     downloadIcs(
       buildIcs({
@@ -109,8 +130,9 @@ function Reminder({ scenario }) {
         aria-disabled={!date}
         aria-describedby={date ? undefined : "reminder-help"}
       >
-        <Icon name="calendar" size={18} /> {t("scenarios.remindSave")}
+        <Icon name="calendar" size={18} /> {native ? t("native.remindSave") : t("scenarios.remindSave")}
       </button>
+      {message && <p className="reminder-help" role="status">{message}</p>}
       {!date && <p id="reminder-help" className="reminder-help">{t("r6.remindHelper")}</p>}
     </div>
   );
@@ -224,6 +246,12 @@ export default function ScenarioDetail() {
           </a>
         </p>
       )}
+
+      <ShareButton
+          title={scenario.title}
+          text={`${scenario.title}\n${stripMarkdown(scenario.body || "").slice(0, 160).trim()}…`}
+          url={`${window.location.origin}/scenarios/${scenario.slug}`}
+      />
 
       <h2 className="visually-hidden">{t("scenarios.remind")}</h2>
       <Reminder scenario={scenario} />

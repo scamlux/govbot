@@ -18,6 +18,14 @@
   width: min(1000px, 100%); height: auto; pointer-events: none;
 }
 .lp-orn { display: block; margin: 0 auto 20px; }
+/* Narrow screens: the arch is shorter than the hero, so its straight sides would end
+   mid-text. Fade the lower part out so no ornament line reaches the lead paragraph. */
+@media (max-width: 560px) {
+  .lp-arch {
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
+  }
+}
 
 /* ---- Hero ---- */
 .lp-hero { position: relative; max-width: 1120px; margin-inline: auto; padding: 64px 24px 32px; text-align: center; }

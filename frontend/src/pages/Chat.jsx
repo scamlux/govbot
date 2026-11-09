@@ -12,6 +12,7 @@ import RelatedQuestions from "../components/RelatedQuestions";
 import Spinner from "../components/Spinner";
 import { useSpeechInput } from "../hooks/useSpeechInput";
 import Icon from "../components/Icon";
+import { hapticTap } from "../native/bridge";
 import { exportConversationMarkdown } from "../utils/exportConversation";
 import { takePendingQuestion } from "../utils/pendingQuestion";
 
@@ -182,6 +183,7 @@ export default function Chat({ guest = false, embedded = false }) {
     async (text, baseMessages) => {
       const content = text.trim();
       if (!content || sending) return;
+      hapticTap();
       setSending(true);
       setInput("");
       resetInputHeight();

@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 
 import HelpContacts from "./HelpContacts";
 import Icon from "./Icon";
+import ShareButton from "./ShareButton";
+import { hapticTap } from "../native/bridge";
 import { useSpeechOutput } from "../hooks/useSpeechOutput";
 
 // Canned replies that are not real answers — no "ungrounded" warning or TTS for them.
@@ -89,6 +91,14 @@ export default function MessageBubble({
         <div className="bubble-author">
           {isUser ? t("chat.you") : t("chat.assistant")}
           {isRealAnswer && <ReadAloud text={content} lang={answerLang} />}
+          {isRealAnswer && (
+            <ShareButton
+              compact
+              title="GovBot"
+              text={`${content}\n\n${t("native.shareSignature")}`}
+              url={window.location.origin}
+            />
+          )}
         </div>
         {isUser ? (
           <p className="bubble-plain">{content}</p>
@@ -228,6 +238,7 @@ function FeedbackBar({ feedback, onFeedback }) {
   const [reason, setReason] = useState(feedback?.reason ?? "");
 
   const rate = (value) => {
+    hapticTap();
     setRating(value);
     setShowReason(value === "down");
     onFeedback(value, value === "down" ? reason : "");
