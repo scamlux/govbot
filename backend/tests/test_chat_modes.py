@@ -246,6 +246,7 @@ def test_public_config_reports_flags():
         "chat_mode": "ai",
         "ai_mode": "mock",
         "telegram_bot": False,
+        "billing_enabled": False,
     }
 
 

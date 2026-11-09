@@ -22,6 +22,9 @@ echo "Seeding scenario catalog…"
 python manage.py seed_scenarios || true
 python manage.py apply_content_updates || true
 
+echo "Ensuring billing plans (not for sale until priced in admin)…"
+python manage.py seed_plans || true
+
 echo "Ensuring admin account…"
 python manage.py ensure_admin || true
 

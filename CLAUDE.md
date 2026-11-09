@@ -232,6 +232,12 @@ admin update and before a restore, so restores are undoable.
 - Admin: `/api/admin/scenarios/?status=`, `…/{id}/revisions/`, `…/{id}/revisions/{rid}/restore/`
   (E2), `/api/admin/scenarios/stale/` (E4), `/api/admin/kb/sources/` CRUD + `…/{id}/reindex/` (E3).
 
+**Billing (disabled until configured)** — app `billing` (Stage 2 groundwork; production behaviour is unchanged until the owner prices a plan AND sets provider keys).
+- Models: `Plan` (`code` free/plus/business, `name` JSON, `price_uzs` NULL = not for sale, `period_days`, `daily_question_limit` NULL = unlimited, `features`), `Subscription`, `Order` (what is being paid; Payme `account.order_id` / Click `merchant_trans_id`), `PaymentTransaction` (unique per provider+txn id; states 1/2/-1/-2 as Payme; no card data). `python manage.py seed_plans` (also run by `entrypoint.sh`) creates the three plans only when missing, unpriced, unlimited; edit them in Django admin.
+- `billing.limits.check_question_allowed(user)` runs before the LLM in both authenticated message endpoints: counts `role=user` messages since local midnight (`Asia/Tashkent`) vs `active_plan_for(user).daily_question_limit`; exceeded -> **402** `{code:"plan_limit", detail:<uz/ru/en>, plan, limit}` (SSE: before the stream starts). Staff never limited; guest chat unchanged.
+- `GET /api/billing/plans/?lang=` (public), `GET /api/billing/me/` (auth: plan, `used_today`, `limit`, `subscription_end`), `POST /api/billing/checkout/` `{plan, provider, lang?}` (auth; 400 `billing_disabled|provider_unavailable|plan_not_for_sale`; returns the provider checkout URL). `/api/config/` exposes only `billing_enabled` (a plan has a price AND a provider is configured).
+- `POST /api/billing/payme/` — Payme Merchant API JSON-RPC (404 unless `PAYME_MERCHANT_KEY`; Basic `Paycom:<key>` or `PAYME_TEST_KEY`; errors are HTTP 200 with -32504/-32700/-32600/-32601/-32300, -31001/-31003/-31007/-31008/-31050/-31099); 12 h timeout. `POST /api/billing/click/prepare/` and `/complete/` — Click SHOP API (404 unless `CLICK_SERVICE_ID`+`CLICK_SECRET_KEY`; md5 `sign_string`; errors 0/-1/-2/-3/-4/-5/-6/-8/-9). Both are idempotent, run under `select_for_update`, and Perform/Complete extend the subscription by `plan.period_days`. Callbacks are exempt from auth/CSRF and use only the per-IP `BILLING_WEBHOOK_THROTTLE` (default 600/min).
+
 ### 4.3 OpenAI service (`chat/services.py`)
 - `generate_reply(messages, language)` builds the request and calls the OpenAI Chat
   Completions API. A streaming variant `stream_reply(messages, language)` yields chunks.
@@ -400,7 +406,7 @@ admin update and before a restore, so restores are undoable.
 (10/min), `NUM_PROXIES` (optional, unset),
 `CHAT_AUTODETECT_LANGUAGE`, `CONVERSATION_RETENTION_DAYS`, `ADMIN_CAN_READ_CONVERSATIONS`,
 `SCENARIO_STALE_DAYS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_THROTTLE`,
-`LLM_COOLDOWN_SECONDS` (default 120; seconds to skip OpenAI after a failure, 0 = off).
+`LLM_COOLDOWN_SECONDS` (default 120; seconds to skip OpenAI after a failure, 0 = off). Billing (all optional, empty = disabled): `PAYME_MERCHANT_ID`, `PAYME_MERCHANT_KEY`, `PAYME_TEST_KEY`, `PAYME_CHECKOUT_URL` (sandbox `https://test.paycom.uz`), `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID`, `CLICK_SECRET_KEY`, `CLICK_MERCHANT_USER_ID`, `BILLING_WEBHOOK_THROTTLE` (default 600/min).
 
 **Frontend** (`frontend/.env.example`): `VITE_API_BASE_URL` (`/api` in production — same-origin).
 

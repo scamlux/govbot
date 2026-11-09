@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "scenarios",
     "chat",
     "knowledge",
+    "billing",
 ]
 
 MIDDLEWARE = [
@@ -183,6 +184,8 @@ REST_FRAMEWORK = {
         "guest_related": env("GUEST_THROTTLE_RELATED", default="10/min"),
         # D1 — Telegram bot, keyed by Telegram chat id.
         "telegram": env("TELEGRAM_THROTTLE", default="20/hour"),
+        # Stage 2 — payment-provider callbacks (per IP; generous, providers retry).
+        "billing_webhook": env("BILLING_WEBHOOK_THROTTLE", default="600/min"),
     },
 }
 
@@ -336,6 +339,21 @@ SCENARIO_STALE_DAYS = env.int("SCENARIO_STALE_DAYS", default=90)
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 # Secret Telegram echoes in X-Telegram-Bot-Api-Secret-Token; requests without it are refused.
 TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET", default="")
+
+# ---------------------------------------------------------------------------
+# Stage 2 — billing (all optional; billing stays disabled until prices AND keys are set)
+# ---------------------------------------------------------------------------
+# Payme: callbacks enabled by PAYME_MERCHANT_KEY; checkout links also need PAYME_MERCHANT_ID.
+PAYME_MERCHANT_ID = env("PAYME_MERCHANT_ID", default="")
+PAYME_MERCHANT_KEY = env("PAYME_MERCHANT_KEY", default="")
+PAYME_TEST_KEY = env("PAYME_TEST_KEY", default="")
+# Override for the sandbox, e.g. https://test.paycom.uz (default https://checkout.paycom.uz).
+PAYME_CHECKOUT_URL = env("PAYME_CHECKOUT_URL", default="")
+# Click: callbacks need CLICK_SERVICE_ID + CLICK_SECRET_KEY; checkout links also CLICK_MERCHANT_ID.
+CLICK_SERVICE_ID = env("CLICK_SERVICE_ID", default="")
+CLICK_MERCHANT_ID = env("CLICK_MERCHANT_ID", default="")
+CLICK_SECRET_KEY = env("CLICK_SECRET_KEY", default="")
+CLICK_MERCHANT_USER_ID = env("CLICK_MERCHANT_USER_ID", default="")
 
 # ---------------------------------------------------------------------------
 # Knowledge Base ingestion (admin-managed RAG sources)

@@ -63,6 +63,7 @@ urlpatterns = [
         name="admin-conversation-detail",
     ),
     path("api/admin/", include(admin_router.urls)),
+    path("api/billing/", include("billing.urls")),
     path("api/", include("chat.urls")),
     path("api/scenarios/", include("scenarios.urls")),
     path("api/", include("knowledge.urls")),

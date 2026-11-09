@@ -10,6 +10,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from billing import config as billing_config
+from billing.limits import check_question_allowed, limit_response
+
 from . import retrieval, safety, services
 from .models import Conversation, Message, MessageFeedback
 from .serializers import (
@@ -120,6 +123,12 @@ class MessageCreateView(_ThrottledChatView):
         )
         plain = serializer.validated_data.get("plain", False)
 
+        decision = check_question_allowed(request.user)
+        if not decision.allowed:  # Stage 2 — plan limit, checked BEFORE anything is stored/sent to the LLM
+            return limit_response(
+                decision, serializer.validated_data.get("language") or conversation.language
+            )
+
         user_msg = Message.objects.create(
             conversation=conversation, role=Message.USER, content=content
         )
@@ -173,6 +182,12 @@ class MessageStreamView(_ThrottledChatView):
             content, serializer.validated_data.get("language") or conversation.language
         )
         plain = serializer.validated_data.get("plain", False)
+
+        decision = check_question_allowed(request.user)
+        if not decision.allowed:  # Stage 2 — plan limit, checked BEFORE anything is stored/sent to the LLM
+            return limit_response(
+                decision, serializer.validated_data.get("language") or conversation.language
+            )
 
         user_msg = Message.objects.create(
             conversation=conversation, role=Message.USER, content=content
@@ -365,6 +380,7 @@ class PublicConfigView(APIView):
                 "chat_mode": getattr(settings, "CHAT_MODE", "ai"),
                 "ai_mode": _ai_mode(),
                 "telegram_bot": bool(getattr(settings, "TELEGRAM_BOT_TOKEN", "")),
+                "billing_enabled": billing_config.billing_enabled(),
             }
         )
 
