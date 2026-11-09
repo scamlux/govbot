@@ -420,6 +420,16 @@ git-ignored.
 
 ---
 
+## 7a. Mobile app (Capacitor)
+- `mobile/` — Capacitor 8 shell, app id `uz.govbot.app`. The WebView loads the live site
+  (`server.url` = production), so web deploys reach the app without a store release;
+  `www/offline.html` shows when the site can't load. Native plugins (status bar, splash,
+  local notifications, share, haptics) are reached from web code via `window.Capacitor`,
+  feature-detected so the plain web stays unaffected.
+- Build: `cd mobile && npm run apk` (JDK 21 + Android SDK 36). Release signing reads
+  `~/.govbot/keystore.properties` — the keystore is never committed. Steps: `mobile/README.md`.
+- iOS needs Xcode + an Apple Developer account (not set up yet).
+
 ## 8. Quality bar
 - Backend: clear DRF serializers/viewsets, proper status codes, input validation, no N+1
   on conversation/message lists (use `select_related`/`prefetch_related`).

@@ -1,0 +1,30 @@
+{
+  "appId": "uz.govbot.app",
+  "appName": "GovBot",
+  "webDir": "www",
+  "server": {
+    "url": "https://govbot-web.vercel.app",
+    "androidScheme": "https",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#F5F6F8"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 700,
+      "launchAutoHide": true,
+      "backgroundColor": "#F5F6F8",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#F5F6F8",
+      "overlaysWebView": false
+    },
+    "LocalNotifications": {
+      "iconColor": "#0A6E78"
+    }
+  }
+}

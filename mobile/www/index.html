@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>GovBot — internet yo'q</title>
+<style>
+  :root { --bg: #F5F6F8; --ink: #1D1D1F; --muted: #636366; --accent: #0A6E78; --gold: #C9A55A; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 32px 24px; background: var(--bg); color: var(--ink); text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, system-ui, sans-serif;
+  }
+  main { max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  h1 { margin: 0; font-size: 28px; letter-spacing: -0.02em; }
+  p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--muted); }
+  .alt { font-size: 14px; }
+  button {
+    min-height: 52px; padding: 0 28px; border: 0; border-radius: 999px;
+    background: var(--accent); color: #FFFFFF; font: 600 17px/1 inherit; cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .hotline { font-size: 15px; color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <svg width="96" height="96" viewBox="0 0 40 40" aria-hidden="true">
+    <polygon points="10,10 30,10 30,30 10,30" fill="none" stroke="#0A6E78" stroke-width="2"></polygon>
+    <polygon points="20,5.9 34.1,20 20,34.1 5.9,20" fill="none" stroke="#B8913F" stroke-width="2"></polygon>
+  </svg>
+  <h1>Internet aloqasi yo'q</h1>
+  <p>GovBot'ga ulanib bo'lmadi. Aloqani tekshirib, qayta urinib ko'ring.</p>
+  <p class="alt">Нет подключения к интернету · No internet connection</p>
+  <button type="button" id="retry">Qayta urinish</button>
+  <p class="hotline"><b>112</b> — favqulodda yordam · <b>1242</b> — my.gov.uz</p>
+</main>
+<script>
+  document.getElementById("retry").addEventListener("click", function () {
+    window.location.href = "https://govbot-web.vercel.app/";
+  });
+</script>
+</body>
+</html>
