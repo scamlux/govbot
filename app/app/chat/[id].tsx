@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import { BlurView } from "expo-blur";
+import { Glass } from "../../src/ui/Glass";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from "react";
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
@@ -242,7 +242,7 @@ export default function ChatScreen() {
       </KeyboardAvoidingView>
 
       <View pointerEvents="box-none" style={{ position: "absolute", top: 0, left: 0, right: 0, paddingTop: insets.top, height: insets.top + HEADER_BAR }}>
-        <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+        <Glass intensity={30} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(245,246,248,0.82)", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(0,0,0,0.06)" }]} />
         <View style={{ height: HEADER_BAR, flexDirection: "row", alignItems: "center", paddingHorizontal: 6, gap: 4 }}>
           <IconButton icon="chevronLeft" label={t("common.back")} onPress={() => (router.canGoBack() ? router.back() : router.replace("/chat"))} color={palette.accent} />

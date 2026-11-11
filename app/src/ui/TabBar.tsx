@@ -1,4 +1,4 @@
-import { BlurView } from "expo-blur";
+import { Glass } from "./Glass";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
@@ -89,7 +89,7 @@ export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: B
           backgroundColor: Platform.OS === "android" ? "rgba(255,255,255,0.94)" : "rgba(255,255,255,0.82)",
         }}
       >
-        <BlurView intensity={50} tint="light" style={StyleSheet.absoluteFill} />
+        <Glass intensity={50} fallback="rgba(255,255,255,0.97)" />
         <Animated.View
           pointerEvents="none"
           style={[

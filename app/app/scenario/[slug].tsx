@@ -1,4 +1,4 @@
-import { BlurView } from "expo-blur";
+import { Glass } from "../../src/ui/Glass";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -95,8 +95,8 @@ export default function ScenarioScreen() {
       </ScrollView>
 
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, overflow: "hidden", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.06)" }}>
-        <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
-        <View style={{ flexDirection: "row", gap: 10, paddingTop: 14, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 12) + 8, backgroundColor: "rgba(245,246,248,0.86)" }}>
+        <Glass intensity={40} />
+        <View style={{ flexDirection: "row", gap: 10, paddingTop: 14, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 12) + 8, backgroundColor: "rgba(245,246,248,0.96)" }}>
           <Button tone="plain" icon="share" label={t("m.scenario.share")} onPress={share} style={{ paddingHorizontal: 18 }} />
           <Button icon="sparkle" label={t("m.scenario.askAi")} onPress={askAi} style={{ flex: 1 }} />
         </View>

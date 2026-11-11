@@ -1,4 +1,4 @@
-import { BlurView } from "expo-blur";
+import { Glass } from "./Glass";
 import { useCallback, useState, type ReactNode } from "react";
 import { Platform, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
@@ -119,7 +119,7 @@ export function LargeTitleScreen({ title, largeTitle, headerRight, children, onR
 
       <View pointerEvents="box-none" style={{ position: "absolute", top: 0, left: 0, right: 0, height: headerH }}>
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, headerBlur]}>
-          <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+          <Glass intensity={30} />
           <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(245,246,248,0.78)", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(0,0,0,0.08)" }]} />
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, right: 0, bottom: 0, height: HEADER_BAR, alignItems: "center", justifyContent: "center" }, compactTitle]}>
