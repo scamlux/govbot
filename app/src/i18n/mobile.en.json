@@ -1,0 +1,90 @@
+{
+  "tabs": {
+    "home": "Home",
+    "chat": "Chat",
+    "catalog": "Catalog",
+    "cases": "My cases",
+    "profile": "Profile"
+  },
+  "home": {
+    "greeting": "Hello",
+    "popular": "Popular topics",
+    "aiMode": {
+      "degraded": "The AI is temporarily running in limited mode. Answers come from the catalog.",
+      "catalog_only": "Chat is running in catalog-only mode.",
+      "mock": "Test mode: answers are samples."
+    },
+    "offline": "You are offline. Showing saved data."
+  },
+  "cases": {
+    "title": "My cases",
+    "empty": "Nothing in progress yet. Open a topic in the catalog and tick off its documents.",
+    "progress": "{{done}} / {{total}} ready",
+    "reminders": "Reminders",
+    "noReminders": "No reminders"
+  },
+  "chat": {
+    "signInPrompt": "Sign in to keep your chat history.",
+    "guestTry": "Ask as a guest",
+    "newConversation": "New chat",
+    "stop": "Stop",
+    "simpleLanguage": "Simple language",
+    "readAloud": "Read aloud",
+    "voiceInput": "Voice input",
+    "voiceUnavailable": "Voice input is not available on this device",
+    "share": "Share",
+    "answeredIn": "Answered in {{language}}",
+    "limitReached": "Daily question limit reached"
+  },
+  "auth": {
+    "title": "Sign in",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full name",
+    "failed": "Could not sign in",
+    "signOut": "Sign out"
+  },
+  "profile": {
+    "language": "Language",
+    "xlText": "Large text",
+    "highContrast": "High contrast",
+    "haptics": "Haptic feedback",
+    "reduceMotion": "Reduce motion",
+    "reduceMotionSystem": "Follow system",
+    "exportData": "Export my data",
+    "deleteAccount": "Delete account",
+    "help": "Help",
+    "callHotline": "Call {{number}}",
+    "about": "About"
+  },
+  "scenario": {
+    "documents": "Documents to prepare",
+    "askAi": "Ask the AI",
+    "remind": "Set a reminder",
+    "reminderSet": "Reminder set for {{date}} at 09:00",
+    "notificationsDenied": "Notification permission was denied",
+    "verified": "Verified: {{date}}",
+    "source": "Official source"
+  },
+  "paywall": {
+    "title": "Plan",
+    "limit": "Daily limit: {{limit}}",
+    "disabled": "Payments are not enabled yet"
+  },
+  "onboarding": {
+    "title": "GovBot 2.0",
+    "next": "Next",
+    "start": "Get started",
+    "step1": "Get plain-language answers about public services.",
+    "step2": "Tick off the documents list and set reminders.",
+    "step3": "The AI can make mistakes: verify important details with the official source."
+  },
+  "common": {
+    "retry": "Retry",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "close": "Close"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "GovBot",
+    "slug": "govbot",
+    "scheme": "govbot",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon-only.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F5F6F8",
+    "ios": {
+      "bundleIdentifier": "uz.govbot.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "uz.govbot.app",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon-foreground.png",
+        "backgroundImage": "./assets/icon-background.png",
+        "backgroundColor": "#0A6E78"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "backgroundColor": "#F5F6F8",
+          "imageWidth": 220,
+          "resizeMode": "contain"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0A6E78"
+        }
+      ],
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "GovBot uses the microphone to dictate your question.",
+          "speechRecognitionPermission": "GovBot uses speech recognition to turn your voice into a question.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
