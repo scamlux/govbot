@@ -1,21 +1,16 @@
-import { Tabs } from "expo-router";
+import { Tabs } from "expo-router/js-tabs";
 import { useTranslation } from "react-i18next";
 
 import { useA11y } from "../../src/theme/a11y";
+import { TabBar } from "../../src/ui/TabBar";
 
 export default function TabsLayout() {
   const { t } = useTranslation();
   const { palette } = useA11y();
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: palette.accent,
-        tabBarInactiveTintColor: palette.muted,
-        tabBarStyle: { backgroundColor: palette.surface, borderTopColor: palette.line },
-        tabBarIconStyle: { display: "none" },
-        tabBarLabelStyle: { fontSize: 13, paddingVertical: 12 },
-      }}
+      tabBar={(props) => <TabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: palette.bg }, animation: "fade" }}
     >
       <Tabs.Screen name="index" options={{ title: t("m.tabs.home") }} />
       <Tabs.Screen name="chat" options={{ title: t("m.tabs.chat") }} />

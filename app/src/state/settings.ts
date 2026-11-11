@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { Lang } from "../config";
+import type { AccentName } from "../theme/tokens";
 import { asyncJsonStorage } from "./storage";
 
 export type SettingsState = {
@@ -13,6 +14,11 @@ export type SettingsState = {
   /** null follows the OS "reduce motion" setting. */
   reduceMotionOverride: boolean | null;
   onboarded: boolean;
+  accent: AccentName;
+  /** "Oddiy til" default for new chat turns. */
+  plainDefault: boolean;
+  setAccent: (value: AccentName) => void;
+  setPlainDefault: (value: boolean) => void;
   setLanguage: (language: Lang) => void;
   setXlText: (value: boolean) => void;
   setHighContrast: (value: boolean) => void;
@@ -30,6 +36,10 @@ export const useSettings = create<SettingsState>()(
       haptics: true,
       reduceMotionOverride: null,
       onboarded: false,
+      accent: "teal",
+      plainDefault: false,
+      setAccent: (accent) => set({ accent }),
+      setPlainDefault: (plainDefault) => set({ plainDefault }),
       setLanguage: (language) => set({ language }),
       setXlText: (xlText) => set({ xlText }),
       setHighContrast: (highContrast) => set({ highContrast }),

@@ -3,6 +3,7 @@ import { AccessibilityInfo, PixelRatio, type TextStyle } from "react-native";
 
 import { useSettings } from "../state/settings";
 import {
+  accents,
   colors,
   highContrastColors,
   type Palette,
@@ -45,12 +46,13 @@ export function useA11y(): A11y {
   const xlText = useSettings((s) => s.xlText);
   const highContrast = useSettings((s) => s.highContrast);
   const override = useSettings((s) => s.reduceMotionOverride);
+  const accent = useSettings((s) => s.accent);
   const osReduceMotion = useOsReduceMotion();
 
   return useMemo(() => {
     const appTextScale = xlText ? XL_TEXT_SCALE : 1;
     return {
-      palette: highContrast ? highContrastColors : colors,
+      palette: { ...(highContrast ? highContrastColors : colors), ...accents[accent] },
       appTextScale,
       osFontScale: PixelRatio.getFontScale(),
       highContrast,
@@ -64,5 +66,5 @@ export function useA11y(): A11y {
         };
       },
     };
-  }, [xlText, highContrast, override, osReduceMotion]);
+  }, [xlText, highContrast, override, osReduceMotion, accent]);
 }

@@ -12,6 +12,7 @@ import i18n, { initI18n } from "../src/i18n";
 import { configureNotifications } from "../src/native/notifications";
 import { persistOptions, queryClient, setupOnlineManager } from "../src/query/client";
 import { useSettings } from "../src/state/settings";
+import { useA11y } from "../src/theme/a11y";
 
 void SplashScreen.preventAutoHideAsync();
 configureNotifications();
@@ -37,6 +38,7 @@ function Routes() {
   const { loading } = useAuth();
   const onboarded = useSettings((s) => s.onboarded);
   const router = useRouter();
+  const { palette } = useA11y();
   const segments = useSegments();
 
   useEffect(() => {
@@ -48,13 +50,14 @@ function Routes() {
   }, [onboarded, segments, router]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }}>
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="scenario/[slug]" options={{ headerShown: true, title: "" }} />
-      <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: "" }} />
-      <Stack.Screen name="auth" options={{ presentation: "modal" }} />
-      <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
-      <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="scenario/[slug]" options={{ animation: "slide_from_right" }} />
+      <Stack.Screen name="chat/[id]" options={{ animation: "slide_from_right" }} />
+      <Stack.Screen name="voice" options={{ animation: "fade", gestureEnabled: false }} />
+      <Stack.Screen name="auth" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
+      <Stack.Screen name="paywall" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
+      <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: "fade" }} />
     </Stack>
   );
 }
