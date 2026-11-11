@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -22,6 +22,9 @@ export default function AuthSheet() {
   const { t } = useTranslation();
   const lang = useLang();
   const router = useRouter();
+  // A guest's question typed before sign-in (from the chat redirect) is re-sent afterwards.
+  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
+  const signedIn = useRef(false);
   const { login, register } = useAuth();
   const { palette } = useA11y();
   const [mode, setMode] = useState<Mode>("login");
@@ -38,6 +41,10 @@ export default function AuthSheet() {
     setOpen(false);
   };
   const finish = () => {
+    if (signedIn.current && prefill) {
+      router.replace({ pathname: "/chat/[id]", params: { id: "new", prefill, autoSend: "1" } });
+      return;
+    }
     if (router.canGoBack()) router.back();
     else router.replace("/");
   };
@@ -51,6 +58,7 @@ export default function AuthSheet() {
       if (mode === "login") await login(email.trim(), password);
       else await register({ email: email.trim(), password, full_name: fullName.trim() || undefined, preferred_language: lang });
       void haptics.success();
+      signedIn.current = true;
       close();
     } catch (e) {
       void haptics.warning();

@@ -97,9 +97,10 @@ export default function Onboarding() {
       >
         <View style={{ width, alignItems: "center" }}>
           <Animated.View entering={FadeIn.duration(400)} style={{ position: "absolute", top: insets.top + 20 }} pointerEvents="none">
-            <Svg width={390} height={430} viewBox="0 0 390 430">
-              <Path d="M40 430 L40 214 C40 120 120 52 195 22 C270 52 350 120 350 214 L350 430" fill="#FFFFFF" stroke="#C9A55A" strokeWidth={1.5} />
-              <Path d="M62 430 L62 220 C62 136 132 76 195 48 C258 76 328 136 328 220 L328 430" fill="none" stroke={palette.accent} strokeOpacity={0.25} strokeWidth={1} />
+            {/* Tall enough that the title, tagline and language switcher all sit inside the arch. */}
+            <Svg width={390} height={620} viewBox="0 0 390 620">
+              <Path d="M40 620 L40 214 C40 120 120 52 195 22 C270 52 350 120 350 214 L350 620" fill="#FFFFFF" stroke="#C9A55A" strokeWidth={1.5} />
+              <Path d="M62 620 L62 220 C62 136 132 76 195 48 C258 76 328 136 328 220 L328 620" fill="none" stroke={palette.accent} strokeOpacity={0.25} strokeWidth={1} />
             </Svg>
           </Animated.View>
           <View style={{ marginTop: insets.top + 130 }}>

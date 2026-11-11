@@ -56,8 +56,10 @@ export default function ChatScreen() {
 
   // Guests are only allowed when the server enables guest chat.
   useEffect(() => {
-    if (routeId === CHAT_NEW && !user && config.data && !config.data.guest_chat) router.replace("/auth");
-  }, [routeId, user, config.data, router]);
+    if (routeId === CHAT_NEW && !user && config.data && !config.data.guest_chat) {
+      router.replace(prefill ? { pathname: "/auth", params: { prefill } } : "/auth");
+    }
+  }, [routeId, user, config.data, router, prefill]);
 
   useEffect(() => {
     if (autoSend === "1" && prefill && !autoSent.current && config.isFetched) {
